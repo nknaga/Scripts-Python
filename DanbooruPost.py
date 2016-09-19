@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created : 26/08/2016
-Last modified : 07/09/2016
+Last modified : 09/09/2016
 Python version : 3.5
 @author: Rignak
 """
@@ -44,7 +44,7 @@ def ReplaceAll(text, dic_error):
 def DelLine(list_n):
     """Delete line in the html file
     Input:
-    list_n - A list of str, number of line to delete in each file"""
+    list_n - A list of str, number of lines to delete in each file"""
     for i in range(len(list_HTML)):
         newHTML = open(list_HTML[i] + '~', 'w')
         oldHTML = open(list_HTML[i], 'r')
@@ -61,7 +61,7 @@ def DelLine(list_n):
 
 
 def TrimHTML():
-    """Delete line with the url of picture as listed in trim.txt"""
+    """Delete lines with the url of the pictures listed in trim.txt"""
     trim_f = open(join(root, "trim.txt"), 'r')
     list_url = trim_f.readline().split()
     for i in range(len(list_HTML)):
