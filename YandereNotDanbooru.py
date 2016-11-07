@@ -11,6 +11,7 @@ import bs4 as BeautifulSoup
 from datetime import datetime
 from stem import Signal
 from stem.control import Controller
+from os.path import join
 
 controller = Controller.from_port(port=9151)
 
@@ -23,7 +24,7 @@ def renew_tor():
     # time.sleep(10)
 
 
-def CreateListAllURL(tags, limit):
+def CreateListAllURL(tags, limit,tag_add):
     """Create the list of all urls resulting of the search
 
     Input:
@@ -91,6 +92,22 @@ def IsOnDan(url_sample, url_yan):
     else:
         return False
 
+def AlreadyFound(urls):
+    """Remove the links of picture which are already recorded"""
+    root = 'E:\\Telechargements\\Anime\\post\\data'
+    list_L = ["L1.txt", "L2.txt", "L3.txt", "LPriority.txt"]
+    links = {}
+    for file in list_L:
+        temp_links = open(join(root, file), "r")
+        for link in temp_links:
+            links[link] = 1
+
+    for i in range(len(urls)):
+        if urls[i] in links:
+            urls.pop(i)
+            i = i -1
+    return urls
+
 
 def WriteHTML(urls_yan):
     """Write the result of the search in a .html
@@ -111,20 +128,21 @@ if __name__ == '__main__':
     limit = int(input("Choose a limit: "))
     begin = datetime.now()
     urls = []
-    i = 0
-
-    urls_yan = CreateListAllURL(tags, limit)
+    urls_yan = AlreadyFound(CreateListAllURL(tags, limit, tag_add))
     print("The number of url is :", len(urls_yan))
 
-    for url in urls_yan:
+    n = len(urls_yan)
+    for i in range(n):
+        url = urls_yan[i]
         if i%24 == 0:
             renew_tor()
         res =  IsOnDan(URLSample(url), url)
-        ending = (datetime.now() - begin) / (i + 1) * len(urls_yan) + begin
+        ending = (datetime.now() - begin) / (i + 1) * n + begin
         if not res:
-            print(url, '|' , i + 1, ' on ', len(urls_yan), '|', ending.strftime('%H:%M'))
+            print(url, '|' , i + 1, 'on', n, '|', ending.strftime('%H:%M'), '| OK')
             urls.append(url)
-        i = i + 1
+        else:
+            print(url, '|' , i + 1, "on", n, '|', ending.strftime('%H:%M'))
 
     print('\n', len(urls), 'results')
     WriteHTML(urls)
