@@ -96,12 +96,12 @@ def LaunchWaifu(list_waifu):
 
         r = requests.post('http://waifu2x.udp.jp/api', files=files,
                           data=payload, headers=headers, stream=True)
-
-        with open(join(waifu_root, file.split('\\')[-1][:-4] + '.png'), 'wb') as out_file:
-            out_file.write(r.content)
-        out_file.close()
-        print(i+1, "on", len(list_waifu), '|',
-              (datetime.datetime.now() - begin) / (i + 1) * len(list_waifu) + begin)
+        if len(r.content)>400:
+            with open(join(waifu_root, file.split('\\')[-1][:-4] + '.png'), 'wb') as out_file:
+                out_file.write(r.content)
+            out_file.close()
+            print(i+1, "on", len(list_waifu), '|',
+                  (datetime.datetime.now() - begin) / (i + 1) * len(list_waifu) + begin)
     return
 
 
@@ -113,10 +113,7 @@ def Rem_Waifu():
     for root, dirs, files in walk(waifu_root):
         for i in range(len(files)):
             name = files[i]
-            if name.find("waifu2x") != -1:
-                newname = name[:name.find("waifu2x") - 1] + ".jpg"
-            else:
-                newname = name[:-4] + ".jpg"
+            newname = name[:-4] + ".jpg"
             if name != newname:
                 im = Image.open(join(root, name))
                 im.save(join(root, newname), format="JPEG", quality=100)
@@ -148,7 +145,10 @@ def Convert_to_jpg(list_file):
         if file[-4:] == ".png":
             print(file)
             im = Image.open(file)
-            im.save(file[:-4] + ".jpg", format="JPEG", quality=100)
+            try:
+                im.save(file[:-4] + ".jpg", format="JPEG", quality=100)
+            except:
+                print('error:', file)
             remove(file)
             im.close()
     return
