@@ -9,19 +9,16 @@ Python version : 3.5
 from os.path import join
 from os import remove, rename
 
-# Declare each files wich will be used
-root = "E:\Telechargements\Anime\post\data"
-error_fname = "error.txt"
-banned_fname = "banned_artist.txt"
-list_T = ["T1.txt", "T2.txt", "T3.txt", "T4.txt", "Priority.txt"]
-list_L = ["L1.txt", "L2.txt", "L3.txt", "L4.txt", "LPriority.txt"]
-list_HTML = []
-for i in range(len(list_T)):
-    list_T[i] = join(root, list_T[i])
-    list_L[i] = join(root, list_L[i])
-    list_HTML.append(list_T[i][:-4] + 'Advanced.html')
+root = "../files"
+list_T = ["T1.txt", "T2.txt", "T3.txt", "T4.txt", "TP.txt"]
+list_T = [join(root, 'tags', e) for e in list_T]
+list_L = ["L1.txt", "L2.txt", "L3.txt", "L4.txt", "LP.txt"]
+list_L = [join(root, 'links', e) for e in list_L]
+list_HTML = ["F1.txt", "F2.txt", "F3.txt", "F4.txt", "FP.txt"]
+list_HTML = [join(root,'html', e) for e in list_HTML]
 
 # Create a list of error to correct
+error_fname = "error.txt"
 dic_error = {}
 error_f = open(join(root, error_fname), "r")
 for line in error_f:
@@ -29,6 +26,7 @@ for line in error_f:
         l = line.split()
         dic_error[l[0]] = l[1]
 
+banned_fname = "banned_artist.txt"
 dic_banned = {}
 banned_f = open(join(root, banned_fname), "r")
 for line in banned_f:
@@ -44,9 +42,6 @@ def CorrectorSample(url_sample):
 
     Output:
     url_pict - string, the url of the image"""
-
-    #if url_sample.startswith("https://files.yande.re/sample/"):
-    #    return url_sample.replace('/sample/', '/image/')
     if "g.hitomi" in url_sample:
         return url_sample.replace("g.hitomi", "a.hitomi")
     if "sample" in url_sample:
