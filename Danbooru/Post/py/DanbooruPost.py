@@ -131,7 +131,7 @@ def GenerateTXT():
     """Creation of two .txt (url and tags) for each .html"""
     print("Generation of .txt")
     for i in range(len(list_T)):
-        file = open(list_T[i][:-4] + 'Advanced.html', 'r')
+        file = open(list_HTML[i], 'r')
         fileT = open(list_T[i], 'w')
         fileL = open(list_L[i], 'w')
         for line in file:
@@ -152,7 +152,7 @@ def GenerateHTML():
     """Creation of .html for each duo of .txt"""
     print("Generation of .html")
     for i in range(len(list_T)):
-        file = open(list_T[i][:-4] + 'Advanced.html', 'w')
+        file = open(list_HTML[i], 'w')
         fileT = open(list_T[i], 'r')
         fileL = open(list_L[i], 'r')
 
