@@ -131,7 +131,7 @@ def main():
     inf = 2352374
     sup = 2500000
     tags = 'id:<='+str(sup)+" breasts -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
-    limit = 1500
+    limit = 10
     data = []
     res = []
 
@@ -151,9 +151,11 @@ def main():
     # Asking data from user
     i = 0
 
-    for img in imgs:
+    begin = datetime.now()
+    for j,img in enumerate(imgs):
         i += 1
-        print(i, '-', img._Id)
+        print(i, '-', img._Id, '|',
+              ((datetime.now()-begin)/(j+1)*(len(imgs)-j) + datetime.now()).strftime('%H:%M'))
         img._add = Sample.InputTags(img)
         if img._add == 'return':  # End of operations
             break
@@ -182,7 +184,7 @@ def main():
                 print(code)
             t_mean = (datetime.now() - begin)/(i)
             print(img._Id, '|', i, 'on', len(res), '|',
-                  (t_mean*(len(res) - i) + datetime.now() + timedelta(seconds=(len(res)//1000-i//1000)*0)).strftime('%H:%M') )
+                  (t_mean*(len(res) - i) + datetime.now()).strftime('%H:%M'))
     return
 
 
