@@ -17,7 +17,6 @@ f = open("../Danbooru_Codes.txt")
 api_key = f.readline().split()[1]
 username = f.readline().split()[1]
 f.close()
-
 known_tags = {'g' : 'flat_chest', 's' : 'small_breasts', 'm' : 'medium_breasts',
               'l' : 'large_breasts', 'h' : 'huge_breasts', '-' : '-sideboob -cleavage -breasts',
               'look' : 'looking_at_viewer', 'hair' : 'hair_between_eyes',
@@ -78,8 +77,8 @@ class Sample:
     def GetTag(self):
         url = 'http://danbooru.donmai.us/posts/' + self._Id + '.json'
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
-        payload = {'api_key':'vGRt81yjji615z_Iazec12m7p5kd_2cSz_h4MeHdeT8',
-                   'login': 'Rignak'}
+        payload = {'api_key':api_key,
+                   'login': username}
 
         req = requests.get(url,
                             data=payload, headers=headers, stream=True)
@@ -106,8 +105,8 @@ def ListUrl(tags):
     """Make a rqst to danbooru in order to get the data"""
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
     payload = {'limit ': 100, 'tags' : tags,
-               'api_key':'vGRt81yjji615z_Iazec12m7p5kd_2cSz_h4MeHdeT8',
-               'login': 'Rignak'}
+               'api_key':api_key,
+               'login': username}
     req = requests.get('https://danbooru.donmai.us/posts.json',
                         data=payload, headers=headers, stream=True)
     data = req.json()

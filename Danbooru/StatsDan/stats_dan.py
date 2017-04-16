@@ -10,18 +10,20 @@ from datetime import timedelta, date, datetime
 from time import sleep
 
 str1 = "http://sonohara.donmai.us/counts/posts.json?tags="
-name = "Rignak"
-api = "vGRt81yjji615z_Iazec12m7p5kd_2cSz_h4MeHdeT8"
+f = open("../Danbooru_Codes.txt")
+api_key = f.readline().split()[1]
+username = f.readline().split()[1]
+f.close()
 
 def NbTags(tags):
-    request = str1 + tags + '&login=' + name + '&api_key=' + api
+    request = str1 + tags + '&login=' + username + '&api_key=' + api_key
     e = True
     while e:
         try:
             e = False
             page = urllib.request.urlopen(request)
         except urllib.error.HTTPError:
-            print('tags')
+            print('Spam?')
             sleep(300)
             e = True
 

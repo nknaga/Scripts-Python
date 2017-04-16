@@ -14,7 +14,7 @@ list_T = ["T1.txt", "T2.txt", "T3.txt", "T4.txt", "TP.txt"]
 list_T = [join(root, 'tags', e) for e in list_T]
 list_L = ["L1.txt", "L2.txt", "L3.txt", "L4.txt", "LP.txt"]
 list_L = [join(root, 'links', e) for e in list_L]
-list_HTML = ["F1.txt", "F2.txt", "F3.txt", "F4.txt", "FP.txt"]
+list_HTML = ["F1.html", "F2.html", "F3.html", "F4.html", "FP.html"]
 list_HTML = [join(root,'html', e) for e in list_HTML]
 
 # Create a list of error to correct
