@@ -10,7 +10,6 @@ from io import BytesIO
 from PIL import Image
 from os import system
 from datetime import datetime
-from datetime import timedelta
 from time import sleep
 
 f = open("../Danbooru_Codes.txt")
@@ -26,6 +25,9 @@ f = open('tags.txt', 'r')
 dic_tags = {}
 for line in f:
     dic_tags[line[:-1]] = 0
+
+def init_screen(width, height):
+    return pygame.display.set_mode((width, height), pygame.RESIZABLE)
 
 class Sample:
     """Depict a sample with:
@@ -116,22 +118,19 @@ def ListImgs(data):
     """Create a list of imgs, sample object"""
     imgs = []
     begin = datetime.now()
-    i = 0
-    for dic in data:
-        i += 1
+    for i,dic in enumerate(data):
         imgs.append(Sample(dic))
-        #break
-        t_mean = (datetime.now() - begin)/(i)
-        if i%10 == 0:
-            print(i,'on', len(data), '| id:', imgs[-1]._Id, '|',
-                 (t_mean*(len(data) - i) + datetime.now()).strftime('%H:%M'))
+        t_mean = (datetime.now() - begin)/(i+1)
+        if i%10 == 1:
+            print(i+1,'on', len(data), '| id:', imgs[-1]._Id, '|',
+                 (t_mean*(len(data) - i-1) + datetime.now()).strftime('%H:%M'))
     return imgs
 
 def main():
-    inf = 2352374
+    inf = 237500
     sup = 2500000
     tags = 'id:<='+str(sup)+" breasts -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
-    limit = 10
+    limit = 1500
     data = []
     res = []
 
@@ -147,15 +146,12 @@ def main():
     begin = datetime.now()
     imgs = ListImgs(data)
     print(datetime.now() - begin)
-
+    input('Push enter to begin')
     # Asking data from user
-    i = 0
-
     begin = datetime.now()
-    for j,img in enumerate(imgs):
-        i += 1
-        print(i, '-', img._Id, '|',
-              ((datetime.now()-begin)/(j+1)*(len(imgs)-j) + datetime.now()).strftime('%H:%M'))
+    for i,img in enumerate(imgs):
+        print(i+1, '-', img._Id, '|',
+              ((datetime.now()-begin)/(i+1)*(len(imgs)-i) + datetime.now()).strftime('%H:%M'))
         img._add = Sample.InputTags(img)
         if img._add == 'return':  # End of operations
             break
@@ -163,16 +159,15 @@ def main():
             continue
         else:
             res.append(img)
+    print('MEAN TIME:', (datetime.now()-begin)/(i+1))
 
     r_file = open('res.txt', 'w')
     for img in res:
         r_file.write('1 - ' + str(img._Id) + '\n\n' + str(img._adds) + '\n')
     r_file.close()
     # Launch the modifications to danbooru
-    i = 0
     begin = datetime.now()
-    for img in res:
-        i += 1
+    for i,img in enumerate(res):
         code = 0
         while code != 200:
             try:
@@ -182,9 +177,9 @@ def main():
             if code != 200:
                 sleep(5)
                 print(code)
-            t_mean = (datetime.now() - begin)/(i)
-            print(img._Id, '|', i, 'on', len(res), '|',
-                  (t_mean*(len(res) - i) + datetime.now()).strftime('%H:%M'))
+            t_mean = (datetime.now() - begin)/(i+1)
+            print(img._Id, '|', i+1, 'on', len(res), '|',
+                  (t_mean*(len(res) - i-1) + datetime.now()).strftime('%H:%M'))
     return
 
 
