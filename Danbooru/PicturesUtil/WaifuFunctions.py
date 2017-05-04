@@ -72,20 +72,3 @@ def Unnoise(file, ext = 'png'):
         LaunchWaifu(file, ext=ext, scale=0, noise=3)
         return True
     return False
-
-
-
-"""from os import listdir
-files = listdir('files')
-res = []
-print(files)
-for i, file in enumerate(files):
-    file = join('files', file)
-    print(i, len(files))
-    LaunchWaifu(file, scale = 2, noise = 3)
-
-    #♥if Unnoise(file):
-      #  res.append(file)
-print(res)
-print(len(res))
-"""

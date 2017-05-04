@@ -290,6 +290,8 @@ def Launch(files, mode='full', folder = dirname(realpath(__file__))):
           "\nReduce white:",t_reduce/n,
           "\nTotal time:",(t_download+t_waifu+t_bloc+t_reduce)/n,(dt.now()-begin)/n)
 
+
+if __name__ == '__main__':
 #Full(folder = join(dirname(realpath(__file__)), 'result\\test'))
-a = join(dirname(realpath(__file__)), 'result\\to do')
-onFolder(folder=a)
+    a = join(dirname(realpath(__file__)), 'result\\to do')
+    onFolder(folder=a)
