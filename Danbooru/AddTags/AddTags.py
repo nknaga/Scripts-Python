@@ -26,8 +26,6 @@ dic_tags = {}
 for line in f:
     dic_tags[line[:-1]] = 0
 
-def init_screen(width, height):
-    return pygame.display.set_mode((width, height), pygame.RESIZABLE)
 
 class Sample:
     """Depict a sample with:
@@ -121,23 +119,23 @@ def ListImgs(data):
     for i,dic in enumerate(data):
         imgs.append(Sample(dic))
         t_mean = (datetime.now() - begin)/(i+1)
-        if i%10 == 1:
+        if i%10 == 9:
             print(i+1,'on', len(data), '| id:', imgs[-1]._Id, '|',
                  (t_mean*(len(data) - i-1) + datetime.now()).strftime('%H:%M'))
     return imgs
 
 def main():
-    inf = 237500
-    sup = 2500000
-    tags = 'id:<='+str(sup)+" breasts -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
-    limit = 1500
+    inf = 2668973
+    sup = 2700000
+    tags = 'id:<='+str(sup)+" -animated* -comic breasts -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
+    limit = 1600
     data = []
     res = []
 
     # Asking data from website
     for i in range((limit-1)//100+1):
 
-        print('Searching for picts:', i+1, 'on', limit//100 + 1)
+        print('Searching for picts:', i+1, 'on', (limit-1)//100+1, '|', inf)
         data += ListUrl(tags+str(inf))
         inf = data[-1]['id']
         if inf>sup:
@@ -162,8 +160,10 @@ def main():
     print('MEAN TIME:', (datetime.now()-begin)/(i+1))
 
     r_file = open('res.txt', 'w')
+    r_file2 = open('res2.txt', 'w')
     for img in res:
         r_file.write('1 - ' + str(img._Id) + '\n\n' + str(img._adds) + '\n')
+        r_file2.write(str(img._Id) + ' ' + str(img._adds) + '\n')
     r_file.close()
     # Launch the modifications to danbooru
     begin = datetime.now()

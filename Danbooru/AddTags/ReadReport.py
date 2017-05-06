@@ -9,6 +9,10 @@ If the AddTags program abord, this one will be able to recover some work
 import requests
 from datetime import datetime
 
+codes = open("../Danbooru_Codes.txt")
+api_key = codes.readline().split()[1]
+username = codes.readline().split()[1]
+
 known_tags = {'g' : 'flat_chest', 's' : 'small_breasts', 'm' : 'medium_breasts',
               'l' : 'large_breasts', 'h' : 'huge_breasts', '-' : '-sideboob -cleavage -breasts',
               'look' : 'looking_at_viewer', 'hair' : 'hair_between_eyes',
@@ -44,36 +48,33 @@ def GetTag(Id):
     data = req.json()
     return data["tag_string"]
 
-def ReadReport(file ='report.txt'):
+def ReadReport(file ='res.txt'):
     txt = open(file, 'r')
     begin = datetime.now()
     nb = 1500
-    for j in range(nb):
-        line1 = txt.readline()
-        while len(line1.split()) != 3:
-            line1 = txt.readline()
-        if line1.split()[1] == '-': # This line indicates the id
-            Id = line1.split()[2]
-            txt.readline()
-            line2 = txt.readline()
-            while len(line2.split()) < 3:
-                txt.readline()
-                line2 = txt.readline()
-            # Now line2 contain the tags to add
-            tags = line2.split()[2:]
-            tags = VerifyTags(' '.join(tags))
-            if tags == 'pass' or tags == 'p':
-                continue
-            tags  += ' ' + GetTag(Id)
-            url = 'http://danbooru.donmai.us/posts/' + Id + '.json'
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
-            payload = {'post[tag_string]': tags,
-                       'api_key':'vGRt81yjji615z_Iazec12m7p5kd_2cSz_h4MeHdeT8',
-                       'login': 'Rignak'}
-            res = requests.put(url,data=payload, headers=headers, stream=True)
-            print(payload)
-        t_mean = (datetime.now()-begin)/(j+1)
-        print(j+1, (t_mean*(nb - j + 1) + datetime.now()).strftime('%H:%M'), res.status_code, Id)
+    j = 0
+    for line in txt:
+        tags = line.split()[1:]
+        tags = VerifyTags(' '.join(tags))
+        Id = line.split()[0]
+        if tags == 'pass' or tags == 'p':
+            continue
+        tags  += ' ' + GetTag(Id)
+        url = 'http://danbooru.donmai.us/posts/' + Id + '.json'
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
+        payload = {'post[tag_string]': tags,
+                   'api_key':api_key,
+                   'login': username}
+        code = 0
+        while code != 200:
+            try:
+                code = requests.put(url,data=payload, headers=headers,
+                                    stream=True).status_code
+            except:
+                print(code)
+        j+=1
+        t_mean = (datetime.now()-begin)/j
+        print(j, (t_mean*(nb - j) + datetime.now()).strftime('%H:%M'), Id)
     return
 
 
