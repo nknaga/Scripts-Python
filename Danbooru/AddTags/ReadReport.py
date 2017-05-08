@@ -40,8 +40,8 @@ def VerifyTags(tags):
 def GetTag(Id):
     url = 'http://danbooru.donmai.us/posts/' + Id + '.json'
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
-    payload = {'api_key':'vGRt81yjji615z_Iazec12m7p5kd_2cSz_h4MeHdeT8',
-               'login': 'Rignak'}
+    payload = {'api_key':api_key,
+               'login': username}
 
     req = requests.get(url,
                         data=payload, headers=headers, stream=True)
@@ -51,7 +51,7 @@ def GetTag(Id):
 def ReadReport(file ='res.txt'):
     txt = open(file, 'r')
     begin = datetime.now()
-    nb = 1500
+    nb = 3000
     j = 0
     for line in txt:
         tags = line.split()[1:]
