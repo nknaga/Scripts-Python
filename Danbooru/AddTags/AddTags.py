@@ -125,10 +125,10 @@ def ListImgs(data):
     return imgs
 
 def main():
-    inf = 2668973
-    sup = 2700000
-    tags = 'id:<='+str(sup)+" -animated* -comic breasts -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
-    limit = 1600
+    inf = 0
+    sup = 2672834
+    tags = "breasts -animated -comic -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
+    limit = 1000
     data = []
     res = []
 
@@ -137,6 +137,8 @@ def main():
 
         print('Searching for picts:', i+1, 'on', (limit-1)//100+1, '|', inf)
         data += ListUrl(tags+str(inf))
+        if inf == data[-1]['id']:
+            break
         inf = data[-1]['id']
         if inf>sup:
             break

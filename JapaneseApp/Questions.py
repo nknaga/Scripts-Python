@@ -20,14 +20,15 @@ standart_file = join(standart_root, 'kanjis.txt')
 class Question:
     def __init__(self, line, question, answer):
         l = line.split('\t')
-        self.question = l[int(question)]
-        self.answer = l[int(answer)]
-        self.all = l
+        self.question = l[int(question)].replace(u'\xa0', u'')
+        self.answer = l[int(answer)].replace(u'\xa0', u'')
+        self.all = [l[i].replace(u'\xa0', u'') for i in range(len(l))]
         return
 
 class Question_Canvas(tk.Tk):
     def __init__(self):
         self.fenetre=tk.Tk.__init__(self)
+        self.bind('<Return>', self.on_button_check)
         self._update = False
         self.canvas = tk.Canvas(self.fenetre, width=300, height=100)
         self._text = self.canvas.create_text(150, 20, text='Hello World', font="Arial 25")
@@ -40,25 +41,28 @@ class Question_Canvas(tk.Tk):
         self.button_pass.pack()
         self.button_break = tk.Button(self, text="Break", command=self.on_button_break, width=10)
         self.button_break.pack()
+        self._result = [0, 0]
 
     def Init(self, question):
-        self._result = [0, 0]
         self.question = question
         self.canvas.delete(self._text)
         self._text = self.canvas.create_text(150, 20, text=self.question.question, font="Arial 25")
         self.canvas.pack()
         self._update = False
 
-    def on_button_check(self):
+    def on_button_check(self, event = None):
         if self.entry.get() in  self.question.answer.split(', '):
             print('Right : ', self.question.all)
             sys.stdout.flush()
-            self._update = True
             self._result[0] += 1
         else:
-            print('False')
+            print('False', self.question.answer, '/\\', self.entry.get())
             self._result[1] += 1
+        self._update = True
         sys.stdout.flush()
+        self.entry.delete(0, "end")
+        self.entry.insert(0, "")
+        self.entry.pack()
         return
 
     def on_button_pass(self):
@@ -68,13 +72,10 @@ class Question_Canvas(tk.Tk):
         return
 
     def on_button_break(self):
+        print("The number of good answer:", self._result[0])
+        print("The number of bad answer:", self._result[1])
         self.destroy()
-        self.termination()
-
-    def termination(self):
-            print("The number of good answer:", self._result[0])
-            print("The number of bad answer:", self._result[1])
-            sys.exit()
+        sys.exit()
 
 if __name__ == '__main__':
     result = [0, 0]
@@ -104,4 +105,3 @@ if __name__ == '__main__':
                     break
             except:
                 sys.exit()
-    frame.termination()

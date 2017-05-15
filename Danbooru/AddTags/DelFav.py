@@ -11,8 +11,8 @@ It write the link in a .txt, to manually double-check and unfav
 from AddTags import ListImgs, ListUrl, Sample
 from datetime import datetime
 
-limit = 1500
-inf = 1969904
+limit = 2500
+inf = 2439224
 sup = 1000000000
 f = open("../Danbooru_Codes.txt")
 api_key = f.readline().split()[1]

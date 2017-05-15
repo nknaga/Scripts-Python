@@ -21,10 +21,9 @@ def renew_tor():
     controller.signal(Signal.NEWNYM)
     socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9150, True)
     socket.socket = socks.socksocket
-    # time.sleep(10)
 
 
-def CreateListAllURL(tags, limit,tag_add):
+def CreateListAllURL(tags, limit,tag_add, mode):
     """Create the list of all urls resulting of the search
 
     Input:
@@ -41,7 +40,7 @@ def CreateListAllURL(tags, limit,tag_add):
             continue
         print(tag, len(urls))
         tag = tag + "+" + tag_add  # Add a tag for all search
-        while i <= limit//1000 + 1:
+        while i <= (limit+1)//1000+1:
             # do it for each page
             url = 'https://yande.re/post?page=' + str(i)
             url = url + '&tags=' + tag + '+limit%3A' + str(limit)
@@ -54,6 +53,7 @@ def CreateListAllURL(tags, limit,tag_add):
                 turl = turl.get_text()[3:]
                 if turl not in urls:
                     urls.append(turl)
+            print(i, '/', limit//1000 + 1)
             i = i + 1
     return urls
 
@@ -143,16 +143,20 @@ def WriteHTML(urls_yan):
 if __name__ == '__main__':
     tags = input("Write some tags (split search with blanck): ")
     tag_add = input("Perhaps a tag for all searchs ? ")
-    limit = int(input("Choose a limit: "))
-    urls = []
-    if input("Check for Already found: ")=='y':
-        urls_yan = AlreadyFound(CreateListAllURL(tags, limit, tag_add))
+    limit_r = int(input("Choose a limit: "))
+    mode = int(input("Limit of total (1) of or results (2)? "))
+    if mode == 2:
+        limit = int(input("Nb max of posts: "))
     else:
-        urls_yan = CreateListAllURL(tags, limit, tag_add)
+        limit = 0
+    urls_yan = CreateListAllURL(tags, max(limit_r, limit), tag_add, mode)
+    if input("Check for Already found: ")=='y':
+        urls_yan = AlreadyFound(urls_yan)
     print("The number of url is :", len(urls_yan))
 
     n = len(urls_yan)
     begin = datetime.now()
+    urls = []
     try:
         for i in range(n):
             url = urls_yan[i]
@@ -161,17 +165,15 @@ if __name__ == '__main__':
             res =  IsOnDan(URLSample(url), url)
             ending = (datetime.now() - begin) / (i + 1) * n + begin
             if not res:
-                print("founds: ", len(urls), '|' , i + 1, 'on', n, '|',
-                      ending.strftime('%D - %H:%M'), '| OK')
                 urls.append(url)
-            else:
-                print("founds: ", len(urls), '|' , i + 1, "on", n, '|',
-                      ending.strftime('%D - %H:%M'))
+            if mode == 2 and len(urls)>limit_r:
+                break
+            print("founds: ", len(urls_yan), '|' , i + 1, 'on', n, '|',
+                  ending.strftime('%D - %H:%M'), '| results:', len(urls))
     except KeyboardInterrupt as e:
         print(e)
         print("Will write the report")
     finally:
-
         print('\n', len(urls), 'results')
         WriteHTML(urls)
         print("Done in", (datetime.now() - begin).seconds, "seconds")

@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     begin = datetime.now()
     mini = 0
-    maxi = 20
+    maxi = 30
     file = open('result.txt', 'w')
     for i in range(mini, maxi):
         res = str(date.today() - timedelta(days=i)) + " "
