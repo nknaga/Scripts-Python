@@ -168,8 +168,7 @@ if __name__ == '__main__':
                 urls.append(url)
             if mode == 2 and len(urls)>limit_r:
                 break
-            print("founds: ", len(urls_yan), '|' , i + 1, 'on', n, '|',
-                  ending.strftime('%D - %H:%M'), '| results:', len(urls))
+            print(i + 1, 'on', n, '|', ending.strftime('%D - %H:%M'), '| results:', len(urls))
     except KeyboardInterrupt as e:
         print(e)
         print("Will write the report")

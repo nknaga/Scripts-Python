@@ -5,14 +5,12 @@ Created on Tue Oct  4 18:41:01 2016
 @author: Rignak
 """
 from PIL import Image
-from os import listdir
-from os.path import join, dirname, realpath
 import urllib
+from datetime import datetime as dt
 
-standartRoot = dirname(realpath(__file__))
 
 
-def InverseFunction(r, g, b, wtmk1_px, wtmk2_px):
+def InverseFunction(r, g, b, wtmk1_px, wtmk2_px, l = 100):
     """Try to get the original data of the function from its output
     We suppose that the function is bijective
     f(rt, gt, bt) = r, g, b
@@ -30,7 +28,7 @@ def InverseFunction(r, g, b, wtmk1_px, wtmk2_px):
     r_wtmk1, g_wtmk1, b_wtmk1 = (255 - r_wtmk1, 255 - g_wtmk1, 255 - b_wtmk1)
 
     rt, gt, bt = r, g, b
-    for i in range(100):
+    for i in range(l):
         # The watermark used differs with the brightness
         rt = r+(r_wtmk1*rt/255) - r_wtmk2*((255-rt)/255)
         gt = g+(g_wtmk1*gt/255) - g_wtmk2*((255-gt)/255)
@@ -38,8 +36,15 @@ def InverseFunction(r, g, b, wtmk1_px, wtmk2_px):
     return int(rt), int(gt), int(bt)
 
 def Download(line, i):
-    urllib.request.urlretrieve(line, "images/" + str(i) + line[-4:])
-    return
+    retry = True
+    while retry:
+        try:
+            urllib.request.urlretrieve(line, "images/" + str(i) + line[-4:])
+            retry = False
+        except Exception as e:
+            print(e)
+            retry = True
+    return "images/" + str(i) + line[-4:]
 
 def RemoveWatermark(watermark1, watermark2, picture):
     """Remove the watermark
@@ -79,22 +84,16 @@ def RemoveWatermark(watermark1, watermark2, picture):
     im.close()
     imr.close()
 
+def onDengeki():
+    f = open('files.txt')
+    l = f.readlines()
+    n = len(l)
+    begin = dt.now()
+    for i, line in enumerate(l):
+        name = Download(line[:-1], i)
+        RemoveWatermark('Watermark/Dengeki/watermark_sample1.jpg',
+                        'Watermark/Dengeki/watermark_sample2.jpg', name)
+        print(i+1, 'on', n, '|', ((dt.now()-begin)/(i+1)*n + begin).strftime('%H:%M'))
 
 if __name__ == '__main__':
-    case = input("Press 1 to download files, 2 to remove the watermark: ")
-    if int(case) == 1:
-        f = open(join(standartRoot, 'files.txt'))
-        i = 0
-        for line in f:
-            i += 1
-            Download(line[:-1], i)
-            print(i)
-    elif int(case) == 2:
-        watermarks = listdir('Watermark')[:2]
-        for file in listdir('Images'):
-            RemoveWatermark('Watermark/'  + watermarks[0],
-                            'Watermark/'  + watermarks[1],
-                            'Images/' + file)
-            print(file)
-
-
+    onDengeki()
