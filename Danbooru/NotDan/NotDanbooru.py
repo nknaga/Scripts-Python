@@ -3,6 +3,7 @@
     Author: Rignak
     Python version: 3.5
 """
+print('Begin')
 import socks
 import socket
 
@@ -12,11 +13,21 @@ from datetime import datetime
 from stem import Signal
 from stem.control import Controller
 from os.path import join
+from threading import Thread
 
 from pixivpy3 import AppPixivAPI
-controller = Controller.from_port(port=9151)
+case = True
+controller = None
+api = None
+find = 0
+file = None
 
 def renew_tor():
+    global case
+    global controller
+    if case:
+        controller = Controller.from_port(port=9151)
+        case = False
     controller.authenticate()
     controller.signal(Signal.NEWNYM)
     socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9150, True)
@@ -25,13 +36,10 @@ def renew_tor():
 def IsOnDan(url_sample):
     """Check if a sample is on dan
 
-    Input:
-    urls_yan -- A list
-    urls_sample -- A list
-
     Output:
     False if the image is not on danbooru
     True else """
+    global file
     try:
         # Look if the sample is already on Danbooru
         url = 'http://danbooru.iqdb.org/?url=' + url_sample
@@ -85,7 +93,7 @@ def WriteHTML(urls_yan):
     file.close()
     return
 
-def CreateListAllURL(tags, limit,tag_add, mode):
+def CreateListAllURL(tags, limit,tag_add):
     """Create the list of all urls resulting of the search
 
     Input:
@@ -140,97 +148,104 @@ def URLSample(url_yan):
 def YandereNotDanbooru():
     tags = input("Write some tags (split search with blanck): ")
     tag_add = input("Perhaps a tag for all searchs ? ")
-    limit_r = int(input("Choose a limit: "))
-    mode = int(input("Limit of total (1) of or results (2)? "))
-    if mode == 2:
-        limit = int(input("Nb max of posts: "))
-    else:
-        limit = 0
-    urls_yan = CreateListAllURL(tags, max(limit_r, limit), tag_add, mode)
-    if input("Check for Already found: ")=='y':
+    limit = int(input("Choose a limit: "))
+    check = input("Check for Already found: ")
+    urls_yan = CreateListAllURL(tags, limit, tag_add)
+    if check=='y':
         urls_yan = AlreadyFound(urls_yan)
     print("The number of url is :", len(urls_yan))
 
     n = len(urls_yan)
+    nb = 20
+    global file
+    global find
+    file = open('NotDanbooru_Result.html', 'w')
     begin = datetime.now()
-    urls = []
     try:
-        for i in range(n):
-            url = urls_yan[i]
-            if i%24 == 0:
-                renew_tor()
-            res =  IsOnDan(URLSample(url))
-            ending = (datetime.now() - begin) / (i + 1) * n + begin
-            if not res:
-                urls.append(url)
-            if mode == 2 and len(urls)>limit_r:
-                break
-            print(i + 1, 'on', n, '|', ending.strftime('%D - %H:%M'), '| results:', len(urls))
-    except KeyboardInterrupt as e:
+        for i in range(n//nb):
+            ts = []
+            renew_tor()
+            for j in range(nb):
+                k = i*nb+j
+                args = (urls_yan[k],)
+                ts.append(Thread(target=IndividualYandereNotDan, args=args))
+                ts[-1].start()
+            [t.join() for t in ts]
+            ending = (datetime.now() - begin) / (k + 1) * n + begin
+            print(k + 1, 'on', n, '|', ending.strftime('%D - %H:%M'), '| results:', find)
+    except Exception as e:
         print(e)
-        print("Will write the report")
     finally:
-        print('\n', len(urls), 'results')
-        WriteHTML(urls)
-        print("Done in", (datetime.now() - begin).seconds, "seconds")
+        print('MEAN TIME:', (datetime.now()-begin)/n)
+        file.close()
 
+def IndividualYandereNotDan(url_yan):
+    global file
+    global find
+    url_sample = URLSample(url_yan)
+    try:
+        if not IsOnDan(url_sample):
+            find += 1
+            file.write('<A HREF="' + url_yan + '"> ' + url_yan + '<br/>')
+    except:
+        pass
 
-def ListPixiv(last, limit, score):
-    f = open("../Pixiv_Codes.txt")
-    username = f.readline().split()[1]
-    password = f.readline().split()[1]
-    f.close()
-    urls = {}
-    begin = datetime.now()
-    api = AppPixivAPI()
-    for i in range(limit):
-        if i%3000 == 0:
-            api.login(username, password)
-        index = last - i
-        json_result = api.illust_detail(index)
-        try:
-            if json_result['illust']['total_bookmarks'] > score:
-                url = json_result['illust']['image_urls']['medium']
-                if url != 'https://source.pixiv.net/common/images/limit_r18_360.png':
-                    urls[url] = 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id='+str(index)
-        except:
-            print('Error on', index)
-        ending = (datetime.now() - begin) / (i + 1) * limit + begin
-        print(i + 1, 'on', limit, '|', ending.strftime('%D - %H:%M'),
-              '| results:', len(urls))
-    print('MEAN TIME:', (datetime.now()-begin)/limit)
-    print('RESULTS:', len(urls))
-    return urls
 
 def PixivNotDanbooru():
     last = int(input('Where to begin? '))
     limit = int(input('How many to check? '))
     score = int(input('Minimum score? '))
-    end_urls = []
-    urls = ListPixiv(last, limit, score)
-    print("The number of url is :", len(urls))
 
-    n = len(urls)
+    codes = open("../Pixiv_Codes.txt")
+    username = codes.readline().split()[1]
+    password = codes.readline().split()[1]
+    codes.close()
+
     begin = datetime.now()
-    i = 0
+    global api
+    global find
+    global file
+    api = AppPixivAPI()
+    file = open('NotDanbooru_Result.html', 'w')
+    api.login(username, password)
+    nb = 50
+    for i in range(limit//nb):
+        ts = []
+        for j in range(nb):
+            k = i*nb+j
+            args = (k, username, password, begin, last, score, limit)
+            ts.append(Thread(target=IndividualPixivNotDan, args=args))
+            ts[-1].start()
+        [t.join() for t in ts]
+        ending = (datetime.now() - begin) / (k + 1) * limit + begin
+        print(k + 1, 'on', limit, '|', ending.strftime('%D - %H:%M'),'| results:', find)
+    print('MEAN TIME:', (datetime.now()-begin)/limit)
+    file.close()
+
+def IndividualPixivNotDan(i, username, password, begin, last, score, limit):
+    global api
+    global file
+    global find
+    censor = 'https://source.pixiv.net/common/images/limit_r18_360.png'
+    prefix = 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id='
+    if i%2500 == 2499:
+        try:
+            api.login(username, password)
+        except:
+            print('Unable to login')
+    index = last - i
     try:
-        for key in urls.keys():
-            value = urls[key]
-            if i%24 == 0:
-                renew_tor()
-            res =  IsOnDan(key)
-            ending = (datetime.now() - begin) / (i + 1) * n + begin
-            if not res:
-                end_urls.append(value)
-            print(i + 1, 'on', n, '|', ending.strftime('%D - %H:%M'), '| results:', len(end_urls))
-            i+=1
-    except KeyboardInterrupt as e:
-        print(e)
-        print("Will write the report")
-    finally:
-        print('\n', len(end_urls), 'results')
-        WriteHTML(end_urls)
-        print("Done in", (datetime.now() - begin).seconds, "seconds")
+        json_result = api.illust_detail(index)
+        url = json_result['illust']['image_urls']['medium']
+        s = json_result['illust']['total_bookmarks']
+        type_ = json_result['illust']['type']
+        if s > score and type_=='illust' and url != censor and not IsOnDan(url):
+            url = prefix+str(index)
+            file.write('<A HREF="' + url + '"> ' + url + '<br/>')
+            find += 1
+    except:
+        pass
+        #print('Error on', index)
 
 if __name__ == '__main__':
     choice = input('Website? (pixiv:0, yandere:1) ')
