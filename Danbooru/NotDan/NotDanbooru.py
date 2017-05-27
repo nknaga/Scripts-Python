@@ -23,6 +23,7 @@ find = 0
 file = None
 
 def renew_tor():
+    """Create a connexion to Tor or renew it if it already exist"""
     global case
     global controller
     if case:
@@ -35,9 +36,11 @@ def renew_tor():
 
 def IsOnDan(url_sample):
     """Check if a sample is on dan
+    Input:
+    url_sample - string: url of a picture
 
     Output:
-    False if the image is not on danbooru
+    False if the image is not on danbooru (or error)
     True else """
     global file
     try:
@@ -46,6 +49,8 @@ def IsOnDan(url_sample):
         page = urllib.request.urlopen(url)
         strpage = page.read().decode('utf-8')
     except Exception as e:
+        if "Flood detected" in str(e):
+            renew_tor()
         print(e)
         return False
     if 'Best match' in strpage and page.getcode()==200:
@@ -55,7 +60,7 @@ def IsOnDan(url_sample):
 
 def AlreadyFound(urls):
     """Remove the links of picture which are already recorded (only for yandere)"""
-    root = 'E:\\Telechargements\\Anime\\post\\data'
+    root = '../Post/files/tags'
     list_L = ["L1.txt", "L2.txt", "L3.txt", "LPriority.txt"]
     links = {}
     for file in list_L:
@@ -84,9 +89,7 @@ def WriteHTML(urls_yan):
     """Write the result of the search in a .html
 
     Input:
-    urls_yan -- A list
-
-    Output:"""
+    urls_yan -- A list of string"""
     file = open('NotDanbooru_Result.html', 'w')
     for url in urls_yan:
         file.write('<A HREF="' + url + '"> ' + url + '<br/>')
@@ -99,9 +102,10 @@ def CreateListAllURL(tags, limit,tag_add):
     Input:
     tags -- A string
     limit -- A int
+    tag_add -- A string
 
     Output:
-    urls -- A list"""
+    urls -- A list of string"""
     tags = tags.split(' ')
     urls = []
     for tag in tags:
@@ -133,7 +137,7 @@ def URLSample(url_yan):
     url_yan -- A str
 
     Output:
-    url_sample -- A str"""
+    url -- A str"""
     ok = False
     while not ok:
         try:
@@ -209,6 +213,7 @@ def PixivNotDanbooru():
     file = open('NotDanbooru_Result.html', 'w')
     api.login(username, password)
     nb = 50
+    #renew_tor()
     for i in range(limit//nb):
         ts = []
         for j in range(nb):
@@ -228,7 +233,7 @@ def IndividualPixivNotDan(i, username, password, begin, last, score, limit):
     global find
     censor = 'https://source.pixiv.net/common/images/limit_r18_360.png'
     prefix = 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id='
-    if i%2500 == 2499:
+    if i%30000 == 29999:
         try:
             api.login(username, password)
         except:
@@ -239,13 +244,32 @@ def IndividualPixivNotDan(i, username, password, begin, last, score, limit):
         url = json_result['illust']['image_urls']['medium']
         s = json_result['illust']['total_bookmarks']
         type_ = json_result['illust']['type']
-        if s > score and type_=='illust' and url != censor and not IsOnDan(url):
-            url = prefix+str(index)
-            file.write('<A HREF="' + url + '"> ' + url + '<br/>')
-            find += 1
-    except:
+        if s > score and type_=='illust':
+            if (url != censor and not IsOnDan(url)):
+                url = prefix+str(index)
+                file.write('<A HREF="' + url + '"> ' + url + '<br/>')
+                find += 1
+            elif url == censor and IsOnDan(getR18_URL(json_result, index)):
+                url = prefix+str(index)
+                file.write('<A HREF="' + url + '"> ' + url + '<br/>')
+                find += 1
+
+    except Exception as e:
         pass
         #print('Error on', index)
+
+def getR18_URL(json_result, index):
+    date = json_result['illust']['create_date']
+    sample_prefix = 'https://i.pximg.net/c/600x600/img-master/img/'
+    year = date[0:4]
+    month = date[5:7]
+    day = date[8:10]
+    hour = date[11:13]
+    minute = date[14:16]
+    second = date[17:19]
+    add = '/'.join([year, month, day, hour, minute, second])
+    url_sample = sample_prefix + add + '/' + str(index) + '_p0_master1200.jpg'
+    return url_sample
 
 if __name__ == '__main__':
     choice = input('Website? (pixiv:0, yandere:1) ')
