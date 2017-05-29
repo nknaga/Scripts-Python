@@ -270,12 +270,7 @@ def IndividualPixivNotDan(i, username, password, begin, last, score, limit):
         type_ = json_result['illust']['type']
         nb_page = json_result['illust']['page_count']
         if s > score and type_=='illust' and int(nb_page) < 8:
-            if (url != censor and not IsOnDan(url)):
-                url = prefix+str(index)
-                file.write('<A HREF="' + url + '"> ' + url + '<br/>')
-                find += 1
-            #elif url == censor and IsOnDan(getR18_URL(json_result, index)):
-            elif url == censor and AltIsOnDan(i):
+            if not AltIsOnDan(index):
                 url = prefix+str(index)
                 file.write('<A HREF="' + url + '"> ' + url + '<br/>')
                 find += 1
