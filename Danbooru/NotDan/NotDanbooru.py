@@ -14,6 +14,7 @@ from stem import Signal
 from stem.control import Controller
 from os.path import join
 from threading import Thread
+import requests
 
 from pixivpy3 import AppPixivAPI
 case = True
@@ -21,6 +22,11 @@ controller = None
 api = None
 find = 0
 file = None
+
+f = open("../Danbooru_Codes.txt")
+api_key = f.readline().split()[1]
+dan_username = f.readline().split()[1]
+f.close()
 
 def renew_tor():
     """Create a connexion to Tor or renew it if it already exist"""
@@ -51,12 +57,29 @@ def IsOnDan(url_sample):
     except Exception as e:
         if "Flood detected" in str(e):
             renew_tor()
-        print(e)
-        return False
+            return True
+        else:
+            print(e)
+            return False
     if 'Best match' in strpage and page.getcode()==200:
         return True
     else:
         return False
+
+
+def AltIsOnDan(pixivId):
+    url = 'http://danbooru.donmai.us/posts.json'
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
+    payload = {'limit': '1',
+               'tags':'pixiv:'+str(pixivId),
+               'api_key':api_key,
+               'login':dan_username}
+    res = requests.get(url,data=payload, headers=headers, stream=True)
+    if len(res.content) <=2:
+        return False
+    else:
+        return True
+
 
 def AlreadyFound(urls):
     """Remove the links of picture which are already recorded (only for yandere)"""
@@ -203,6 +226,8 @@ def PixivNotDanbooru():
     codes = open("../Pixiv_Codes.txt")
     username = codes.readline().split()[1]
     password = codes.readline().split()[1]
+    #if input('Open Tor at the beginning? ') == 'y':
+   #     renew_tor()
     codes.close()
 
     begin = datetime.now()
@@ -212,8 +237,7 @@ def PixivNotDanbooru():
     api = AppPixivAPI()
     file = open('NotDanbooru_Result.html', 'w')
     api.login(username, password)
-    nb = 50
-    #renew_tor()
+    nb = 100
     for i in range(limit//nb):
         ts = []
         for j in range(nb):
@@ -244,19 +268,20 @@ def IndividualPixivNotDan(i, username, password, begin, last, score, limit):
         url = json_result['illust']['image_urls']['medium']
         s = json_result['illust']['total_bookmarks']
         type_ = json_result['illust']['type']
-        if s > score and type_=='illust':
+        nb_page = json_result['illust']['page_count']
+        if s > score and type_=='illust' and int(nb_page) < 8:
             if (url != censor and not IsOnDan(url)):
                 url = prefix+str(index)
                 file.write('<A HREF="' + url + '"> ' + url + '<br/>')
                 find += 1
-            elif url == censor and IsOnDan(getR18_URL(json_result, index)):
+            #elif url == censor and IsOnDan(getR18_URL(json_result, index)):
+            elif url == censor and AltIsOnDan(i):
                 url = prefix+str(index)
                 file.write('<A HREF="' + url + '"> ' + url + '<br/>')
                 find += 1
 
     except Exception as e:
         pass
-        #print('Error on', index)
 
 def getR18_URL(json_result, index):
     date = json_result['illust']['create_date']
