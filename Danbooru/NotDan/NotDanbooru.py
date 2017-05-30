@@ -22,6 +22,7 @@ controller = None
 api = None
 find = 0
 file = None
+dic_index = {}
 
 f = open("../Danbooru_Codes.txt")
 api_key = f.readline().split()[1]
@@ -64,6 +65,7 @@ def IsOnDan(url_sample):
     if 'Best match' in strpage and page.getcode()==200:
         return True
     else:
+        file.write('<A HREF="' + url + '"> ' + url + '<br/>')
         return False
 
 
@@ -75,10 +77,15 @@ def AltIsOnDan(pixivId):
                'api_key':api_key,
                'login':dan_username}
     res = requests.get(url,data=payload, headers=headers, stream=True)
-    if len(res.content) <=2:
+    if len(res.content) >= 100 or res.status_code != 200:
         return False
     else:
-        return True
+        prefix = 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id='
+        global file
+        global find
+        url = prefix+str(pixivId)
+        file.write('<A HREF="' + url + '"> ' + url + '<br/>')
+        find += 1
 
 
 def AlreadyFound(urls):
@@ -226,38 +233,50 @@ def PixivNotDanbooru():
     codes = open("../Pixiv_Codes.txt")
     username = codes.readline().split()[1]
     password = codes.readline().split()[1]
-    #if input('Open Tor at the beginning? ') == 'y':
-   #     renew_tor()
     codes.close()
 
-    begin = datetime.now()
     global api
     global find
     global file
+    global dic_index
     api = AppPixivAPI()
-    file = open('NotDanbooru_Result.html', 'w')
     api.login(username, password)
-    nb = 100
-    for i in range(limit//nb):
-        ts = []
-        for j in range(nb):
-            k = i*nb+j
-            args = (k, username, password, begin, last, score, limit)
-            ts.append(Thread(target=IndividualPixivNotDan, args=args))
+    nb = 200
+    begin = datetime.now()
+    file = open('NotDanbooru_Result.html', 'w')
+    try:
+        for i in range(limit//nb):
+            ts = []
+            for j in range(nb):
+                k = i*nb+j
+                args = (k, username, password, begin, last, score, limit)
+                ts.append(Thread(target=IndividualPixivNotDan, args=args))
+                ts[-1].start()
+            [t.join() for t in ts]
+            ending = (datetime.now() - begin) / (k + 1) * limit + begin
+            if len(dic_index) > 50:
+                ts = []
+                for index in dic_index:
+                    ts.append(Thread(target=AltIsOnDan, args=(index,)))
+                    ts[-1].start()
+                [t.join() for t in ts]
+                dic_index = {}
+            print(k + 1, 'on', limit, '|', ending.strftime('%D - %H:%M'),'| results:',len(dic_index), find)
+        for index in dic_index:
+            ts.append(Thread(target=AltIsOnDan, args=(index,)))
             ts[-1].start()
         [t.join() for t in ts]
-        ending = (datetime.now() - begin) / (k + 1) * limit + begin
-        print(k + 1, 'on', limit, '|', ending.strftime('%D - %H:%M'),'| results:', find)
-    print('MEAN TIME:', (datetime.now()-begin)/limit)
-    file.close()
+        print('MEAN TIME:', (datetime.now()-begin)/limit)
+    except Exception as e:
+        print(e)
+    finally:
+        file.close()
 
 def IndividualPixivNotDan(i, username, password, begin, last, score, limit):
     global api
     global file
-    global find
-    censor = 'https://source.pixiv.net/common/images/limit_r18_360.png'
-    prefix = 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id='
-    if i%30000 == 29999:
+    global dic_index
+    if i%100000 == 99999:
         try:
             api.login(username, password)
         except:
@@ -265,17 +284,23 @@ def IndividualPixivNotDan(i, username, password, begin, last, score, limit):
     index = last - i
     try:
         json_result = api.illust_detail(index)
-        url = json_result['illust']['image_urls']['medium']
-        s = json_result['illust']['total_bookmarks']
-        type_ = json_result['illust']['type']
-        nb_page = json_result['illust']['page_count']
-        if s > score and type_=='illust' and int(nb_page) < 8:
-            if not AltIsOnDan(index):
-                url = prefix+str(index)
-                file.write('<A HREF="' + url + '"> ' + url + '<br/>')
-                find += 1
+        if 'illust' in json_result:
+            url = json_result['illust']['image_urls']['medium']
+            censor = 'https://source.pixiv.net/common/images/limit_r18_360.png'
+            s = json_result['illust']['total_bookmarks']
+            type_ = json_result['illust']['type']
+            nb_page = json_result['illust']['page_count']
+            if s > score and type_=='illust' and int(nb_page) < 6:
+                if url != censor:
+                    if str(index) in url:
+                        dic_index[index] = url
+                else:
+
+                    pass
+                    #dic_index[index] = getR18_URL(json_result, index)
 
     except Exception as e:
+        print(e)
         pass
 
 def getR18_URL(json_result, index):
