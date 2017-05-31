@@ -1,0 +1,11 @@
+1/ Lancer Questions.py
+2/ Entrer le fichier sur lequel vous voulez travailler ("kanjis" ou "verbes", sans ".txt")
+3/ Entrer les chiffres correspondants:
+	si le programme affiche 0: !masu | 1: masu | 2: !te | 3: te | 4: français : 
+	l'utilisateur entre "0 4" :
+		le programme affichera la forme -masu d'un verbe en kana
+		l'utilisateur devra rentrer la traduction
+
+	l'utilisateur entre "4 1"
+		le programme affichera la traduction
+		l'utilisateur devra rentrer la forme -masu en romaji
