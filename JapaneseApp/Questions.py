@@ -56,7 +56,7 @@ class Question_Canvas(tk.Tk):
             sys.stdout.flush()
             self._result[0] += 1
         else:
-            print('False', self.question.answer, '/\\', self.entry.get())
+            print('False', self.question.all)
             self._result[1] += 1
         self._update = True
         sys.stdout.flush()

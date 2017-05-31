@@ -65,7 +65,6 @@ def IsOnDan(url_sample):
     if 'Best match' in strpage and page.getcode()==200:
         return True
     else:
-        file.write('<A HREF="' + url + '"> ' + url + '<br/>')
         return False
 
 
