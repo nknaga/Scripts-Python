@@ -151,6 +151,7 @@ def GenerateTXT():
 def GenerateHTML():
     """Creation of .html for each duo of .txt"""
     print("Generation of .html")
+    banned = 0
     for i in range(len(list_T)):
         file = open(list_HTML[i], 'w')
         fileT = open(list_T[i], 'r')
@@ -161,14 +162,17 @@ def GenerateHTML():
             lineT = lineT.replace("\n", '')
             fileT.readline()
             if IsBanned(lineT):
+                banned += 1
                 print(lineL, 'Banned\n')
                 continue
-            l = '<A HREF="' + CorrectorSample(lineL[:-1]) + '"> ' + ReplaceAll(lineT, dic_error) + '<br></br> \n'
+            l = '<A HREF="' + CorrectorSample(lineL[:-1]) + '"> ' \
+            + ReplaceAll(lineT, dic_error) + '<br></br> \n'
             l = l.replace('<br></br><br></br>','<br></br>')
             l = l.replace('<br></br> <br></br>','<br></br>')
             file.write(l)
 
     global number_replacements
+    print('Number of deleted :', banned)
     print('Number of remplacements :',number_replacements)
     return
 
