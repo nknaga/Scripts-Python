@@ -7,6 +7,7 @@ Created on Tue Oct  4 18:41:01 2016
 from PIL import Image
 import urllib
 from datetime import datetime as dt
+import os
 
 
 
@@ -86,6 +87,8 @@ def RemoveWatermark(watermark1, watermark2, picture):
 
 def onDengeki():
     f = open('files.txt')
+    if not os.path.exists('images'):
+        os.makedirs('images')
     l = f.readlines()
     n = len(l)
     begin = dt.now()
