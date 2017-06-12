@@ -23,7 +23,7 @@ dic_error = {}
 error_f = open(join(root, error_fname), "r")
 for line in error_f:
     if len(line) > 3:
-        l = line.split()
+        l = line.split('\t')
         dic_error[l[0]] = l[1]
 
 banned_fname = "banned_artist.txt"
