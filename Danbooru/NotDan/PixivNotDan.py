@@ -102,7 +102,7 @@ def PixivNotDanbooru(mode = 0, data = None):
     global find
     global file
     global pixiv_dic
-    nb, limit_active, k, p, find  = 10, 100, 0, 0.0, 0
+    nb, limit_active, k, p, find  = 50, 150, 0, 0.0, 0
     with open("../Pixiv_Codes.txt", 'r') as f:
         pixiv_username = f.readline().split()[1]
         pixiv_password = f.readline().split()[1]
@@ -147,7 +147,7 @@ def PixivNotDanbooru(mode = 0, data = None):
         print(e)
     finally:
         if mode==0:
-            name = 'pixiv/'+str((last-limit)//100000)+'.json'
+            name = 'pixiv/'+str((last-limit)//1000000)+'.json'
             with open(name, 'w') as file:
                 json.dump(pixiv_dic, file, sort_keys=True, indent=4)
 
@@ -161,7 +161,7 @@ def PixivNotDanbooru(mode = 0, data = None):
 
 def ReadJSON(files):
     data = {}
-    for file in files.split():
+    for file in files:
         with open('pixiv/'+file+'.json', 'r') as file:
             data.update(json.load(file))
     PixivNotDanbooru(mode = 2, data = data)
@@ -178,11 +178,13 @@ def FuseJSON(files):
     with open(new_name, 'w') as file:
         json.dump(dic, file, sort_keys=True, indent=4)
 
-def SplitJSON(file):
-    dic = {}
+def SplitJSON(files):
     l = 1000000
-    with open(file, 'r') as file:
-        data = json.load(file)
+    data = {}
+    dic = {}
+    for file in files:
+        with open('pixiv/'+file+'.json', 'r') as file:
+            data.update(json.load(file))
     for key, value in data.items():
         if int(key)//l not in dic.keys():
             dic[int(key)//l] = {}
@@ -197,16 +199,16 @@ def SplitJSON(file):
 if __name__ == '__main__':
     print('mode 0 : go to pixiv and write a .json')
     print('mode 1 : go to pixiv and directly check on dan')
-    print('mode 2 : read .json')
+    print('mode 2 : read .json and check on dan')
     print('mode 3 : fuse several .json')
     print('mode 4 : split .json')
     mode = int(input('Which mode ? '))
     if mode == 2:
-        ReadJSON(input('File numbers ? '))
+        ReadJSON(input('File numbers ? ').split())
     elif mode == 3:
         FuseJSON(input('File numbers ? ').split())
     elif mode == 4:
-        SplitJSON('pixiv/'+input('File number ? ')+'.json')
+        SplitJSON(input('File numbers ? ').split())
     else:
         PixivNotDanbooru(mode = mode)
 
