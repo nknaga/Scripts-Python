@@ -80,36 +80,31 @@ def IndividualWritePixiv(index, score):
 
 def IndividualFromDic(i, score):
     global pixiv_dic
-    if (pixiv_dic[i]['s'] > score[0] and pixiv_dic[i]['s'] < score[1])\
-        and (str(i) in pixiv_dic[i]['u']\
-        or 'r18' in pixiv_dic[i]['u']):
-            for tag in blacklist:
-                if tag in pixiv_dic[i]['t']:
-                    return
-            if ('r' in pixiv_dic[i] and pixiv_dic[i]['r']<2.5) \
-            or 'r' not in pixiv_dic[i]:
-                if score[2]:
-                    for tag in score[2].split():
-                        if tag in pixiv_dic[i]['t']:
-                            PixIsOnDan(i)
-                            return
-                else:
+    small_dic = pixiv_dic[i]
+    if (small_dic['s'] > score[0] and small_dic['s'] < score[1])\
+        and (str(i) in small_dic['u'] or 'r18' in small_dic['u']):
+        if 'r' in small_dic and small_dic['r']>2.5:
+            return
+        for tag in blacklist:
+            if tag in small_dic['t']:
+                return
+        if score[2]:
+            for tag in score[2].split():
+                if tag in small_dic['t']:
                     PixIsOnDan(i)
+                    return
+        else:
+            PixIsOnDan(i)
 
 def PixivNotDanbooru(mode = 0, data = None):
     if mode != 2:
         last = int(input('Where to begin? '))
         limit = int(input('How many to check? '))
     score = int(input('minimum score? '))
-    global api
     global find
     global file
     global pixiv_dic
     nb, limit_active, k, p, find  = 50, 150, 0, 0.0, 0
-    with open("../Pixiv_Codes.txt", 'r') as f:
-        pixiv_username = f.readline().split()[1]
-        pixiv_password = f.readline().split()[1]
-
     if mode == 0:
         function = IndividualWritePixiv
         pixiv_dic = {}
@@ -126,12 +121,17 @@ def PixivNotDanbooru(mode = 0, data = None):
         index = list(data.keys())
         limit = len(index)
     try:
-        api = AppPixivAPI()
         begin = datetime.now()
-        api.login(pixiv_username, pixiv_password)
-        last_login = begin
+        if mode in [0, 1]:
+            global api
+            with open("../Pixiv_Codes.txt", 'r') as f:
+                pixiv_username = f.readline().split()[1]
+                pixiv_password = f.readline().split()[1]
+            api = AppPixivAPI()
+            api.login(pixiv_username, pixiv_password)
+            last_login = begin
         for i in range(limit//nb):
-            if (datetime.now()-last_login).total_seconds() > 3500:
+            if mode in [0, 1] and (datetime.now()-last_login).total_seconds() > 3500:
                 try:
                     api.login(pixiv_username, pixiv_password)
                     last_login = datetime.now()
