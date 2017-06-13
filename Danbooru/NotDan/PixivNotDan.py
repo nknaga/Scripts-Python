@@ -86,12 +86,15 @@ def IndividualFromDic(i, score):
             for tag in blacklist:
                 if tag in pixiv_dic[i]['t']:
                     return
-            if 'r' in pixiv_dic[i]:
-                if pixiv_dic[i]['r']<2.5:
+            if ('r' in pixiv_dic[i] and pixiv_dic[i]['r']<2.5) \
+            or 'r' not in pixiv_dic[i]:
+                if score[2]:
+                    for tag in score[2].split():
+                        if tag in pixiv_dic[i]['t']:
+                            PixIsOnDan(i)
+                            return
+                else:
                     PixIsOnDan(i)
-            else:
-                PixIsOnDan(i)
-
 
 def PixivNotDanbooru(mode = 0, data = None):
     if mode != 2:
@@ -116,7 +119,7 @@ def PixivNotDanbooru(mode = 0, data = None):
         function = IndividualPixivNotDan
         index = range(last, last-limit, -1)
     elif mode == 2:
-        score = [score, int(input('maximum score? '))]
+        score = [score, int(input('maximum score? ')), input('tags? ')]
         file = open('NotDanbooru_Result.html', 'w')
         function = IndividualFromDic
         pixiv_dic = data
@@ -203,12 +206,19 @@ if __name__ == '__main__':
     print('mode 3 : fuse several .json')
     print('mode 4 : split .json')
     mode = int(input('Which mode ? '))
+    if mode in [2, 3, 4]:
+        files = input('File numbers ? ')
+        if ':' in files:
+            r = files.split(':')
+            files = [str(x) for x in list(range(int(r[0]), int(r[1])))]
+        else:
+            files = files.split()
     if mode == 2:
-        ReadJSON(input('File numbers ? ').split())
+        ReadJSON(files)
     elif mode == 3:
-        FuseJSON(input('File numbers ? ').split())
+        FuseJSON(files)
     elif mode == 4:
-        SplitJSON(input('File numbers ? ').split())
+        SplitJSON(files)
     else:
         PixivNotDanbooru(mode = mode)
 
