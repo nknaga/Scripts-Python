@@ -29,10 +29,11 @@ def PixIsOnDan(pixivId):
                'api_key':api_key,
                'login':dan_username}
     res = requests.get(api_url,data=payload, headers=headers, stream=True)
-    while res.status_code != 200:
+    t = 0
+    while res.status_code != 200 or t<5:
         print(res.status_code)
         res = requests.get(api_url,data=payload, headers=headers, stream=True)
-    if len(res.content) >= 100:
+    if len(res.content) >= 100 or t == 5:
         return False
     else:
         global file
@@ -65,8 +66,7 @@ def IndividualWritePixiv(index, score):
             and json['illust']['total_bookmarks'] > score \
             and json['illust']['page_count'] < 10:
             new_dic = {}
-            tags = [json['illust']['tags'][i]['name'] for i in range(len(json['illust']['tags']))]
-            new_dic['t'] = tags
+            new_dic['t'] = [json['illust']['tags'][i]['name'] for i in range(len(json['illust']['tags']))]
             new_dic['u'] = json['illust']['image_urls']['medium']
             new_dic['n'] = json['illust']['page_count']
             new_dic['d'] = json['illust']['create_date']
@@ -104,7 +104,7 @@ def PixivNotDanbooru(mode = 0, data = None):
     global find
     global file
     global pixiv_dic
-    nb, limit_active, k, p, find  = 50, 150, 0, 0.0, 0
+    nb, limit_active, k, p, find  = 50, 200, 0, 0.0, 0
     if mode == 0:
         function = IndividualWritePixiv
         pixiv_dic = {}
