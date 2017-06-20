@@ -59,13 +59,13 @@ if __name__ == '__main__':
         res += str(ratio).replace('.', ',') + " "
         res += str(upload_number) + " "
         if i<620:
-            rignak_number = NbTags("user:" + username + "%20status:all" + tag_date)
-            if rignak_number == 0:
-                rignak_del = 0
+            user_number = NbTags("user:" + username + "%20status:all" + tag_date)
+            if user_number == 0:
+                user_del = 0
             else:
-                rignak_del = NbTags("user:rignak%20status:deleted" + tag_date)
-            res += str(rignak_number) + " "  # rignak_number
-            res += str(rignak_del)  # rignak_deleted
+                user_del = NbTags("user:" + username + "%20status:deleted" + tag_date)
+            res += str(user_number) + " "
+            res += str(user_del)
 
         t_mean = (datetime.now()-begin)/(i+1)
         print(res)
