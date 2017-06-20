@@ -21,12 +21,8 @@ find = 0
 file = None
 dic_index = {}
 
-f = open("../Danbooru_Codes.txt")
-api_key = f.readline().split()[1]
-dan_username = f.readline().split()[1]
-f.close()
 
-def renew_tor():
+def renew_tor(test):
     """Create a connexion to Tor or renew it if it already exist"""
     global case
     global controller
@@ -35,10 +31,12 @@ def renew_tor():
         case = False
     controller.authenticate()
     controller.signal(Signal.NEWNYM)
-    socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9150, True)
+    socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1",
+                          9150, True)
     socket.socket = socks.socksocket
+    IsOnDan(test, mode = True)
 
-def IsOnDan(url_sample):
+def IsOnDan(url_sample, mode=False):
     """Check if a sample is on dan
     Input:
     url_sample - string: url of a picture
@@ -54,8 +52,11 @@ def IsOnDan(url_sample):
         strpage = page.read().decode('utf-8')
     except Exception as e:
         if "Flood detected" in str(e):
-            renew_tor()
-            print('Flood detected')
+            if mode:
+                print('Flood detected, renew tor')
+                renew_tor(url_sample)
+            else:
+                print('Flood detected')
             return True
         else:
             print(e)
@@ -92,16 +93,6 @@ def AlreadyFound(urls):
               len(urls) + len(already), '|', ending.strftime('%D - %H:%M'))
     return urls
 
-def WriteHTML(urls_yan):
-    """Write the result of the search in a .html
-
-    Input:
-    urls_yan -- A list of string"""
-    file = open('NotDanbooru_Result.html', 'w')
-    for url in urls_yan:
-        file.write('<A HREF="' + url + '"> ' + url + '<br/>')
-    file.close()
-    return
 
 def CreateListAllURL(tags, limit,tag_add):
     """Create the list of all urls resulting of the search
@@ -121,7 +112,7 @@ def CreateListAllURL(tags, limit,tag_add):
             continue
         print(tag, len(urls))
         tag = tag + "+" + tag_add  # Add a tag for all search
-        while i <= (limit+1)//1000+1:
+        while i <= int(limit/1000):
             # do it for each page
             url = 'https://yande.re/post?page=' + str(i)
             url = url + '&tags=' + tag + '+limit%3A' + str(limit)
@@ -150,10 +141,11 @@ def URLSample(url_yan):
         try:
             page = urllib.request.urlopen(url_yan)
             ok = True
-        except:
+            soup = BeautifulSoup.BeautifulSoup(page, "lxml")
+            url = soup.find('meta', {"property": 'og:image'}).get('content')
+        except Exception as e:
+            print(e)
             continue
-    soup = BeautifulSoup.BeautifulSoup(page, "lxml")
-    url = soup.find('meta', {"property": 'og:image'}).get('content')
     return url
 
 def YandereNotDanbooru():
@@ -165,16 +157,16 @@ def YandereNotDanbooru():
     if check=='y':
         urls_yan = AlreadyFound(urls_yan)
     print("The number of url is :", len(urls_yan))
-
-    n, nb, k = len(urls_yan), 24, 0
+    test = URLSample(urls_yan[0])
+    n, nb, k = len(urls_yan), 18, 0
     global file
     global find
     file = open('NotDanbooru_Result.html', 'w')
     try:
         begin = datetime.now()
-        for i in range(n//nb+1):
+        for i in range(int(n/nb)):
             ts = []
-            renew_tor()
+            renew_tor(test)
             for j in range(nb):
                 if k < len(urls_yan):
                     k = i*nb+j
