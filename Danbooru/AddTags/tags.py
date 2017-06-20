@@ -3,16 +3,13 @@
 Created on Wed Nov  2 21:50:59 2016
 
 @author: Rignak
-This program list the 500 more popular of danbooru
 """
 import urllib
 import bs4 as BeautifulSoup
-from datetime import datetime
 
 url_beg = "http://sonohara.donmai.us/tags?commit=Search&page="
 url_end = "&search%5Bcategory%5D=0&search%5Bhide_empty%5D=yes&search%5Border%5D=count&utf8=%E2%9C%93"
 
-begin = datetime.now()
 tags = []
 for i in range(500):
     print(i)

@@ -12,9 +12,6 @@ import requests
 standartRoot = 'E:\Mes images\Anime - Manga\Art'
 waifuRoot = join(dirname(realpath(__file__)), "waifu")
 
-maxDimWaifu = pow(1500, 2)
-maxDimAll = pow(3000, 2)
-maxForThumb = 3*maxDimWaifu
 
 if not exists(waifuRoot):
     makedirs(waifuRoot)

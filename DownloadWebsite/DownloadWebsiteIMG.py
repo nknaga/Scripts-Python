@@ -10,7 +10,6 @@ from datetime import datetime
 from threading import Thread
 import threading
 import time
-from os import makedirs
 
 def EndTime(begin, i, n):
     mean_time = (datetime.now()-begin)/i
@@ -51,9 +50,7 @@ def GetDataWebsite(site):
     ini_thread = threading.active_count()
     while unvisited or threading.active_count() != ini_thread:
         while not unvisited:
-            if threading.active_count() == ini_thread:
-                return
-            elif (datetime.now()-last).total_seconds() > 300:
+            if (datetime.now()-last).total_seconds() > 300:
                 return
             else:
                 time.sleep(0.5)
@@ -67,11 +64,6 @@ def GetDataWebsite(site):
             print('V|R[P:', l1,'|',l2,'|', l3,'|', EndTime(begin, l1, l1+l2))
             last = datetime.now()
 
-    time.sleep(120)
-    pictures = [pictures_id[ID] for ID in pictures_id]
-    print(pictures)
-    return pictures
-
 def IndividualGetData(url, site):
     global visited
     global unvisited
@@ -80,25 +72,12 @@ def IndividualGetData(url, site):
         href = data['href'].split('?')[0].split('#')[0]
         if href.startswith(site) and href not in visited and href not in unvisited:
             unvisited.append(href)
-        if href.endswith(".png"):
+        if href.endswith(".png") or href.endswith(".jpg"):
             ID = href.split('/')[-1]
             if ID not in pictures_id:
                 Thread(target=IndividualDownload, args=(href,)).start()
                 pictures_id[ID] = href
 
-
-def Download(pictures):
-    try:
-        makedirs("Images")
-    except Exception:
-        pass
-    begin = datetime.now()
-    limit_active = 100
-    for i, url in enumerate(pictures):
-        while threading.active_count() > limit_active:
-            time.sleep(0.5)
-        Thread(target=IndividualDownload, args=(url,)).start()
-        print(i+1, "on", len(pictures), '|',EndTime(begin, i+1, len(pictures)))
 
 def IndividualDownload(url):
     try:
@@ -109,4 +88,3 @@ def IndividualDownload(url):
 
 if __name__ == '__main__':
     GetDataWebsite(input('Enter a website: '))
-    #Download(GetDataWebsite(input('Enter a website: ')))

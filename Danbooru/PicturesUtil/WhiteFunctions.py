@@ -113,11 +113,11 @@ class IMG():
                     s = 1
                     break
         s = 0
-        for y in range(self._width-1,-1, -1):
+        for y in range(self._width-1):
             if s == 1:
                 ymax=y
                 break
-            for x in range(self._height):
+            for x in range(self._height-1,-1, -1):
                 l = np.array([e < i for e in self._array[x,y,:3]])
                 if l.any():
                     s=1
@@ -206,56 +206,34 @@ def onFolder(folder = dirname(realpath(__file__))):
     Launch(list_file, mode = 'folder', folder = folder)
 
 def Launch(files, mode='full', folder = dirname(realpath(__file__))):
-    t_download = dt.now()-dt.now()
-    t_bloc = dt.now()-dt.now()
-    t_waifu = dt.now()-dt.now()
-    t_reduce = dt.now()-dt.now()
-    begin = dt.now()
     files.sort(key =lambda z:int(re.split(r'[._()]+',z)[1]))
     n = len(files)
+    begin = dt.now()
     for i, f in enumerate(files):
         if mode == 'full':
             location = join(dirname(realpath(__file__)), 'result', str(i) +'.jpg')
-            t = dt.now()
             DownloadDanbooru.DownloadPictures(f, str(i))
-            t_download += dt.now()-t
         elif mode == 'folder':
             location = join(folder, f)
-
         image = IMG(location)
         image.Remove_Transparency()
         image.ImToArray()
-
-        t = dt.now()  # If we do this before all, the next steps will be quicker
         image.Reduce()
         image.ArrayToIm()
         image.Save()
-        t_reduce += dt.now()-t
-
-        t = dt.now()
         if image._height*image._width<2900*2900 and WaifuFunctions.Unnoise(image._name):
             image._name = image._name[:-4] + "_waifu.png"
             location = join(dirname(realpath(__file__)), 'result', image._name)
             image = IMG(location)
-        t_waifu += dt.now()-t
-
-
-        t = dt.now()
         if image._width > 1500 or image._height > 1500:
             image.Thumbnail((1500,1500))
             image.ImToArray()
         image.GetBlocs()
-        t_bloc += dt.now()-t
-
         image.TrimBloc()
         image._name = image._name = image._name[:-4] + "_trimmed" + image._name[-4:]
-
-        t = dt.now()
         image.Reduce()
         image.GetBorder()
         image.ArrayToIm()
-        t_reduce += dt.now()-t
-
         if image._ratio < 0.3:
             image.Thumbnail((174, 676))
             image.ImToArray()
@@ -264,7 +242,6 @@ def Launch(files, mode='full', folder = dirname(realpath(__file__))):
             image.Thumbnail((549, 706))
             image.ImToArray()
             image._name = image._name[:-4] + "_google" + image._name[-4:]
-
         if image._border[0] == True:
             image._name = image._name[:-4] + "_left" + image._name[-4:]
         if image._border[1] == True:
@@ -277,18 +254,10 @@ def Launch(files, mode='full', folder = dirname(realpath(__file__))):
             image.Sym_Y()
             image.ArrayToIm()
             image._name = image._name.replace("left", "right")
-
         image._name = image._name[:-4] + "_end" + image._name[-4:]
         image.Save()
-
         print(i+1, 'on', n, '|', (dt.now()-begin)/(i+1)*n + begin)
-        sys.stdout.flush()
-
-    print("MEAN TIME:\nDownload time:",t_download/n,
-          "\nWaifu time:",t_waifu/n,
-          "\nBlock detecting time:", t_bloc/n,
-          "\nReduce white:",t_reduce/n,
-          "\nTotal time:",(t_download+t_waifu+t_bloc+t_reduce)/n,(dt.now()-begin)/n)
+    print("MEAN TIME:", (dt.now()-begin)/n)
 
 
 if __name__ == '__main__':
