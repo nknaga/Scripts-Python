@@ -18,17 +18,16 @@ list_HTML = ["F1.html", "F2.html", "F3.html", "F4.html", "FP.html"]
 list_HTML = [join(root,'html', e) for e in list_HTML]
 
 # Create a list of error to correct
-error_fname = "error.txt"
 dic_error = {}
-error_f = open(join(root, error_fname), "r")
+error_f = open(join(root, "error.txt"), "r")
 for line in error_f:
     if len(line) > 3:
         l = line.split('\t')
+        print(l)
         dic_error[l[0]] = l[1].split('\n')[0]
 
-banned_fname = "banned_artist.txt"
 dic_banned = {}
-banned_f = open(join(root, banned_fname), "r")
+banned_f = open(join(root, "banned_artist.txt"), "r")
 for line in banned_f:
     dic_banned[line[:-1]] = "True"
 global number_replacements
