@@ -132,7 +132,6 @@ def main():
     data = []
     res = []
 
-    # Asking data from website
     for i in range((limit-1)//100+1):
 
         print('Searching for picts:', i+1, 'on', (limit-1)//100+1, '|', inf)
@@ -160,14 +159,6 @@ def main():
         else:
             res.append(img)
     print('MEAN TIME:', (datetime.now()-begin)/(i+1))
-
-    r_file = open('res.txt', 'w')
-    r_file2 = open('res2.txt', 'w')
-    for img in res:
-        r_file.write('1 - ' + str(img._Id) + '\n\n' + str(img._adds) + '\n')
-        r_file2.write(str(img._Id) + ' ' + str(img._adds) + '\n')
-    r_file.close()
-    # Launch the modifications to danbooru
     begin = datetime.now()
     for i,img in enumerate(res):
         code = 0
