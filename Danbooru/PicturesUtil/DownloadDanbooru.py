@@ -23,7 +23,7 @@ def ListPicturesWithTag(tags, limit):
     Output:
     list_pictures_with -- A list"""
     list_pictures_with = []
-    for i in range(limit // 200 + 1):
+    for i in range(int(limit/200)):
         url = "https://danbooru.donmai.us/posts?page=" + str(i + 1)
         url = url + "&tags=limit%3A200+" + tags.replace(' ','+')
         url += "&login="+username+"&api_key="+api_key
@@ -51,7 +51,7 @@ def DownloadPictures(url, name, folder = join(dirname(realpath(__file__)), 'resu
         os.mkdir(folder)
     except Exception:
         pass
-    urllib.request.urlretrieve(url,join(folder, name + ".jpg"))
+    urllib.request.urlretrieve(url,join(folder, name + url[-4:]))
     return
 
 def Launch():
