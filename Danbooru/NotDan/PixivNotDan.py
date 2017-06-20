@@ -30,9 +30,9 @@ def PixIsOnDan(pixivId):
                'login':dan_username}
     res = requests.get(api_url,data=payload, headers=headers, stream=True)
     t = 0
-    while res.status_code != 200 or t<5:
-        print(res.status_code)
+    while res.status_code != 200 and t<5:
         res = requests.get(api_url,data=payload, headers=headers, stream=True)
+        t+=1
     if len(res.content) >= 100 or t == 5:
         return False
     else:
@@ -42,20 +42,6 @@ def PixIsOnDan(pixivId):
         file.write('<A HREF="' + url + '"> ' + url + '<br/>')
         find += 1
 
-def IndividualPixivNotDan(i, score):
-    global api
-    try:
-        json_result = api.illust_detail(i)
-        if 'illust' in json_result and \
-            json_result['illust']['total_bookmarks'] > score \
-            and int(json_result['illust']['page_count']) < 5 \
-            and (str(i) in json_result['illust']['image_urls']['medium']\
-            or 'r18' in json_result['illust']['image_urls']['medium']) \
-            and json_result['illust']['type'] == 'illust':
-            PixIsOnDan(i)
-    except Exception as e:
-        #print(e)
-        pass
 
 def IndividualWritePixiv(index, score):
     global api
@@ -97,41 +83,36 @@ def IndividualFromDic(i, score):
             PixIsOnDan(i)
 
 def PixivNotDanbooru(mode = 0, data = None):
-    if mode != 2:
-        last = int(input('Where to begin? '))
-        limit = int(input('How many to check? '))
-    score = int(input('minimum score? '))
     global find
     global file
     global pixiv_dic
-    nb, limit_active, k, p, find  = 50, 200, 0, 0.0, 0
+    begin = datetime.now()
+    score = int(input('minimum score? '))
     if mode == 0:
+        last = int(input('Where to begin? '))
+        limit = int(input('How many to check? '))
         function = IndividualWritePixiv
         pixiv_dic = {}
         index = range(last, last-limit, -1)
+        global api
+        with open("../Pixiv_Codes.txt", 'r') as f:
+            pixiv_username = f.readline().split()[1]
+            pixiv_password = f.readline().split()[1]
+        api = AppPixivAPI()
+        api.login(pixiv_username, pixiv_password)
+        last_login = begin
     elif mode == 1:
-        file = open('NotDanbooru_Result.html', 'w')
-        function = IndividualPixivNotDan
-        index = range(last, last-limit, -1)
-    elif mode == 2:
         score = [score, int(input('maximum score? ')), input('tags? ')]
         file = open('NotDanbooru_Result.html', 'w')
         function = IndividualFromDic
         pixiv_dic = data
         index = list(data.keys())
+        index.sort()
         limit = len(index)
+    nb, limit_active, k, p, find  = 25, 100, 0, 0.0, 0
     try:
-        begin = datetime.now()
-        if mode in [0, 1]:
-            global api
-            with open("../Pixiv_Codes.txt", 'r') as f:
-                pixiv_username = f.readline().split()[1]
-                pixiv_password = f.readline().split()[1]
-            api = AppPixivAPI()
-            api.login(pixiv_username, pixiv_password)
-            last_login = begin
-        for i in range(limit//nb):
-            if mode in [0, 1] and (datetime.now()-last_login).total_seconds() > 3500:
+        for i in range(int(limit/nb)):
+            if not mode and (datetime.now()-last_login).total_seconds() > 3500:
                 try:
                     api.login(pixiv_username, pixiv_password)
                     last_login = datetime.now()
@@ -142,14 +123,14 @@ def PixivNotDanbooru(mode = 0, data = None):
             for j in range(nb):
                 Thread(target=function, args=(index[k], score)).start()
                 k += 1
-            ending = ((datetime.now() - begin)/k*limit + begin).strftime('%H:%M')
             if p != int(k/limit*1000)/10:
+                ending = ((datetime.now() - begin)/k*limit + begin).strftime('%H:%M')
                 print(str(p)+'%', '|', ending, '|', find)
                 p = int(k/limit*1000)/10
     except Exception as e:
         print(e)
     finally:
-        if mode==0:
+        if not mode:
             name = 'pixiv/'+str((last-limit)//1000000)+'.json'
             with open(name, 'w') as file:
                 json.dump(pixiv_dic, file, sort_keys=True, indent=4)
@@ -167,19 +148,8 @@ def ReadJSON(files):
     for file in files:
         with open('pixiv/'+file+'.json', 'r') as file:
             data.update(json.load(file))
-    PixivNotDanbooru(mode = 2, data = data)
+    PixivNotDanbooru(mode = 1, data = data)
 
-def FuseJSON(files):
-    dic = {}
-    new_name = 'pixiv/new/'+input('Number of new file ? ')+'.json'
-    for file in files:
-        name = 'pixiv/'+file+'.json'
-        with open(name, 'r') as file:
-            data = json.load(file)
-        for key, value in data.items():
-            dic[key] = value
-    with open(new_name, 'w') as file:
-        json.dump(dic, file, sort_keys=True, indent=4)
 
 def SplitJSON(files):
     l = 1000000
@@ -193,7 +163,7 @@ def SplitJSON(files):
             dic[int(key)//l] = {}
         dic[int(key)//l][key] = value
     for key, value in dic.items():
-        name = 'pixiv/new'+str(key)+'.json'
+        name = 'pixiv/' + str(key)+'.json'
         with open(name, 'w') as file:
             json.dump(value, file, sort_keys=True, indent=4)
         print('Done on', key)
@@ -201,26 +171,22 @@ def SplitJSON(files):
 
 if __name__ == '__main__':
     print('mode 0 : go to pixiv and write a .json')
-    print('mode 1 : go to pixiv and directly check on dan')
-    print('mode 2 : read .json and check on dan')
-    print('mode 3 : fuse several .json')
-    print('mode 4 : split .json')
+    print('mode 1 : read .json and check on dan')
+    print('mode 2 : split .json')
     mode = int(input('Which mode ? '))
-    if mode in [2, 3, 4]:
+    if mode:
         files = input('File numbers ? ')
         if ':' in files:
             r = files.split(':')
             files = [str(x) for x in list(range(int(r[0]), int(r[1])))]
         else:
             files = files.split()
-    if mode == 2:
+    if mode == 1:
         ReadJSON(files)
-    elif mode == 3:
-        FuseJSON(files)
-    elif mode == 4:
+    elif mode == 2:
         SplitJSON(files)
     else:
-        PixivNotDanbooru(mode = mode)
+        PixivNotDanbooru(mode = 0)
 
 
 # -----------------------
