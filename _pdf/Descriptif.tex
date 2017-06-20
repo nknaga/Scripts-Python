@@ -1,0 +1,696 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[french]{babel}
+\usepackage{fullpage}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc} 
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage[toc,page]{appendix}
+\usepackage{color}
+\usepackage{ulem}
+\usepackage{titlesec}
+
+
+\setcounter{secnumdepth}{4}
+
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+
+\title{Descriptif du dossier Scripts-Python}
+\author{Rignak}
+\date{\today\\v1.0}
+
+
+\begin{document}
+
+\maketitle
+\clearpage 
+\addtocontents{toc}{\protect\enlargethispage{+60mm}}\setcounter{tocdepth}{2}
+\tableofcontents
+\clearpage 
+
+\definecolor{mygreen}{rgb}{0,0.4,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{myred}{rgb}{1,0,0}
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+\definecolor{darkWhite}{rgb}{0.96,0.96,0.96}
+\definecolor{black}{rgb}{0,0,0}
+
+
+\lstset{ %
+  backgroundcolor=\color{darkWhite},
+  flexiblecolumns=true
+  backgroundcolor=\color{white},   % choose the background color
+  basicstyle=\footnotesize,        % size of fonts used for the code
+  breaklines=true,                 % automatic line breaking only at whitespace
+  captionpos=b,                    % sets the caption-position to bottom
+  commentstyle=\color{mygreen},    % comment style
+  escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+  keywordstyle=\color{blue},       % keyword style
+  stringstyle=\color{mymauve},     % string literal style
+  backgroundcolor=\color{darkWhite},   % choose the background color
+  basicstyle=\normalsize\ttfamily 
+}
+
+\section{Introduction}
+
+Ce document liste les différents programmes présents dans le dossier. Il décrit leurs fonctionnalités, leurs limites ainsi que les formats des données en entrée et en sortie. Il indique les conditions nécessaires à leurs exécution. Enfin, il apporte des indications quand aux évolutions futures des fichiers.
+
+\part{Danbooru}
+Dans ce dossier se trouvent des programmes ayant pour dénominateur commun l'utilisation du site internet Danbooru. 
+Cinq sous-dossiers sont présents :
+\begin{itemize}
+\item AddTags : permet d'afficher à l'écran des images correspondant à des tags particuliers et d'y entrer des additions ou des soustractions ;
+\item NotDan : permet de chercher des images n'étant probablement pas présentes sur Danbooru ;
+\item PicturesUtil : permet de travailler sur des images à l'aide de l'application Waifu2x, de détecter la présence de bruit JPEG. Danbooru est utilisé dans un but de téléchargement d'images.
+\item Post : permet la génération de fichier aidant à l'upload d'images. De part la mise en forme des tuples (url, tags) et la correction d'erreur de frappe.
+\item StatsDan : permet l'obtention de données d'upload journalier.
+\end{itemize}
+
+Dans un cadre général, nous utilisons l'hypothèse suivante : un fichier contenant les identifiants du compte danbooru est présent à la racine. Ce fichier, nommé Danboory\_Codes.txt contient les informations sous la forme :
+\begin{lstlisting}
+api_key xxx
+login yyy
+\end{lstlisting}
+
+où \og xxx \fg{} désigne la clef api et \og yyy \fg{} le nom d'utilisateur.
+Sauf mention contraire, ce fichier est nécessaire pour l'exécution des programmes.   
+\section{AddTags}
+\subsection{AddTags}
+\subsubsection{Hyphothèses}
+Ce programme fonctionne sous l'environnement Windows 7 mais n'a pas de raison sur un système autre que Windows.
+Les 10000 tags les plus populaires de Danbooru sont listés dans le fichier \og tags.txt \fg. Une ligne y représente un tag.
+\subsubsection{Comportement}
+Lors de l'exécution, le programme utilise Danbooru pour télécharger des images dans la mémoire vive. Il commence par recherche les urls des images puis télécharge leur contenu. L'application affiche à l'utilisateur la progression de cette étape et une estimation de sa terminaison. 
+
+Une fois cette étape achevée, les images s'affichent une par une dans la visionneuse de photos Windows (notés ci-après VPW). L'utilisateur est alors invité à rentrer une chaîne de caractère représentant les tags à ajouter ou à supprimer de l'image. La validation de cette chaîne de caractère provoque la fermeture de la VPW puis l'ouverture de l'image suivante. Les informations renvoyées à l'utilisateur sont le numéro de l'image dans la série, l'identifiant sur Danbooru, ainsi qu'une estimation de la date de terminaison de la série. L'utilisateur peut terminer la série en validant la chaîne \og return \fg{}. L'utilisateur peut passer à l'image suivante en validant la chaîne \og pass \fg{}. Si un tag correspond à une clef dans le dictionnaire known\_tags, ce tag sera remplacé par la valeur de l'entrée. Cela permet de minimiser le temps d'écriture des tags par l'utilisateur. 
+Les tags entrés par l'utilisateur sont comparés à la liste du \og tags.txt \fg{} et supprimés s'il n'y a pas de correspondance. La possibilité d'ajouter un tag par erreur est ainsi réduite. 
+
+Nous conseillons de paramétrer une souris avec les macros correspondant aux entrer dans le know\_tags. La vitesse atteinte pour une série de 1000 images avant sept tags différents à rajouter fut de près de deux secondes par images.
+\subsubsection{Évolutions futures}
+\begin{itemize}
+\item Passer le dictionnaire known\_tags dans un fichier .json et non hard-codé dans le programme.
+\item Donner à l'utilisateur la possibilité de changer la plage d'identifiant, les tags et le nombre d'image. Cela n'a pas été fait en raison de l'utilisation générique (sur une seule série de tags) du programme. 
+\item Utiliser les threads afin d'accroître la vitesse de récupération des informations préalables à l'entrée des tags. Les threads ne sont en revanche pas nécessaire lors de l'application des tags, du fait de la limitation du nombre de requête \og post \fg{} par Danbooru.  On pourrait cependant imaginer que la validation d'un tag entraîne son ajout simultané par le biais d'un thread.
+\item Ouvrir Danbooru\_Codes.txt au sein d'un \og with \fg{} à des fins purement esthétiques. 
+\end{itemize}
+\subsubsection{Implémentation}
+\paragraph{Pré-traitement}
+L'application récupére les informations de Danbooru\_Codes.txt et créé le dictionnaire known\_tags. La fonction main est lancée.
+\paragraph{class Sample}
+Cette classe permet la description d'une image et des informations correspondantes nécessaire.
+\subparagraph{def \_\_init\_\_}
+Création de l'instance de Sample. Ses attributs sont :
+\begin{itemize}
+\item \_Id : une chaîne de caractère décimaux indiquant l'identifiant de l'image sur Danbooru ;
+\item \_data : les données binaires représentants l'image ; 
+\item \_tags : une chaîne de caractères indiquant les tags présents sur l'image ;
+\item \_adds : une chaîne de caractères indiquant les tags à rajouter sur Danbooru.
+\end{itemize}
+\subparagraph{def InputTags}
+Affiche l'image dans la VPW et demande à l'utilisateur de rentrer des tags. Si l'affichage de l'image échoue (il peut s'agit d'un .webm par exemple) le tag renvoyé est \og pass \fg. La VPW est fermée à l'issue de la fonction.
+\subparagraph{def InputTags}
+Recherche sur Danbooru les tags actuellement présents sur l'image et y ajoute les tags entrés par l'utilsateur. Si l'utilisateur a rentré le tag \og pass \fg, ces actions ne sont pas effectuées. La fonction renvoie le status\_code de la requête. Il est égale à 200 si la requête a réussi. 
+\subparagraph{def GetTag}
+Recherche sur Danbooru les tags actuellement présents sur l'image.
+\subparagraph{def VerifyTags}
+Vérifie si les mots contenus dans la chaîne de caractère sont présents dans la liste des tags ou dans le dictionnaire known\_tag. Les mots inconnus sont supprimés de la chaîne de sortie.
+\paragraph{def ListUrl}
+Effectue une requête sur Danbooru pour obtenir les urls d'images correspondant aux tags d'entrée.
+\paragraph{def ListImgs}
+Créé une liste d'instance de Sample à partir des données fourni par ListUrl. Indique la date de terminaison prévue.
+\paragraph{def main}
+
+Initialise les variables de la recherche : plage d'identifiant, tags et nombre d'image.
+
+Créé la liste des urls (sous la forme d'une concaténation de requêtes).
+
+Utilise ces urls pour obtenir le contenu des image et créer les instances de Sample.
+
+Invite l'utilisateur à rentrer les tags à ajouter ou supprimer.
+
+Effectue les requêtes pour modifier les tags sur Danbooru.
+
+\subsection{DelFav}
+\subsubsection{Hyphothèses}
+Il n'y a pas d'autres hypothèse que l'existence du Danbooru\_Codes.txt.
+\subsubsection{Comportement}
+Ce programme utilise AddTags pour afficher des images. L'utilisateur est invité à rentrer le caractère \og - \fg, décidant alors que l'image sera supprimée de ses favoris. L'url de l'image est alors ajoutée dans un fichier texte, permettant alors de rapidement y accéder (via une extension comme \og Multilink \fg{} sur le navigateur Chrome) et de supprimer l'image de ses favoris. Le fichier .txt ainsi créé est nommé \og to\_del.txt \fg{} 
+\subsubsection{Traitement}
+Traitement similaire à celui d'AddTags.py, sans utiliser la partie mise-à-jour des tags.
+\subsubsection{Évolutions futures}
+Les favoris auraient pu être mis-à-jour directement via l'api. Un traitement manuel a été choisi pour pouvoir avec une deuxième validation des modifications. Ce programme est très rarement utilisé (développé pour une utilisation temporellement unique) et ne présente pas un intérêt justifiant un travail d'amélioration.
+
+\subsection{tags}
+\subsubsection{Hypothèses}
+Aucune hypothèse n'est faite. L'existence du Danbooru\_Codes.txt n'est pas nécessaire. 
+\subsubsection{Comportement et traitement}
+Le programme effectue, sur les 500 premières pages du wiki, la recherche des tags. Chacune de ces pages est censée recueillir 20 tags, permettant ainsi de lister les 10000 tags les plus utilisés.
+Ces tags sont écrit dans le fichier tags.txt à raison d'un tag par ligne.
+\subsubsection{Évolutions futures}
+Aucune évolution n'est prévue. Il fut utilisé avec succès une fois. La conservation de la liste ainsi créé 
+
+\section{NotDan}
+\subsection{PixivNotDan}
+\subsubsection{Hypothèses}
+Ce programme utilise, outre les bibliothèques usuelles, la bibliothèque AppPixivApi afin de pouvoir utiliser l'api de Pixiv. 
+
+Une limitation importante existe lors de la vérification de la présence sur Danbooru. En effet, pour que le résultat soit positif, il ne faut pas uniquement que l'image soit effectivement sur le site, mais qu'elle ait été psotée depuis Pixiv. Cela signifie que si une image identique a été postée par le biais de Twitter ou de NicoSeiga, l'image sera considérée comme n'étant pas présente sur Danbooru. Notons que la compression avec perte imposée par Twitter change le md5 de l'image et ne permet pas d'utiliser de tels méthodes pour vérifier la présence de l'image. Cette méthode semble en revanche pouvoir être mise en œuvre pour détecter les faux-positifs provenant de NicoSeiga. Le calcul du md5 étant nécessaire (il ne fait pas parti des méta-données de pixiv), cette piste n'a pas été explorée.
+\subsubsection{Comportement}
+Lors de l'exécution, cinq modes sont proposés à l'utilisateur :
+\begin{itemize}
+\item 0 : requêtes sur pixiv et écriture d'un fichier .json ;
+\item 1 : lecture d'un fichier .json provenant du mode 1 et vérification sur danbooru ;
+\item 2 : fusion ou séparation de plusieurs fichiers .json ;
+\end{itemize}
+
+Le but de ces modes est d'aboutir à l'extraction d'informations concernant les images stockées sur pixiv et de vérifier leur présence sur Danbooru. 
+Les informations stockées dans les fichiers .json sont les suivantes :
+\begin{itemize}
+\item t : les tags caractérisant l'image sur Pixiv.
+\item u : le lien direct vers la première image à une taille moyenne. Dans le cas d'une image contenant du contenu explicite, ce lien est remplacé par une censure R18. Dans le cas ou l'image ait été supprimé, le lien est également différent.
+\item n : le nombre d'images sur l'œuvre.
+\item d : la date de création, une chaîne de caractère de la forme "2000-01-30T20:00:00+09:00"
+\item s : le nombre de fois où cette image a été placée en favori.
+\item r : le ratio taille/largeur de l'image.
+\end{itemize}
+\subsubsection{Évolutions futures}
+Une mesure du nombre de threads nécessaire est envisagée. La vitesse de traitement par image (25ms sur une liaison 3G et 7ms sur une liaison filaire) est satisfaisante et ne semble pas pouvoir être augmentée.
+
+Le nom de l'artiste pourrait être recherché afin de le coupler avec la liste des artistes retirés de Danbooru. Ce nombre est relativement faible et est considéré comme un moindre mal face à une nouvelle extraction des données.
+
+Une ré-extraction des données correspondant à la plage 43M à 46M sera exécutée afin de supprimer certaines vérifications sur la présence du ratio h/w dans les données.
+\subsubsection{Implémentation}
+\paragraph{Pré-traitement}
+Initialisation de la blacklist et récupération des identifiants pour Danbooru. Déclaration des données nécessaire aux requêtes afin de les sortir des threads.
+\paragraph{def PixIsOnDan}
+Prend pixivId en argument, un entier représentant l'identifiant sur Pixiv. Effectue la requête pixiv:pixivId sur Danbooru. Cette opération ne permet pas de s'asssurer de l'inexistence de l'image sur Danbooru (il faudrait utiliser IQDB pour s'approcher de cette affirmation) mais fournit un premier discriminant qui est d'autant plus fort que l'image est ancienne. En cas d'échec de la requête, la manœuvre est tentée jusqu'à quatre fois supplémentaires.
+
+En cas de réusite de la requête, le fichier de résultat est mis-à-jour (il est donc écrit simultanément à l'exécution).
+\paragraph{def IndividualWritePixiv}
+Lancé par le mode 0.
+
+Prend en argument un entier représentant l'identifiant sur Pixiv ainsi que le score minimum.
+
+Met à jour le dictionnaire courant en rajoutant les informations relative à l'image i, via une requête à l'api de Pixiv.
+Les conditions de mise à jour sont :
+\begin{itemize}
+\item que l'image soit marquée comme une illustration, non un manga ou un ugoira ; 
+\item que le nombre d'illustrations composant l'image soit inférieur à 10 (afin d'éviter les mangas) ;
+\item que le score de l'image soit supérieur à celui indiqué par l'utilisateur.
+\end{itemize}
+
+Les erreurs sont explicitement passées sous silence par le biais de la variable \og find \fg{} qui les compte.
+\paragraph{def IndividualFromDic}
+Lancé par le mode 1.
+
+Prend en argument un entier représentant l'identifiant sur Pixiv ainsi que la plage de score.
+
+Effectue la recherche sur Danbooru si les conditions suivantes sont réunies :
+\begin{itemize}
+\item le score de l'image est inclus dans la plage de valeur ;
+\item l'image n'est pas supprimée ou cachée par son auteur ;
+\item si le ratio de l'image est connu, il doit être inférieur à 2.5 ;
+\item l'image n'est pas décrite par une tag de la blacklist ;
+\item si des tags sont souhaités par l'utilisateur, l'image doit satisfaire à ces tags.
+\end{itemize}
+
+Le ratio n'est pas infaillible puisque des image d'un ratio très important sont curieusement indiquées comme ayant un ratio de 1.0.
+\paragraph{def PixivNotDanbooru}
+Ce programme gère la création des threads ainsi que la demande à l'utilisateur des différents arguments. Le nombre de thread simultané est fixé par \og limit\_active \fg{} et est augmenté de \og nb \fg{} jusqu'à atteindre la valeur maximum. Dans le cas d'une connexion filaire, ces nombres sont 200 et 50. Dans le cas d'une connexion 3G, ces nombres sont passés à 100 et 10.
+
+Dans tous les modes, l'utilisateur est invité à choisir un score minimum.
+
+La date de terminaison estimée est indiquée à chaque progression de 0.1%.
+\subparagraph{mode = 0}
+Ce mode permet l'extraction de Pixiv et l'écriture du .json. Le programme effectue donc la connexion à Pixiv en utilisant les codes indiqués dans le Pixiv\_Codes.txt. Le login sera effectué toute les 3500 secondes. 
+
+L'utilisateur est invité à choisir un identifiant maximum et un nombre d'image à étudier.
+
+Le thread est lancé pour la fonction IndividualWritePixiv.
+
+\subparagraph{mode = 1}
+Ce mode permet la vérification sur Danbooru.
+
+L'utilisateur est invité à choisir un score maximum ainsi que d'éventuels tags à imposer à la recherche.
+
+Le thread est lancé pour la fonction IndividualFromDic.
+
+\paragraph{def ReadJSON}
+Permet de fusionner les dictionnaires contenus dans plusieurs .json et de lancer PixivNotDanbooru en mode 1.
+\paragraph{def SplitJSON}
+Permet de lire les dictionnaires contenus dans plusieurs .json et de les placés dans un fichier avec un nom standardisé. Initialement prévu pour spliter des fichiers, il permet également de les fusionner.
+
+Cette fonction est destructrice dans le sens où elle peut détruire les fichiers d'entrés s'ils ont les mêmes noms que les fichiers standardisés.
+\paragraph{def getR18\_URL}
+Cette fonction était utilisé au commencement du programme. Elle permet d'obtenir l'adresse d'une image non révisée à partir de la date de sa mise en ligne.
+
+Elle n'est pas utilisée à l'heure actuelle mais est laissé en cas de développement ultérieurs.
+
+\subsection{YandereNotDan}
+\subsubsection{Hypothèses}
+Le navigateur doit être lancé avant le lancement du programme. La version 6 et 7 fonctionnent sous Windows 7. Pour utiliser ce navigateur, la bibliothèque stem doit être installée.
+
+Ce programme ne nécessite pas l'utilisation du Danbooru\_Codes.txt.
+\subsubsection{Comportement}
+Ce programme permet de vérifier l'existence d'image sur Danbooru. Cette vérification est établie par l'application IQDB. Il s'agit donc d'une vérification plus fiable que celle de PixivNotDan, mais également plus lente. Le rythme est d'une seconde par image environ.
+IQDB bannissant l'adresse IP après 25 utilisations dans un cours laps de temps, nous utilison Tor afin de changer cette adresse après 24 vérifications.
+Les résultats sont écrit dans un fichier HTML contenant la liste des images dont on présume qu'elles ne sont pas sur Danbooru. 
+Les images sont récupérées sur le site yande.re et correspondent à des tags fournis par l'utilisateur.
+\subsubsection{Évolutions futures}
+Un comportement inattendu est survenu lors du passage à Tor 7.0 et demande des investigations sur une connexion internet plus performante. La vitesse de l'application, bien que très faible par rapport aux résultats obtenus sur Pixiv, sont tout à fait convenables pour l'utilisation hebdomadaire qui en est faite.
+
+On peut toutefois imaginer que l'obtention de l'url des samples soit effectuée en dehors des threads effectuant la requête IQDB. De même, il serait possible d'exécuter la recherche initiale sur des threads différents bien que cette dernière possiblité ne propose pas un gain important.
+\subsubsection{Implémentation}
+\paragraph{renew\_tor}
+Permet de changer l'adresse IP contenue dans le header du paquet IP sortant. Le but premier de Tor est donc de permettre l'anonymat. Un sous-produit de ce logiciel est a possibilité de contourner les mécanismes de bannissement lors d'une utilisation trop intensive d'une application en ligne.
+\paragraph{IsOnDan}
+Vérifie si IQDB renvoie un résultat positif. Si le résultat est une erreur différent d'un flood, ou qu'aucune image ne correspond, le programme renvoie False. Sinon, il renvoie True.
+\paragraph{AlreadyFounds}
+Permet de vérifier si les résultats obtenus dans le traitement préalable on déjà été détectés. Auquel cas il n'est pas nécessaire d'exécuter quelque opération que ce soit pour l'image en question.
+\paragraph{CreateListAllURL}
+Créé, a partir d'une chaîne de tags et d'un nombre maximum d'image, de créer la liste des urls des images qui seront vérifiées.
+\paragraph{URLSample}
+Permet, à partir de l'adresse d'une image (page générale de l'image contenant, en autre, les tags), d'obtenir l'adresse du sample. Le sample est utilisé de sorte à vérifier les conditions de taille et de poids d'image imposées par IQDB.
+\paragraph{YandereNotDanbooru}
+Demande à l'utilisateur des tags. S'il rentre plusieurs recherches séparées par des espaces, plusieurs recherches seront effectuées. L'utilisateur peut également rentrer des tags qui s'appliqueront à chaque recherches. Il peut choisir une limite du nombre d'image à rechercher.
+
+La seconde étape est la recherche préliminaire des urls des images. Celles-ci peuvent être obtenues par série de 1000, il s'agit donc d'une étape rapide.
+Les threads sont ensuites lancées en série de 24. Chacun entraîne la recherche de l'url du sample et la requête IQDB. L'estimation de la date de terminaison est indiqué à la fin de chacune de ces séries, avec le nombre d'image repérées. De même, à la fin d'une série de 24, l'adresse IP est renouvelée.
+\paragraph{IndividualYandereNotDanbooru}
+Effectue la requête IQDB sur une image particulière écrit une ligne dans le fichier de sortie si le résultat est négatif. Il s'agit de la fonction appelée par les threads. 
+
+\section{PicturesUtil}
+\subsection{DownloadDanbooru}
+\subsubsection{Hypothèses}
+Il n'y a pas d'autres hypothèses que l'existence du Danbooru\_Codes.txt.
+\subsubsection{Comportement}
+Ce programme permet de télécharger des images de danbooru dans le sous-dossier \og result \fg{}.  
+\subsubsection{Évolutions futures}
+Pas d'évolution prévue. Son utilisation est très annecdotique.
+On pourrait imaginer lui fournir des threads afin de télécharger de multiples image simultanément.
+La requête de ListPictureswithTag peut être effectuée avec l'api, plutôt que via une url.
+\subsubsection{Implémentation}
+\paragraph{ListPicturesWithTags}
+Prend en entrée une chaîne de caractère et un entier, représentants respectivmeent les tags de la requête ainsi que le nombre maximum d'image à rechercher. Retourne la liste urls menant aux données des images.
+\paragraph{DownloadPictures}
+Prend en entrée une url, un nom et le chemin absolu d'un sous-dossier. Télécharge l'image de l'url avec le nom indiqué dans le sous-dossier.
+\paragraph{Launch}
+Demande des tags et un nombre à l'utilisateur. Télécharge les images en donnant comme nom un entier.
+
+\subsection{GateDivine}
+\subsubsection{Hypothèses}
+Présence des fichiers WhiteFunctions.py et WaifuFunction.py dans le dossier.
+\subsubsection{Comportement}
+Télécharge les images indiquées dans le fichier files.txt. Ces images sont censées provenir du site divine-gate.net. Il s'agit donc d'image PNG avec transparence, ayant subit une réduction du nombre de couleur. Le but est donc de rétablir une qualité correcte. On utilise pour cela Waifu2x.
+\subsubsection{Évolutions futures}
+Le programme est dans sa version finale.
+\subsubsection{Implémentation}
+\paragraph{Pré-traitement}
+Ouverture du files.txt et lecture de son contenu. Téléchargement de chaque image et traitement sur Waifu2x. Les paramètres de ce traitement sont : multiplication de la taille par un facteur 2 (sur chaque côté), donc surface par quatre, et réduction de bruit sur High.
+L'image est ensuite réduite à sa taille initiale, de 1024x1024.
+\paragraph{Download}
+Télécharge l'image dans le sous-dossier \og images \fg. Retourne le chemin complet de la dite image. 
+
+\subsection{NoiseFunctions}
+\subsubsection{Hypothèses}
+Aucune hypothèse
+\subsubsection{Comportement}
+Cette fonctions permet la détection de bruit JPEG par le calcul de l'intensité de la différences de deux images. Cette détection est améliorée par l'utilisation d'un filtre passe-haut qualibré de sorte à garder les contours et les bruits jpeg.
+\subsubsection{Évolutions futures}
+Le programme est en version finale et ne présente aucune raison d'être modifié.
+\subsubsection{Implémentation}
+\paragraph{np\_from\_img}
+Prend en argument une image (PIL.Image) et retourne la matrice correspondante. L'éventuelle transparence est remplacée par un fond blanc. La transparence du canal alpha est gérée.
+
+\paragraph{img\_from\_np}
+Prend en argument une matrice et retourne l'image correspondante.
+
+\paragraph{Grayscale}
+Prend en argument une matrice représentant une image RGB et retourne la matrice représentant cette même image en nuance de gris.
+
+\paragraph{Intensity}
+Prend en argument une matrice et retourne l'intensité moyenne (c'est à dire la moyenne des valeurs contenues dans la matrice).
+
+\paragraph{Filter}
+Prend en argument une matrice ainsi qu'un filtre (une matrice, généralement 9x9) et applique un filtrage par convolution.
+
+\paragraph{MakeFilter}
+Prend en argument un nombre, flottant ou non. Retourne un filtre de détection de contours dont la puissance dépend de l'argument. Plus il est grand, plus le filtre sera fort. 
+
+Ce filtre est un filtre passe-haut.
+
+\paragraph{DetectJPG}
+Prend en argument le chemin d'une image et le numéro du mode utilisé. Mode 1 correspond à test et est destiné au dessin d'un graphe. Mode 0 correspond à un fonctionnement normal. 
+
+L'image va d'abord être transformée en nuance de gris. On lui applique ensuite un filtre de détection de contour de facteur 6. L'image va ensuite être réenregistrée au format JPEG avec des qualités entre 74 et 96. Les mêmes opérations de transformation en nuance de gris et de filtrage sont effectuées. L'image résultante est soustraite à celle issue du premier filtrage et nous calculons l'intensité de cette différence. Nous postulons que cette intensité connaît deux minimums locaux : le qualité 100 pour des raisons évidentes, et la qualité de l'enregistrement initiale de l'image. Nous sommes donc en mesure de découvrir quelle était la qualité d'enregistrement de l'image avant son acquisition. 
+
+\paragraph{FirstLocalMinimum}
+Prend en argument le résultat du mode 0 de DetectJPG et cherche le minimum local parmi les valeurs de qualité jpeg 75, 80, 85, 90 et 95. Ces choix semblent être les valeurs privilégiées par les tiers. D'une part car une qualité inférieure à 70 est très mauvaise et provoque l'apparition d'artefacts particulièrement laids, mais aussi car il s'agit de multiple de 5. De plus, la recherche sur des valeurs inférieur est susceptible de produire des faux-positifs.
+
+\paragraph{Test}
+Cette fonction effectue les opérations sur des fichiers pré-préparés afin de montrer la différence entre les graphes d'intensité sur une image de qualité 100 et son équivalent bruité. Ces graphes permettent de se rendre compte de la pertinence de la technique utilisée pour détecter le bruit JPEG. 
+
+\subsection{WaifuFunctions}
+\subsubsection{Hypothèses}
+La seule hypothèse est la présence de Noisefunctions.py dans le dossier.
+\subsubsection{Comportement}
+Ce programme permet de faire des appels à l'application Waifu2x, d'enlever la transparence d'une image (y compris celle du canal alpha) et de convertir l'image au format jpeg.
+\subsubsection{Évolutions futures}
+Le programme est en version finale, aucun changement n'est prévu.
+\subsubsection{Implémentation}
+\paragraph{LaunchWaifu}
+Prend en entrée le chemin d'une image et appelle l'application Waifu2x. L'opération est ré-effectuée en cas d'erreur. 
+\paragraph{Remove\_Transparency}
+Copie l'image en argument sur un fond blanc en tenant compte du canal alpha. 
+\paragraph{Convert\_to\_jpg}
+Converti une image du format png au format jpeg avec une qualité de 100.
+\paragraph{Unnoise}
+Utilise NoiseFunctions afin de détecter la qualité d'enregistrement de l'image. Si cette qualité est strictement inférieur à 95, Waifu2x est utilisé pour enlever ce bruit.
+\subsection{WhiteFunctions}
+\subsubsection{Hypothèses}
+Nécessite la présence de DownloadDanbooru et de WaifuFunctions (implictiement de NoiseFunctions).
+\subsubsection{Comportement}
+Contient de nombreuses fonctions permettant de travailler sur des images. Ce programme fut utilisé pour créer des images de background pour Google et Wikipedia. Pour cela, le fond doit être blanc, les dimensions doivent respecter des dimensions précises. Dans le cas où l'image se prolonge en hors-champ, il faut déterminer quel est ce côté et l'orienter vers le côté de la fenêtre. Nous enlevons ensuite les blocs, c'est-à-dire les zones colorés séparées de la figure principale par des zones blanches. La transparence est également supprimée.
+\subsubsection{Évolutions futures}
+Ce programme est en version finale. Aucun évolution n'est prévue.
+\subsubsection{Implémentation}
+\paragraph{class bloc}
+Un bloc est une ensemble de coordonnées. Il s'agit des zones de pixel colorés contigües.
+\subparagraph{def \_\_init\_\_}
+Créé le bloc contenant la coordonnée indiquée.
+\subparagraph{def CreateBloc}
+Pour déterminer le bloc nous utilisons l'algorithme suivant :
+\begin{itemize}
+\item On initialise la liste des pixels à explorer.
+\item On prend le premier élément de cette liste et on regarde les pixels adjacents. Si ces pixels ne sont pas blancs, on les rajoute à la liste des pixels à explorer s'ils ne sont pas déjà dans le bloc. 
+\end{itemize}
+
+Dans le pire des cas, cette boucle se termine lorsque la totalité des pixels contenant l'image est explorée.
+\paragraph{class IMG}
+\subparagraph{def \_\_init\_\_}
+Créé l'instance de la classe IMG. Ses attributs sont :
+\begin{itemize}
+\item .\_name : le chemin du fichier contenant l'image ;
+\item .\_im : l'image (PIL.Image) contenue dans le fichier ;
+\item .\_array : la représentation matricielle (matrice tri-dimensionnelle) de l'image ; 
+\item .\_height : la hauteur, en nombre de pixel, de l'image ; 
+\item .\_width : la largeur, en nombre de pixel, de l'image ;
+\item .\_ratio : le rapport largeur/hauteur ;
+\item .\_blocs : la liste des blocs contenus dans l'image
+\item .\_border : une liste de quatre booléen, vrais si l'image sur prolonge en hors-champ sur le côté correspondant.
+\end{itemize}
+
+\subparagraph{def GetBlocs}
+Detecte tout les blocs composant l'image. Pour cela, nous regardons tous les pixels composant l'image. Si ce pixel est blanc ou fait partie d'un bloc précédemment visité, nous passons au pixel suivant. Sinon, nous déterminons l'étendu du bloc contenant le pixel.
+Il s'agit de la partie du programme la plus lente.
+\subparagraph{def TrimBloc}
+Détecte le bloc contenant le bloc le plus grand. Tout les autres blocs sont remplacés par des pixels blancs.
+\subparagraph{def Reduce}
+Supprime les limites de l'image sont avancées afin de ne pas tenir compte des lignes ou des colonnes entièrement blanches. Pour cela nous effectons quatre parcours de l'image : 
+\begin{itemize}
+\item de haut en bas et de gauche à droite, afin de déterminer la limite à gauche  ;
+\item de gauche à droite et de haut en bas, afin de déterminer la limite en haut ;
+\item de bas en haut et de gauche à droite, afin de déterminer la limite à droite ;
+\item de gauche à droite et de bas en haut, afin de déterminer la limite en bas.
+\end{itemize}
+
+L'image est ensuite recadrée en gardant une marge de 1 pixel.
+
+Seule l'image est modifiée.
+\subparagraph{def Crop}
+Le matrice d'entrée est recadréee selon les dimensions indiquées. Chaque case de la matrice bi-dimensionnelle est ensuite réduite à trois éléments, pour garder le mode RGB.
+
+Seule la matrice est modifiée
+\subparagraph{def Remove\_Transparency}
+Copie l'image en argument sur un fond blanc en tenant compte du canal alpha.
+
+Seule l'image est modifiée. 
+\subparagraph{def Thumbnail}
+Réduit l'image suivant la fonction de PIL.Image. Les dimensions indiquées par défaut sont celle correspondant à une image pour Google.
+
+Seule l'image est modifiée.
+\subparagraph{def Sym\_Y}
+Effectue une symétrie verticale de l'image.
+
+Seule la matrice est modifiée.
+\subparagraph{def ImToArray}
+Met à jour les valeurs de hauteur, de largeur, de ratio et la matrice à partir de l'image.
+\subparagraph{def ArrayToIm}
+Met à jour les valeurs de hauteur, de largeur, de ratio et l'image à partir de la matrice.
+\subparagraph{def Show}
+Affiche l'image à l'écran en utilisant le WPV.
+\subparagraph{def Save}
+Sauvegarde l'image au format indigué. La qualité est de 100 dans le cas d'un format jpeg.
+\subparagraph{def GetBorder}
+Permet de savoir sur quel côté l'image se prolonge en hors-champs. La liste booléenne présente la configuration suivante : [gauche, droite, haut, bas] et vaut vrai si l'image se prolonge en hors-champs. Cette prolongation est considérée comme présente si le nombre de pixel non-blanc sur la colonne (respectivement la ligne) correspondante est plus grand que le dixième de la hauteur (respectivement la largeur) de l'image.
+
+\paragraph{def Full}
+Lance l'application à partir du téléchargement des images depuis Danbooru, images correspondant à des tags hard-codés.
+\paragraph{def onFolder}
+Lance l'application sur des images pré-téléchargées.
+\paragraph{def Launch}
+Effectue la transformation des images, sans modification de celles d'origine puisque le résultat est dirigé vers un sous-dossier.
+
+Si le mode choisi est \og full \fg, l'application va télécharger les images correspondant aux urls au fur et à mesure de l'exécution.
+
+Le traitement se déroule de la façon suivante :
+\begin{itemize}
+\item Génération de l'instance de IMG à partir du fichier (téléchargée si besoin).
+\item Suppression e la transparence de l'image, puis mise-à-jour de la matrice.
+\item Suppression des lignes et colonnes exclusivement blanches, puis mise-à-jour de l'image.
+\item Sauvegarde de l'image dans le sous-dossier de résultat.
+\item Si l'image est d'une taille suffisamment faible pour pouvoir passer dans la version online de Waifu2x, nous estimons le bruit résultant d'un potentiel enregistrement jpeg.
+\item Si l'image est d'une taille importante (supérieur à 1500 pixel sur l'un de ses côtés), nous le réduisons.
+
+Ces deux étapes présentent un intérêt pour la réduction du nombre de blocs. En réduisant la taille de l'image (qui devra de toute façon être redimensionnée pour s'afficher entièrement sur Google ou Wikipédia) nous pouvons réduire le temps de calcul de la détection de blocs. De plus, la présence de bruit jpeg entraînent la détection de pixels initialement blancs dans les blocs.
+\item Détection des blocs.
+\item Suppressions des blocs à l'exception du plus grand.
+\item Détection des bordures.
+\item Décision de la cible de l'image (Wikipédia ou Google). La cible est Wikipédia si la hauteur est au moins plus de trois fois plus grande que la largeur. Sinon, ce la hauteur est plus grande que la largeur, l'image est destinée à Google. L'image est redimensionnée à 174x676 pour Wikipedia et à 549x706 pour Google. Mise-à-jour de la matrice.
+\item Changement du nom suivant le côté de la bordure. Si une bordure est à gauche et qu'il n'y en a pas à droite, l'image subit une symétrie verticale. En effet, dans le cas d'une image Google, elle sera placée sur le côté droit. Mise-à-jour de l'image dans le cas d'une symétrie.
+\item Changement de nom pour nommer la version finale de l'image. Affichage d'une date de terminaison estimée. Cette date est peu fiable du fait de l'hétérogénéité du temps de traitement.
+\end{itemize}
+
+Notons qu'un certain nombre d'images intermédiaires est créé. 
+\section{Post}
+\subsection{DanbooruPost}
+\subsubsection{Hypothèses}
+Deux fichiers .txt doivent exister un le dossier \og ../files \fg{} : error.txt et banned\_artist.txt.  Dans le cas d'un mode 3, le fichier trim.txt est également nécessaire.
+\subsubsection{Comportement}
+Ce programme permet la génération de fichiers facilitant l'upload d'images sur Danbooru. Le fichier final utilisé est un .html.
+\subsubsection{Évolutions futures}
+Ce programme a atteint sa version finale et n'a pas vocation a être modifié.
+\subsubsection{Implémentation}
+\paragraph{Pré-traitement}
+Définition des listes de fichiers .txt et .html qui seront utilisés.
+
+Création du dictionnaire des erreurs et des artistes bannis.
+
+Demande à l'utilisateur du mode utilisé. Ces modes sont les suivants :
+\begin{itemize}
+\item 1 : Génération des fichiers .html à partir des fichiers .txt ;
+\item 2 : Génération des fichiers .txt à partir des fichiers .html ;
+\item 3 : Délétion des images dont l'adresse est contenue dans le fichier trim.txt ;
+\item 4 : Demande du nombre d'image à supprimer de chaque fichier et délétion ;
+\item 5 : Comptage des images dans dans les fichiers .txt.
+\end{itemize}
+
+\paragraph{def CorrectorSample}
+Corrige les urls suivant des patterns connus :
+\begin{itemize}
+\item g.hitomi -> a.hitomi : il s'agit du changement d'anciennes urls ;
+\item i.hitomi -> a.hitomi : pour des raisons identiques ;
+\item sample -> jpeg : il s'agit d'adresses d'images sur yande.re ;
+\item :large -> :orig : il s'agit d'adresse d'images sur twitter.
+\end{itemize}
+\paragraph{def IsBanned}
+Si une chaine de tags contient un tags blacklisté, retourne True. Retourn False sinon. 
+
+Le fichier banned\_artist.txt contient les différents noms, tous sur une ligne différente.
+
+Cette fonction permet d'éviter d'uploader des images interdites sur Danbooru.
+\paragraph{def ReplaceAll}
+Corrige les erreurs de frappes, ainsi que les incohérences de noms entre yande.re et Danbooru.
+
+Les couples de correction se situent tous sur des lignes différentes. Le éléments de ces couples sont séparés par une tabulation. 
+\paragraph{def DelLine}
+Supprime les premières lignes de chaque fichier .html. Le nombre de lignes supprimées dépend des informations envoyées par l'utilisateur.
+\paragraph{def TrimHTML}
+Supprime les lignes des .html dont les liens sont présents dans le trim.txt.
+\paragraph{def GenerateTXT}
+Recréé les fichiers sources en .txt à partir des informations contenues dans les .html. 
+Il existe deux fichiers .txt pour chaque .html. Le premier contient les urls des images et le deuxième les tags.
+Les urls sont écrite à la suite, sur des lignes différentes
+Les tags sont écrits à la suite, séparés par une ligne blanche ou contenant des caractères quelconques.
+\paragraph{def GenerateHTML}
+Ecrit les fichiers .html. Le format est le suivant : \og <A HREF="' + \textit{url} + '"> ' \textit{tags} + '<br></br> \fg{} suivi d'un changement de line.
+\paragraph{def CountLine}
+Affiche le nombre de ligne dans chacun des fichiers .txt contenant les liens ainsi que le nombre de ligne total.
+\subsection{stats\_dan}
+\subsubsection{Hypothèses}
+Nécéssite la présence du fichier Danbooru\_Codes.txt
+\subsubsection{Comportement}
+Permet d'obtenir des données relatives au upload journaliers, sur une période de 30 jours. Ces données sont :
+\begin{itemize}
+\item le nombre d'images (uploadées et approuvées) ou (en pending) ;
+\item le nombre d'images supprimées ;
+\item le nombre d'images uploadées par l'utilisateur
+\item le nombre d'images uploadées par l'utilisateur mais supprimées par la suite.
+\end{itemize}
+\subsubsection{Évolutions futures}
+Aucune
+\subsubsection{Implémentation}
+Les recherches correspondantes sont exécutées, il y a cinq requête par jour.
+
+\part{DownloadWebsite}
+\subsection{DownloadWebsiteIMG}
+\subsubsection{Hypothèses}
+Aucune
+\subsubsection{Comportement}
+Ce programme télécharge tout les images (format .png ou .jpg) du site internet indiqué par l'utilisateur.
+\subsubsection{Évolutions futures}
+Un sous-dossier Images doit se trouver à la racine.
+\subsubsection{Implémentation}
+\paragraph{def EndTime}
+Effectue les calculs permettant d'obtenir la date estimé de terminaison du programme. 
+\paragraph{def GetDataLink}
+Requiert les données d'une page internet, extrait tout les liens présents et les renvoie. Si la page ne renvoie rien, la tentative est refaite jusqu'à quatre fois supplémentaires.
+
+\paragraph{def GetDataWebsite}
+Lance les opération de parcours de site. 100 threads sont utilisés simultanément. Les informations de progression sont affichées toutes les 10 secondes.
+La première boucle s'exécute tant qu'il reste des liens à visiter ou que le nombre de thread en cours est différent de l'initial. Cette deuxième condition permet d'assurer de ne pas sortir de la boucle dans l'éventualité ou des threads de parcours sont encore en cours, permettant d'augmenter le nombre de lien à visiter à leur issue.
+Une deuxième boucle permet de sortir lorsqu'il n'y a toujours aucun liens à visiter mais qu'après cinq minutes, le nombre de thread actif est toujours supérieur à celui initial. On considère en effet que les threads sont bloqués et que toute les images extrayables l'ont été.
+Les threads sont ensuite lancés un par un jusqu'à atteindre la limite de thread actif (fixée à 100 threads de parcours).
+\paragraph{def IndividualGetData}
+Obtient la liste des href présents sur la page et l'analyse de sorte à savoir si les images doivent être téléchargées. Ces conditions varie selon le site extrait : le pattern est adapté. Lance un thread de téléchargement si nécéssaire. 
+\paragraph{def Download}
+Télécharge une image en effectuant des remplacements hard-codés spécifiques au site internet téléchargé.
+
+\part{JapaneseApp}
+\subsection{Questions}
+\subsubsection{Hypothèses}
+Aucune
+\subsubsection{Comportement}
+Permet l'ouverture d'une fenêtre affichant un mot et invitant l'utilisateur à en rentrer un autre. Les correspondances sont choisis par l'utilisateur selon les en-têtes des fichiers de ressources. L'invite se nettoie à chaque pression sur le bouton \og check \fg{} ou \og pass \fg. Le bouton \og break \fg{} permet de lancer la terminaison du programme.
+\subsubsection{Évolutions futures}
+Inconnues pour l'instant, elles seront évaluées en fonction des besoins futurs.
+\subsubsection{Implémentation}
+\paragraph{Pré-traitement}
+Demande à l'utilisateur le fichier de travail. La première ligne du fichier de travail doit contenir les en-têtes décrivant les informations contenue par chaque ligne. L'utilisateur choisi ensuite sur quels en-têtes il doit être interrogé. Le premier choix indique ce qui sera indiqué à l'écran (un idéogramme, une traduction français, ...). Le second indique la réponse attendue (transcription en romaji, traduction, ...). Les questions sont ensuite générées.
+
+La fenêtre s'ouvre, le questionnaire peut commencer. 
+\paragraph{class Question}
+La classe Question possède trois attributs :
+\begin{itemize}
+\item .question : symbole qui devra être traduit/transcrit par l'utilisateur ;
+\item .answer : symbole attendu par l'utilisateur ;
+\item .all : toute les informations contenues dans la ligne du fichier.
+\end{itemize}
+
+Les symboles de fin de ligne sont systématiques détruits.
+\paragraph{class Question\_Canvas}
+\subparagraph{def \_\_init\_\_}
+Génère la fenêtre. Celle-ci est composée de :
+\begin{itemize}
+\item le texte de la question ;
+\item l'invite où l'utilisateur doit rentrer sa réponse ;
+\item trois boutons : \og Check \fg, \og Pass \fg{} et \og Break \fg.   
+\end{itemize}
+
+La pression de ces boutons lance la fonction correspondante.
+
+La taille de la fenêtre est automatiquement choisie pour être la plus petite possible compte-tenu des élements qu'elle contient.
+\subparagraph{def Init}
+Initialise le text affiché. Cette fonction est utilisée lors d'un changement de question.
+\subparagraph{def on\_button\_check}
+Vérifie si la réponse entrée par l'utilisateur est correcte. La pression de la touche entrée provoque également l'appel de cette fonction. La question est ensuite passée (on peut rester sur la même question en commentant la ligne self.\_update = True.
+\subparagraph{def on\_button\_pass}
+La question est passée. Le score n'est pas modifié.
+
+\subparagraph{def on\_button\_break}
+Termine le programme après avoir fermé la fenêtre et affiché le score atteinte par l'utilisateur.
+\part{ToDoManager}
+\subsection{ToDoManager}
+\subsubsection{Hypothèses}
+La version portable de ffmpeg.exe doit être présente dans le dossier. De plus, les commandes étant envoyées au shell windows, ce programme peut ne fonctionner que sur W7.
+
+Le fichier \og To Do.txt \fg{} doit être présent dans le dossier \og E:/Telechargements/Anime/to do \fg, nommé par la suite \og local \fg.
+
+Les fichiers référencés dans le To Do.txt doivent être présents dans le sous-dossier \og mp4 \fg{} du dossier local.
+
+Les fichiers à convertir sont écrits dans le To Do.txt sous la forme de cinq informations séparées par des tabulations :
+\begin{itemize}
+\item le nom de la vidéo résultat ;
+\item le début de la vidéo à couper ;
+\item la fin de la vidéo à couper ;
+\item le nom de la vidéo d'origine.
+\end{itemize}
+
+Les fichiers résultats sont écrits dans le sous-dossier \og ok \fg, qui doit donc exister.
+
+Le traitement du fichier se fait à partir de la lecture de la ligne \og video \fg, qui doit donc être présent dans le fichier.
+\subsubsection{Comportement}
+Le programme lis le To Do.txt et effectue les opérations correspondantes. 
+
+Ces opérations se réduisent à l'extraction d'une partie de la vidéo en rajoutant des sous-titres si nécessaire.
+\subsubsection{Évolutions futures}
+Ce programme n'a été testé que de manière minimale et ne fonctionnera probablement pas du premier coup. 
+
+La question des sous-titres n'est pas encore bien comprise et est appelée à évolué. La gestion de vidéo contenant plusieurs sous-titre est ainsi inconnue. 
+\subsubsection{Implémentation}
+\paragraph{def ConvertTime}
+Les date de début et de fin de clip, au format MMSS si la durée est inférieure à une heure, HHMMSS sinon, sont converties en insérant le signe \og : \fg{} pour séparer les différentes unités. Cela permet de créer une date que ffmpeg comprend. 
+\paragraph{Traitement}
+Le programme se résume à la lecture de chaque ligne du To Do.txt et à la création d'une commande envoyée au shell de Windows.
+
+\part{WatermarkDengeki}
+\subsection{WatermarkDengeki}
+\subsubsection{Hypothèses}
+Le fichier files.txt doit exister à la racine. 
+
+On considère que chaque image téléchargée est marquée par le watermark produit par le DengekiOnline.
+\subsubsection{Comportement}
+Ce programme télécharge chaque image dont l'url est contenue dans le files.txt et enlève le watermark appliqué par le Dengeki Online.
+\subsubsection{Évolutions futures}
+\subsubsection{Implémentation}
+\paragraph{def InverseFunction}
+Prend en entrée les arguments suivants :
+\begin{itemize}
+\item r, g et b : trois entiers entre 0 et 255. Ils représentent le contenu d'un pixel, respectivement les couleurs rouges, vertes et bleus.
+\item wtmk1\_px et wtmk2\_px : les pixels de deux watermarks, appliqués respectivement sur la luminosité et l'obscurité.
+\item l : un entier optionnel indiquant la nombre d'itération a effectuer.
+\end{itemize}
+Le principe est le suivant : le retro-ingénieuring du watermark nous a permis de déterminer que deux filtres étaient appliqués. L'un fonction de luminosité des pixels, l'autre de leur obscurité. Ils s'appliquent différent suivant les canaux lumineux et selon un facteur de luminosité normalisé entre 0 et 1.
+
+Lorsque la valeur de la couleur est 0, seul le wtmk2 (appliqué à l'obscurité) est utilisé. A l'inverse, lorsque la couleur est 255, seul le wtmk1 (appliqué à la luminosité) est utilisé. Lorsque la couleur est 122, ils sont utilisé chacun avec un facteur 0.5. 
+Nous utilisons la récurrence pour trouver le pixel initial, chaque itération provoquant une modification plus subtil. Cette modification finirait par être nulle si nous travaillions sur des réels, ce qui n'est pas le cas. L'usage d'entiers impose une limite à la récurrence, qui est fixée expérimentalement à 100. Une limite plus grande induit une altération inverse du résultat escompté. 
+
+Les pixels de watermark sont obtenus par la recherche d'une image entièrement noire, présentant donc uniquement le wtmk2 et d'un image entièrement blanche, présentant uniquement le wtmk1. 
+
+Pour le wtmk2, on utilise en réalité son négatif.
+\paragraph{def Download}
+Téléchargement de l'image. S'il échoue, il est retenté jusqu'à sa réussite.
+
+L'image est placée dans le sous-dossier image.
+\paragraph{def RemoveWatermark}
+Recrée une image en inversant le watermark si nécessaire. Seule une petite zone, située dans la partie inférieure de l'image, est watermarkée.
+\paragraph{def onDengeki}
+Effectue le téléchargement des images et l'application de RemoveWatermark sur chacune.
+\part{Youtube}
+\subsection{YoutubeDL}
+\subsubsection{Hypothèses}
+La bibliothèque pytube doit être installée.
+\subsubsection{Comportement}
+Lit le fichier Youtube\_Links.txt et télécharge les vidéos présentes.
+\subsubsection{Évolutions futures}
+Aucune.
+\subsubsection{Implémentation}
+Chaque ligne du Youtube\_Links contient un lien et nom de fichier, séparés par une tabulation. 
+
+\end{document}

@@ -1,0 +1,28 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [0][-]{part.1}{I Danbooru}{}% 2
+\BOOKMARK [1][-]{section.2}{AddTags}{part.1}% 3
+\BOOKMARK [2][-]{subsection.2.1}{AddTags}{section.2}% 4
+\BOOKMARK [2][-]{subsection.2.2}{DelFav}{section.2}% 5
+\BOOKMARK [2][-]{subsection.2.3}{tags}{section.2}% 6
+\BOOKMARK [1][-]{section.3}{NotDan}{part.1}% 7
+\BOOKMARK [2][-]{subsection.3.1}{PixivNotDan}{section.3}% 8
+\BOOKMARK [2][-]{subsection.3.2}{YandereNotDan}{section.3}% 9
+\BOOKMARK [1][-]{section.4}{PicturesUtil}{part.1}% 10
+\BOOKMARK [2][-]{subsection.4.1}{DownloadDanbooru}{section.4}% 11
+\BOOKMARK [2][-]{subsection.4.2}{GateDivine}{section.4}% 12
+\BOOKMARK [2][-]{subsection.4.3}{NoiseFunctions}{section.4}% 13
+\BOOKMARK [2][-]{subsection.4.4}{WaifuFunctions}{section.4}% 14
+\BOOKMARK [2][-]{subsection.4.5}{WhiteFunctions}{section.4}% 15
+\BOOKMARK [1][-]{section.5}{Post}{part.1}% 16
+\BOOKMARK [2][-]{subsection.5.1}{DanbooruPost}{section.5}% 17
+\BOOKMARK [2][-]{subsection.5.2}{stats\137dan}{section.5}% 18
+\BOOKMARK [0][-]{part.2}{II DownloadWebsite}{}% 19
+\BOOKMARK [1][-]{subsection.5.3}{DownloadWebsiteIMG}{part.2}% 20
+\BOOKMARK [0][-]{part.3}{III JapaneseApp}{}% 21
+\BOOKMARK [1][-]{subsection.5.4}{Questions}{part.3}% 22
+\BOOKMARK [0][-]{part.4}{IV ToDoManager}{}% 23
+\BOOKMARK [1][-]{subsection.5.5}{ToDoManager}{part.4}% 24
+\BOOKMARK [0][-]{part.5}{V WatermarkDengeki}{}% 25
+\BOOKMARK [1][-]{subsection.5.6}{WatermarkDengeki}{part.5}% 26
+\BOOKMARK [0][-]{part.6}{VI Youtube}{}% 27
+\BOOKMARK [1][-]{subsection.5.7}{YoutubeDL}{part.6}% 28
