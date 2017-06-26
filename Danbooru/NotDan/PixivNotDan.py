@@ -34,14 +34,14 @@ def PixIsOnDan(pixivId):
         res = requests.get(api_url,data=payload, headers=headers, stream=True)
         t+=1
     if len(res.content) >= 100 or t == 5:
-        return False
+        return True
     else:
         global file
         global find
         url = prefix+str(pixivId)
         file.write('<A HREF="' + url + '"> ' + url + '<br/>')
         find += 1
-
+        return False
 
 def IndividualWritePixiv(index, score):
     global api
@@ -66,6 +66,7 @@ def IndividualWritePixiv(index, score):
 
 def IndividualFromDic(i, score):
     global pixiv_dic
+    global result
     small_dic = pixiv_dic[i]
     if (small_dic['s'] > score[0] and small_dic['s'] < score[1])\
         and (str(i) in small_dic['u'] or 'r18' in small_dic['u']):
@@ -77,7 +78,8 @@ def IndividualFromDic(i, score):
         if score[2]:
             for tag in score[2].split():
                 if tag in small_dic['t']:
-                    PixIsOnDan(i)
+                    if PixIsOnDan(i):
+                        result[tag] += 1
                     return
         else:
             PixIsOnDan(i)
@@ -86,8 +88,7 @@ def PixivNotDanbooru(mode = 0, data = None):
     global find
     global file
     global pixiv_dic
-    begin = datetime.now()
-    score = int(input('minimum score? '))
+    score = int(input('Minimum score? '))
     if mode == 0:
         last = int(input('Where to begin? '))
         limit = int(input('How many to check? '))
@@ -99,25 +100,25 @@ def PixivNotDanbooru(mode = 0, data = None):
             pixiv_username = f.readline().split()[1]
             pixiv_password = f.readline().split()[1]
         api = AppPixivAPI()
-        api.login(pixiv_username, pixiv_password)
-        last_login = begin
     elif mode == 1:
         score = [score, int(input('maximum score? ')), input('tags? ')]
+        global result
+        result = {key:0 for key in score[2].split()}
         file = open('NotDanbooru_Result.html', 'w')
         function = IndividualFromDic
         pixiv_dic = data
         index = list(data.keys())
         index.sort()
         limit = len(index)
-    nb, limit_active, k, p, find  = 25, 100, 0, 0.0, 0
+    nb, limit_active, k, p, find  = 10, int(input('Number of threads ? ')), 0, 0.0, 0
     try:
+        begin = datetime.now()
+        last_login = begin
         for i in range(int(limit/nb)):
-            if not mode and (datetime.now()-last_login).total_seconds() > 3500:
-                try:
-                    api.login(pixiv_username, pixiv_password)
-                    last_login = datetime.now()
-                except:
-                    print('Unable to login')
+            diff = (datetime.now()-last_login).total_seconds()
+            if not mode and diff > 3500 or i == 0:
+                api.login(pixiv_username, pixiv_password)
+                last_login = datetime.now()
             while threading.active_count() > limit_active:
                 time.sleep(0.5)
             for j in range(nb):
@@ -129,17 +130,17 @@ def PixivNotDanbooru(mode = 0, data = None):
                 p = int(k/limit*1000)/10
     except Exception as e:
         print(e)
+        print('Stop at', k)
     finally:
         if not mode:
             name = 'pixiv/'+str((last-limit)//1000000)+'.json'
             with open(name, 'w') as file:
                 json.dump(pixiv_dic, file, sort_keys=True, indent=4)
-
-        time.sleep(10)
+        if mode == 1:
+            for key, value in result.items():
+                print(key, ':', value)
         print('FOUND:', find)
-        print('MEAN TIME:', (datetime.now()-begin)/limit)
-        if find != 0:
-            print('Time by result:', (datetime.now()-begin)/find)
+        print('MEAN TIME:', (datetime.now()-begin)/k)
         file.close()
 
 
