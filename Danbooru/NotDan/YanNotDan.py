@@ -158,18 +158,18 @@ def YandereNotDanbooru():
         urls_yan = AlreadyFound(urls_yan)
     print("The number of url is :", len(urls_yan))
     test = URLSample(urls_yan[0])
-    n, nb, k = len(urls_yan), 18, 0
+    n, nb, k = len(urls_yan), 24, 0
     global file
     global find
     file = open('NotDanbooru_Result.html', 'w')
     try:
         begin = datetime.now()
-        for i in range(int(n/nb)):
+        for i in range(int(n/nb)+1):
             ts = []
             renew_tor(test)
             for j in range(nb):
-                if k < len(urls_yan):
-                    k = i*nb+j
+                if k < len(urls_yan)-1:
+                    k += 1
                     ts.append(Thread(target=IndividualYandereNotDan,
                                      args=(urls_yan[k],)))
                     ts[-1].start()
