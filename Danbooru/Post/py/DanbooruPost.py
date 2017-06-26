@@ -5,7 +5,6 @@ Created : 26/08/2016
 Python version : 3.5
 @author: Rignak
 """
-
 from os.path import join
 from os import remove, rename
 
@@ -23,8 +22,10 @@ error_f = open(join(root, "error.txt"), "r")
 for line in error_f:
     if len(line) > 3:
         l = line.split('\t')
-        print(l)
-        dic_error[l[0]] = l[1].split('\n')[0]
+        try:
+            dic_error[l[0]] = l[1].split('\n')[0]
+        except:
+            print(l)
 
 dic_banned = {}
 banned_f = open(join(root, "banned_artist.txt"), "r")
@@ -53,8 +54,6 @@ def CorrectorSample(url_sample):
 
 def IsBanned(tags):
     l = tags.split()
-    if len(l)<3:
-        print(l)
     for tag in l:
         if tag in dic_banned:
             return True
