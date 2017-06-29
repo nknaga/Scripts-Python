@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (MiKTeX 2.9.6210 64-bit) (preloaded format=pdflatex 2017.3.9)  19 JUN 2017 22:58
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (MiKTeX 2.9.6210 64-bit) (preloaded format=pdflatex 2017.3.9)  29 JUN 2017 16:01
 entering extended mode
 **./Descriptif.tex
 (Descriptif.tex
@@ -643,87 +643,89 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <8> on input line 6.
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <6> on input line 6.
-)
-\tf@toc=\write4
-\openout4 = `Descriptif.toc'.
-
 
 [2
 
-]
+])
+\tf@toc=\write4
+\openout4 = `Descriptif.toc'.
+
+ [3]
 Package color Info: Redefining color mygreen on input line 38.
 Package color Info: Redefining color mygray on input line 39.
 Package color Info: Redefining color black on input line 42.
 LaTeX Font Info:    Try loading font information for T1+cmtt on input line 76.
  ("C:\Program Files\MiKTeX 2.9\tex\latex\base\t1cmtt.fd"
 File: t1cmtt.fd 2014/09/29 v2.5h Standard LaTeX font definitions
-) [3
+) [4
 
-] [4] [5]
-[6]
+] [5]
+[6] [7]
 Overfull \hbox (32.58588pt too wide) in paragraph at lines 178--179
 []\T1/cmr/m/n/12 d : la date de créa-tion, une chaîne de ca-rac-tère de la form
 e "2000-01-30T20 :00 :00+09 :00" 
  []
 
-[7]
-Overfull \hbox (38.84102pt too wide) in paragraph at lines 231--232
+[8]
+Overfull \hbox (38.84102pt too wide) in paragraph at lines 229--230
 \T1/cmr/m/n/12 gramme ef-fec-tue donc la connexion à Pixiv en uti-li-sant les c
 odes in-di-qués dans le Pixiv_Codes.txt.
  []
 
-[8] [9] [10] [11] [12]
-Overfull \hbox (0.89784pt too wide) in paragraph at lines 338--339
+[9] [10] [11] [12] [13]
+Overfull \hbox (0.89784pt too wide) in paragraph at lines 336--337
 []\T1/cmr/m/n/12 Prend en ar-gu-ment une ma-trice et re-tourne l'in-ten-sité mo
 yenne (c'est à dire la moyenne
  []
 
-[13] [14] [15] [16] [17]
-Overfull \hbox (5.98799pt too wide) in paragraph at lines 484--485
+[14] [15] [16] [17] [18]
+Overfull \hbox (5.98799pt too wide) in paragraph at lines 482--483
 []\T1/cmr/m/n/12 Deux fi-chiers .txt doivent exis-ter un le dos-sier  ../files
   : er-ror.txt et ban-ned_artist.txt.
  []
 
-[18] [19]
+[19] [20]
 
 Package hyperref Warning: Difference (2) between bookmark levels is greater 
-(hyperref)                than one, level fixed on input line 552.
-
-[20]
-
-Package hyperref Warning: Difference (2) between bookmark levels is greater 
-(hyperref)                than one, level fixed on input line 576.
+(hyperref)                than one, level fixed on input line 551.
 
 [21]
 
 Package hyperref Warning: Difference (2) between bookmark levels is greater 
-(hyperref)                than one, level fixed on input line 619.
+(hyperref)                than one, level fixed on input line 575.
 
 [22] [23]
 
 Package hyperref Warning: Difference (2) between bookmark levels is greater 
-(hyperref)                than one, level fixed on input line 653.
+(hyperref)                than one, level fixed on input line 618.
 
 [24]
 
 Package hyperref Warning: Difference (2) between bookmark levels is greater 
-(hyperref)                than one, level fixed on input line 686.
+(hyperref)                than one, level fixed on input line 657.
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 696.
-[25]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 696.
+[25] [26]
+Overfull \hbox (22.28139pt too wide) in paragraph at lines 705--706
+[]\T1/cmr/m/n/12 les dates de dé-but et de fin de dif-fu-sion, au for-mat [DD/M
+M/AAAA, DD/MM/AAAA] ; 
+ []
+
+[27] [28] [29]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 772.
+ [30]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 772.
  (Descriptif.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 696.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 696.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 772.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 772.
 Package rerunfilecheck Info: File `Descriptif.out' has not changed.
-(rerunfilecheck)             Checksum: 8C6914F4D86EC650843CC74DB365C158;1578.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 696.
+(rerunfilecheck)             Checksum: 06F3018AA6567511865A848949957BC4;2073.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 772.
  ) 
 Here is how much of TeX's memory you used:
- 8722 strings out of 493333
- 121969 string characters out of 3139192
- 210050 words of memory out of 3000000
- 11990 multiletter control sequences out of 15000+200000
+ 8758 strings out of 493333
+ 122493 string characters out of 3139192
+ 210059 words of memory out of 3000000
+ 11998 multiletter control sequences out of 15000+200000
  14566 words of font info for 37 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
  28i,6n,32p,946b,1035s stack positions out of 5000i,500n,10000p,200000b,50000s
@@ -738,9 +740,9 @@ Rignak\AppData\Local\MiKTeX\2.9\fonts\pk\ljfour\jknappen\ec\dpi600\ecrm1200.pk>
  <C:\Users\Rignak\AppData\Local\MiKTeX\2.9\fonts\pk\ljfour\jknappen\ec\dpi600\e
 crm1440.pk> <C:\Users\Rignak\AppData\Local\MiKTeX\2.9\fonts\pk\ljfour\jknappen\
 ec\dpi600\ecrm2074.pk>
-Output written on Descriptif.pdf (25 pages, 207488 bytes).
+Output written on Descriptif.pdf (30 pages, 229124 bytes).
 PDF statistics:
- 778 PDF objects out of 1000 (max. 8388607)
- 190 named destinations out of 1000 (max. 500000)
- 225 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 877 PDF objects out of 1000 (max. 8388607)
+ 218 named destinations out of 1000 (max. 500000)
+ 289 words of extra memory for PDF output out of 10000 (max. 10000000)
 

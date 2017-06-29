@@ -28,7 +28,7 @@
 
 \maketitle
 \clearpage 
-\addtocontents{toc}{\protect\enlargethispage{+60mm}}\setcounter{tocdepth}{2}
+\addtocontents{toc}{}\setcounter{tocdepth}{2}
 \tableofcontents
 \clearpage 
 
@@ -178,10 +178,8 @@ Les informations stockées dans les fichiers .json sont les suivantes :
 \item d : la date de création, une chaîne de caractère de la forme "2000-01-30T20:00:00+09:00"
 \item s : le nombre de fois où cette image a été placée en favori.
 \item r : le ratio taille/largeur de l'image.
-\end{itemize}
+\end{itemize} 
 \subsubsection{Évolutions futures}
-Une mesure du nombre de threads nécessaire est envisagée. La vitesse de traitement par image (25ms sur une liaison 3G et 7ms sur une liaison filaire) est satisfaisante et ne semble pas pouvoir être augmentée.
-
 Le nom de l'artiste pourrait être recherché afin de le coupler avec la liste des artistes retirés de Danbooru. Ce nombre est relativement faible et est considéré comme un moindre mal face à une nouvelle extraction des données.
 
 Une ré-extraction des données correspondant à la plage 43M à 46M sera exécutée afin de supprimer certaines vérifications sur la présence du ratio h/w dans les données.
@@ -532,6 +530,7 @@ Les tags sont écrits à la suite, séparés par une ligne blanche ou contenant 
 Ecrit les fichiers .html. Le format est le suivant : \og <A HREF="' + \textit{url} + '"> ' \textit{tags} + '<br></br> \fg{} suivi d'un changement de line.
 \paragraph{def CountLine}
 Affiche le nombre de ligne dans chacun des fichiers .txt contenant les liens ainsi que le nombre de ligne total.
+\section{stats\_dan}
 \subsection{stats\_dan}
 \subsubsection{Hypothèses}
 Nécéssite la présence du fichier Danbooru\_Codes.txt
@@ -624,14 +623,6 @@ Le fichier \og To Do.txt \fg{} doit être présent dans le dossier \og E:/Telech
 
 Les fichiers référencés dans le To Do.txt doivent être présents dans le sous-dossier \og mp4 \fg{} du dossier local.
 
-Les fichiers à convertir sont écrits dans le To Do.txt sous la forme de cinq informations séparées par des tabulations :
-\begin{itemize}
-\item le nom de la vidéo résultat ;
-\item le début de la vidéo à couper ;
-\item la fin de la vidéo à couper ;
-\item le nom de la vidéo d'origine.
-\end{itemize}
-
 Les fichiers résultats sont écrits dans le sous-dossier \og ok \fg, qui doit donc exister.
 
 Le traitement du fichier se fait à partir de la lecture de la ligne \og video \fg, qui doit donc être présent dans le fichier.
@@ -644,6 +635,19 @@ Ce programme n'a été testé que de manière minimale et ne fonctionnera probab
 
 La question des sous-titres n'est pas encore bien comprise et est appelée à évolué. La gestion de vidéo contenant plusieurs sous-titre est ainsi inconnue. 
 \subsubsection{Implémentation}
+\paragraph{def FromYoutube}
+Télécharge une vidéo de youtube, au formet mp4 avec la meilleure qualité possible. La ligne du fichier \og To DO.txt \fg{}indique (dans l'ordre) le nom du fichier destination (sans l'extension), l'url de la vidéo à télécharger de youtube et l'extension (théoriquement mp4 ou mp3). Si l'extension est mp3, ToMP3 est lancé. 
+\paragraph{def CutMP4}
+Détermine les différents arguments de la ligne du fichier To \og Do.txt\fg. Cette ligne est de la forme suivante : \og new\_name begin end episode source \fg{}avec
+\begin{itemize}
+\item new\_name, le nom du nouveau fichier (auquel il faut rajouter l'extension .mp4 ;
+\item begin \& end, les dates de début et de fin de la vidéo, selon le format HHMMSS ou MMSS selon la longueur de la vidéo ;
+\item episode, le numéro de l'épisode de la vidéo au sein de la série ; il n'est pas utilisé ;
+\item source, le nom de la vidéo au sein du dossier \og ./mp4 \fg{}. 
+\end{itemize} 
+Ces arguments permettent l'élaboration d'une commande utilisant ffmpeg.
+\paragraph{def ToMP3}
+Utilise ffmpeg pour transformer le .mp4 en .mp3 et le déplace dans le dossier \og ok \fg. 
 \paragraph{def ConvertTime}
 Les date de début et de fin de clip, au format MMSS si la durée est inférieure à une heure, HHMMSS sinon, sont converties en insérant le signe \og : \fg{} pour séparer les différentes unités. Cela permet de créer une date que ffmpeg comprend. 
 \paragraph{Traitement}
@@ -682,15 +686,87 @@ L'image est placée dans le sous-dossier image.
 Recrée une image en inversant le watermark si nécessaire. Seule une petite zone, située dans la partie inférieure de l'image, est watermarkée.
 \paragraph{def onDengeki}
 Effectue le téléchargement des images et l'application de RemoveWatermark sur chacune.
-\part{Youtube}
-\subsection{YoutubeDL}
-\subsubsection{Hypothèses}
-La bibliothèque pytube doit être installée.
-\subsubsection{Comportement}
-Lit le fichier Youtube\_Links.txt et télécharge les vidéos présentes.
-\subsubsection{Évolutions futures}
-Aucune.
-\subsubsection{Implémentation}
-Chaque ligne du Youtube\_Links contient un lien et nom de fichier, séparés par une tabulation. 
+\part{Myanimelist}
+Regroupe deux programmes permettant de dessiner des graphes à partir d'informations extraites sur le site myanimelist.
 
+De par sa récence, les évolutions futures ne sont pas encore déterminées.
+\section{MakeJSON}
+\subsection{Hypothèses}
+Aucune.
+\subsection{Comportement}
+Ce programme extrait les informations pour chaque anime et les écrit dans un .json.
+Ces informations sont :
+\begin{itemize}
+\item le nom de l'anime ;
+\item le nombre d'épisodes composant l'anime (un entier) ;
+\item le type (TV, OVA, ONA, Movie, Music) ;
+\item la saison durant laquelle la diffusion a commencé (données incomplètes) ;
+\item les genres auxquels l'anime appartient (parmi Action, Adventure, Cars, Comedy, Dementia, Demons, Drama, Ecchi, Fantasy, Game, Harem, Hentai, Historical, Horror, Josei, Kids, Magic, Martial Arts, Mecha, Military, Music, Mystery, Parody, Police, Psychological, Romance, Samurai, School, Sci-Fi, Seinen, Shoujo, Shoujo Ai, Shounen, Shounen Ai, Slice of Life, Space, Sports, Super Power, Supernatural, Thriller et Vampire) ; 
+\item les dates de début et de fin de diffusion, au format [DD/MM/AAAA, DD/MM/AAAA] ;
+\item les données concernant l'horaire et la chaîne de diffusion ;
+\item la liste des producteurs ;
+\item la liste des licenceurs ;
+\item la liste des studios ;
+\item la source (parmis Unknown, Manga, Game, Light novel, Visual novel, 4-koma manga, Novel, Original et Other) ;
+\item la durée des épisodes.
+\end{itemize}
+Ces informations sont contenues dans un dictionnaire, chacun de ces dictionnaire indexé par l'identifiant de l'anime.
+\subsection{Implémentation}
+\subsubsection{def GetTuple}
+Prend en entré l'objet issu de BeautifulSoup et une clef. Returne les valeurs contenues dans la balise \og span \fg{} d'une balise \og div \fg. Pour trouver cette balise \og span \fg, nous utilisons le fait que sa chaîne de caractère est en égalité avec la clef passée en entrée.
+
+Cette balise \og span \fg peut contenir des balises \og a \fg (comprenant dans ce cas des liens hypertextes). L'information a extraire est alors dans la chaîne de caractère du \og a \fg. Sinon, elle est dans la chaîne de caractère du \og div \fg{} contenant le \og span \fg.     
+
+Ces informations sont renvoyées sous forme d'une liste si elles sont mutliples, d'une chaîne de caractère sinon.
+\subsubsection{def Month2Int}
+Prend en entré une chaîne de caractère et renvoie une chaîne de caractère. Si la chaîne est le diminutif d'un mois, renvoie le nombre du mois.
+\subsubsection{def FormatD}
+Supprime les virgules contenues dans la chaîne et rajoute un zéro si la chaîne ne contient qu'un caractère.
+\subsubsection{def Date}
+Transforme la date contenue dans les données de myanimelist à un format unique. Le format de myanimelist diffère en effet suivant les informations connues ou le nombre d'épisodes
+\subsubsection{def GetTitle}
+Extrait le titre de l'anime.
+\subsubsection{def IndividualNb}
+Extrait les informations correspondants aux clefs passées en entrée et à l'anime correspondant à l'identifiant indiqué. Créé un dictionnaire et la rajoute au dictionnaire global.
+\subsubsection{def CreateDic}
+Lance IndividualNb sur les identifiants de 1 à 36000 avec une fenêtre de 20 threads.
+
+\section{MakeGraph}
+\subsection{Hypothèses}
+Aucune.
+\subsection{Comportement}
+Génère des graphes basées sur les demandes de l'utilisateur. 
+
+L'utilisateur peut rentrer des les conditions sous le format key:value (par exemple \og Genres:Mecha \fg). Des conditions multiples peuvent être effectuées en séparant les conditions individuelles par le caractère \og \& \fg{} (par exemple \og Genres:Mecha\&Source:Light novel \fg).  
+
+Il peut également choisir le mode de présentation des données : en valeurs absolues ou en pourcentages.
+
+Enfin, il peut choisir d'étudier les anime regardés par une certain usagé de Myanimelist.
+\subsection{Implémentation}
+\subsubsection{def UserListCompleted}
+Extrait les identifiants des anime contenus dans la liste \og Watched \fg{} de l'utilisateur référencé par son nom sur Myanimelist.
+\subsubsection{def LoadDic}
+Lis le fichier .json de la base de donnée de Myanimelist.
+\subsubsection{def ReduceDic}
+Réduit le dictionnaire d'anime aux seuls identifiants renvoyés par UserListCompleted.
+\subsubsection{def CheckCondition}
+Prend en entrée un tuple et une entrée du dictionnaire (correspondant donc à un anime). Ce tuple est composé d'une clef et d'une valeur. Si ce couple correspond à ce qui est contenu dans l'entrée, renvoie True : l'anime satisfait la conditions. Sinon, renvoie False.
+\subsubsection{def ReduceOnConditions}
+Prend en entrée le dictionnaire global et un ensemble de conditions. Réduit le dictionnaire aux seules entrées satisfaisant toutes les conditions.
+\subsubsection{def CountYear}
+Compte le nombre d'entrées du dictionnaire passé en entrée et les différencies selon l'année de début de diffusion.
+\subsubsection{def GetData}
+Demande à l'utilisateur les différentes variables de création du graphe et génère les données et les légendes. Les opérations de générations de données sont :
+\begin{itemize}
+\item lecture du dictionnaire correspondant à la base de donnée et génération du dictionnaire global ;
+\item réduction du dictionnaire sur les conditions indiquées par l'utilisateur ;
+\item réduction du dictionnaire pour un utilisateur particulier ;
+\item comptage des anime satisfaisant aux conditions ;
+\item génération des ratios si l'utilisateur demande une représentation en pourcentages ;
+\item génération du graphe. 
+\end{itemize}
+\subsubsection{def GetProportion}
+Prend en entrée deux listes d'entiers. Retourne une liste des rapports entre les entiers contenus dans ces listes.
+\subsubsection{def Plt}
+Génère le graphe à partir des informations extraites par GetData.
 \end{document}

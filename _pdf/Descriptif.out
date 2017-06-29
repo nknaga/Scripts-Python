@@ -15,14 +15,22 @@
 \BOOKMARK [2][-]{subsection.4.5}{WhiteFunctions}{section.4}% 15
 \BOOKMARK [1][-]{section.5}{Post}{part.1}% 16
 \BOOKMARK [2][-]{subsection.5.1}{DanbooruPost}{section.5}% 17
-\BOOKMARK [2][-]{subsection.5.2}{stats\137dan}{section.5}% 18
-\BOOKMARK [0][-]{part.2}{II DownloadWebsite}{}% 19
-\BOOKMARK [1][-]{subsection.5.3}{DownloadWebsiteIMG}{part.2}% 20
-\BOOKMARK [0][-]{part.3}{III JapaneseApp}{}% 21
-\BOOKMARK [1][-]{subsection.5.4}{Questions}{part.3}% 22
-\BOOKMARK [0][-]{part.4}{IV ToDoManager}{}% 23
-\BOOKMARK [1][-]{subsection.5.5}{ToDoManager}{part.4}% 24
-\BOOKMARK [0][-]{part.5}{V WatermarkDengeki}{}% 25
-\BOOKMARK [1][-]{subsection.5.6}{WatermarkDengeki}{part.5}% 26
-\BOOKMARK [0][-]{part.6}{VI Youtube}{}% 27
-\BOOKMARK [1][-]{subsection.5.7}{YoutubeDL}{part.6}% 28
+\BOOKMARK [1][-]{section.6}{stats\137dan}{part.1}% 18
+\BOOKMARK [2][-]{subsection.6.1}{stats\137dan}{section.6}% 19
+\BOOKMARK [0][-]{part.2}{II DownloadWebsite}{}% 20
+\BOOKMARK [1][-]{subsection.6.2}{DownloadWebsiteIMG}{part.2}% 21
+\BOOKMARK [0][-]{part.3}{III JapaneseApp}{}% 22
+\BOOKMARK [1][-]{subsection.6.3}{Questions}{part.3}% 23
+\BOOKMARK [0][-]{part.4}{IV ToDoManager}{}% 24
+\BOOKMARK [1][-]{subsection.6.4}{ToDoManager}{part.4}% 25
+\BOOKMARK [0][-]{part.5}{V WatermarkDengeki}{}% 26
+\BOOKMARK [1][-]{subsection.6.5}{WatermarkDengeki}{part.5}% 27
+\BOOKMARK [0][-]{part.6}{VI Myanimelist}{}% 28
+\BOOKMARK [1][-]{section.7}{MakeJSON}{part.6}% 29
+\BOOKMARK [2][-]{subsection.7.1}{Hypoth\350ses}{section.7}% 30
+\BOOKMARK [2][-]{subsection.7.2}{Comportement}{section.7}% 31
+\BOOKMARK [2][-]{subsection.7.3}{Impl\351mentation}{section.7}% 32
+\BOOKMARK [1][-]{section.8}{MakeGraph}{part.6}% 33
+\BOOKMARK [2][-]{subsection.8.1}{Hypoth\350ses}{section.8}% 34
+\BOOKMARK [2][-]{subsection.8.2}{Comportement}{section.8}% 35
+\BOOKMARK [2][-]{subsection.8.3}{Impl\351mentation}{section.8}% 36

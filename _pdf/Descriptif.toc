@@ -1,190 +1,213 @@
 \select@language {french}
-\enlargethispage {+60mm}
-\contentsline {section}{\numberline {1}Introduction}{3}{section.1}
-\contentsline {part}{I\hspace {1em}Danbooru}{3}{part.1}
-\contentsline {section}{\numberline {2}AddTags}{3}{section.2}
-\contentsline {subsection}{\numberline {2.1}AddTags}{3}{subsection.2.1}
-\contentsline {subsubsection}{\numberline {2.1.1}Hyphoth\IeC {\`e}ses}{3}{subsubsection.2.1.1}
-\contentsline {subsubsection}{\numberline {2.1.2}Comportement}{4}{subsubsection.2.1.2}
-\contentsline {subsubsection}{\numberline {2.1.3}\IeC {\'E}volutions futures}{4}{subsubsection.2.1.3}
-\contentsline {subsubsection}{\numberline {2.1.4}Impl\IeC {\'e}mentation}{4}{subsubsection.2.1.4}
-\contentsline {paragraph}{\numberline {2.1.4.1}Pr\IeC {\'e}-traitement}{4}{paragraph.2.1.4.1}
-\contentsline {paragraph}{\numberline {2.1.4.2}class Sample}{4}{paragraph.2.1.4.2}
-\contentsline {subparagraph}{def \_\_init\_\_}{5}{paragraph.2.1.4.2}
-\contentsline {subparagraph}{def InputTags}{5}{paragraph.2.1.4.2}
-\contentsline {subparagraph}{def InputTags}{5}{paragraph.2.1.4.2}
-\contentsline {subparagraph}{def GetTag}{5}{paragraph.2.1.4.2}
-\contentsline {subparagraph}{def VerifyTags}{5}{paragraph.2.1.4.2}
-\contentsline {paragraph}{\numberline {2.1.4.3}def ListUrl}{5}{paragraph.2.1.4.3}
-\contentsline {paragraph}{\numberline {2.1.4.4}def ListImgs}{5}{paragraph.2.1.4.4}
-\contentsline {paragraph}{\numberline {2.1.4.5}def main}{5}{paragraph.2.1.4.5}
-\contentsline {subsection}{\numberline {2.2}DelFav}{5}{subsection.2.2}
-\contentsline {subsubsection}{\numberline {2.2.1}Hyphoth\IeC {\`e}ses}{5}{subsubsection.2.2.1}
-\contentsline {subsubsection}{\numberline {2.2.2}Comportement}{6}{subsubsection.2.2.2}
-\contentsline {subsubsection}{\numberline {2.2.3}Traitement}{6}{subsubsection.2.2.3}
-\contentsline {subsubsection}{\numberline {2.2.4}\IeC {\'E}volutions futures}{6}{subsubsection.2.2.4}
-\contentsline {subsection}{\numberline {2.3}tags}{6}{subsection.2.3}
-\contentsline {subsubsection}{\numberline {2.3.1}Hypoth\IeC {\`e}ses}{6}{subsubsection.2.3.1}
-\contentsline {subsubsection}{\numberline {2.3.2}Comportement et traitement}{6}{subsubsection.2.3.2}
-\contentsline {subsubsection}{\numberline {2.3.3}\IeC {\'E}volutions futures}{6}{subsubsection.2.3.3}
-\contentsline {section}{\numberline {3}NotDan}{6}{section.3}
-\contentsline {subsection}{\numberline {3.1}PixivNotDan}{6}{subsection.3.1}
-\contentsline {subsubsection}{\numberline {3.1.1}Hypoth\IeC {\`e}ses}{6}{subsubsection.3.1.1}
-\contentsline {subsubsection}{\numberline {3.1.2}Comportement}{7}{subsubsection.3.1.2}
-\contentsline {subsubsection}{\numberline {3.1.3}\IeC {\'E}volutions futures}{7}{subsubsection.3.1.3}
-\contentsline {subsubsection}{\numberline {3.1.4}Impl\IeC {\'e}mentation}{7}{subsubsection.3.1.4}
-\contentsline {paragraph}{\numberline {3.1.4.1}Pr\IeC {\'e}-traitement}{7}{paragraph.3.1.4.1}
+
+\contentsline {section}{\numberline {1}Introduction}{4}{section.1}
+\contentsline {part}{I\hspace {1em}Danbooru}{4}{part.1}
+\contentsline {section}{\numberline {2}AddTags}{4}{section.2}
+\contentsline {subsection}{\numberline {2.1}AddTags}{4}{subsection.2.1}
+\contentsline {subsubsection}{\numberline {2.1.1}Hyphoth\IeC {\`e}ses}{4}{subsubsection.2.1.1}
+\contentsline {subsubsection}{\numberline {2.1.2}Comportement}{5}{subsubsection.2.1.2}
+\contentsline {subsubsection}{\numberline {2.1.3}\IeC {\'E}volutions futures}{5}{subsubsection.2.1.3}
+\contentsline {subsubsection}{\numberline {2.1.4}Impl\IeC {\'e}mentation}{5}{subsubsection.2.1.4}
+\contentsline {paragraph}{\numberline {2.1.4.1}Pr\IeC {\'e}-traitement}{5}{paragraph.2.1.4.1}
+\contentsline {paragraph}{\numberline {2.1.4.2}class Sample}{5}{paragraph.2.1.4.2}
+\contentsline {subparagraph}{def \_\_init\_\_}{6}{paragraph.2.1.4.2}
+\contentsline {subparagraph}{def InputTags}{6}{paragraph.2.1.4.2}
+\contentsline {subparagraph}{def InputTags}{6}{paragraph.2.1.4.2}
+\contentsline {subparagraph}{def GetTag}{6}{paragraph.2.1.4.2}
+\contentsline {subparagraph}{def VerifyTags}{6}{paragraph.2.1.4.2}
+\contentsline {paragraph}{\numberline {2.1.4.3}def ListUrl}{6}{paragraph.2.1.4.3}
+\contentsline {paragraph}{\numberline {2.1.4.4}def ListImgs}{6}{paragraph.2.1.4.4}
+\contentsline {paragraph}{\numberline {2.1.4.5}def main}{6}{paragraph.2.1.4.5}
+\contentsline {subsection}{\numberline {2.2}DelFav}{6}{subsection.2.2}
+\contentsline {subsubsection}{\numberline {2.2.1}Hyphoth\IeC {\`e}ses}{6}{subsubsection.2.2.1}
+\contentsline {subsubsection}{\numberline {2.2.2}Comportement}{7}{subsubsection.2.2.2}
+\contentsline {subsubsection}{\numberline {2.2.3}Traitement}{7}{subsubsection.2.2.3}
+\contentsline {subsubsection}{\numberline {2.2.4}\IeC {\'E}volutions futures}{7}{subsubsection.2.2.4}
+\contentsline {subsection}{\numberline {2.3}tags}{7}{subsection.2.3}
+\contentsline {subsubsection}{\numberline {2.3.1}Hypoth\IeC {\`e}ses}{7}{subsubsection.2.3.1}
+\contentsline {subsubsection}{\numberline {2.3.2}Comportement et traitement}{7}{subsubsection.2.3.2}
+\contentsline {subsubsection}{\numberline {2.3.3}\IeC {\'E}volutions futures}{7}{subsubsection.2.3.3}
+\contentsline {section}{\numberline {3}NotDan}{7}{section.3}
+\contentsline {subsection}{\numberline {3.1}PixivNotDan}{7}{subsection.3.1}
+\contentsline {subsubsection}{\numberline {3.1.1}Hypoth\IeC {\`e}ses}{7}{subsubsection.3.1.1}
+\contentsline {subsubsection}{\numberline {3.1.2}Comportement}{8}{subsubsection.3.1.2}
+\contentsline {subsubsection}{\numberline {3.1.3}\IeC {\'E}volutions futures}{8}{subsubsection.3.1.3}
+\contentsline {subsubsection}{\numberline {3.1.4}Impl\IeC {\'e}mentation}{8}{subsubsection.3.1.4}
+\contentsline {paragraph}{\numberline {3.1.4.1}Pr\IeC {\'e}-traitement}{8}{paragraph.3.1.4.1}
 \contentsline {paragraph}{\numberline {3.1.4.2}def PixIsOnDan}{8}{paragraph.3.1.4.2}
-\contentsline {paragraph}{\numberline {3.1.4.3}def IndividualWritePixiv}{8}{paragraph.3.1.4.3}
-\contentsline {paragraph}{\numberline {3.1.4.4}def IndividualFromDic}{8}{paragraph.3.1.4.4}
-\contentsline {paragraph}{\numberline {3.1.4.5}def PixivNotDanbooru}{8}{paragraph.3.1.4.5}
+\contentsline {paragraph}{\numberline {3.1.4.3}def IndividualWritePixiv}{9}{paragraph.3.1.4.3}
+\contentsline {paragraph}{\numberline {3.1.4.4}def IndividualFromDic}{9}{paragraph.3.1.4.4}
+\contentsline {paragraph}{\numberline {3.1.4.5}def PixivNotDanbooru}{9}{paragraph.3.1.4.5}
 \contentsline {subparagraph}{mode = 0}{9}{paragraph.3.1.4.5}
-\contentsline {subparagraph}{mode = 1}{9}{paragraph.3.1.4.5}
-\contentsline {paragraph}{\numberline {3.1.4.6}def ReadJSON}{9}{paragraph.3.1.4.6}
-\contentsline {paragraph}{\numberline {3.1.4.7}def SplitJSON}{9}{paragraph.3.1.4.7}
-\contentsline {paragraph}{\numberline {3.1.4.8}def getR18\_URL}{9}{paragraph.3.1.4.8}
-\contentsline {subsection}{\numberline {3.2}YandereNotDan}{9}{subsection.3.2}
-\contentsline {subsubsection}{\numberline {3.2.1}Hypoth\IeC {\`e}ses}{9}{subsubsection.3.2.1}
-\contentsline {subsubsection}{\numberline {3.2.2}Comportement}{9}{subsubsection.3.2.2}
-\contentsline {subsubsection}{\numberline {3.2.3}\IeC {\'E}volutions futures}{10}{subsubsection.3.2.3}
-\contentsline {subsubsection}{\numberline {3.2.4}Impl\IeC {\'e}mentation}{10}{subsubsection.3.2.4}
-\contentsline {paragraph}{\numberline {3.2.4.1}renew\_tor}{10}{paragraph.3.2.4.1}
-\contentsline {paragraph}{\numberline {3.2.4.2}IsOnDan}{10}{paragraph.3.2.4.2}
-\contentsline {paragraph}{\numberline {3.2.4.3}AlreadyFounds}{10}{paragraph.3.2.4.3}
-\contentsline {paragraph}{\numberline {3.2.4.4}CreateListAllURL}{10}{paragraph.3.2.4.4}
-\contentsline {paragraph}{\numberline {3.2.4.5}URLSample}{10}{paragraph.3.2.4.5}
+\contentsline {subparagraph}{mode = 1}{10}{paragraph.3.1.4.5}
+\contentsline {paragraph}{\numberline {3.1.4.6}def ReadJSON}{10}{paragraph.3.1.4.6}
+\contentsline {paragraph}{\numberline {3.1.4.7}def SplitJSON}{10}{paragraph.3.1.4.7}
+\contentsline {paragraph}{\numberline {3.1.4.8}def getR18\_URL}{10}{paragraph.3.1.4.8}
+\contentsline {subsection}{\numberline {3.2}YandereNotDan}{10}{subsection.3.2}
+\contentsline {subsubsection}{\numberline {3.2.1}Hypoth\IeC {\`e}ses}{10}{subsubsection.3.2.1}
+\contentsline {subsubsection}{\numberline {3.2.2}Comportement}{10}{subsubsection.3.2.2}
+\contentsline {subsubsection}{\numberline {3.2.3}\IeC {\'E}volutions futures}{11}{subsubsection.3.2.3}
+\contentsline {subsubsection}{\numberline {3.2.4}Impl\IeC {\'e}mentation}{11}{subsubsection.3.2.4}
+\contentsline {paragraph}{\numberline {3.2.4.1}renew\_tor}{11}{paragraph.3.2.4.1}
+\contentsline {paragraph}{\numberline {3.2.4.2}IsOnDan}{11}{paragraph.3.2.4.2}
+\contentsline {paragraph}{\numberline {3.2.4.3}AlreadyFounds}{11}{paragraph.3.2.4.3}
+\contentsline {paragraph}{\numberline {3.2.4.4}CreateListAllURL}{11}{paragraph.3.2.4.4}
+\contentsline {paragraph}{\numberline {3.2.4.5}URLSample}{11}{paragraph.3.2.4.5}
 \contentsline {paragraph}{\numberline {3.2.4.6}YandereNotDanbooru}{11}{paragraph.3.2.4.6}
-\contentsline {paragraph}{\numberline {3.2.4.7}IndividualYandereNotDanbooru}{11}{paragraph.3.2.4.7}
-\contentsline {section}{\numberline {4}PicturesUtil}{11}{section.4}
-\contentsline {subsection}{\numberline {4.1}DownloadDanbooru}{11}{subsection.4.1}
-\contentsline {subsubsection}{\numberline {4.1.1}Hypoth\IeC {\`e}ses}{11}{subsubsection.4.1.1}
-\contentsline {subsubsection}{\numberline {4.1.2}Comportement}{11}{subsubsection.4.1.2}
-\contentsline {subsubsection}{\numberline {4.1.3}\IeC {\'E}volutions futures}{11}{subsubsection.4.1.3}
-\contentsline {subsubsection}{\numberline {4.1.4}Impl\IeC {\'e}mentation}{11}{subsubsection.4.1.4}
-\contentsline {paragraph}{\numberline {4.1.4.1}ListPicturesWithTags}{11}{paragraph.4.1.4.1}
-\contentsline {paragraph}{\numberline {4.1.4.2}DownloadPictures}{11}{paragraph.4.1.4.2}
+\contentsline {paragraph}{\numberline {3.2.4.7}IndividualYandereNotDanbooru}{12}{paragraph.3.2.4.7}
+\contentsline {section}{\numberline {4}PicturesUtil}{12}{section.4}
+\contentsline {subsection}{\numberline {4.1}DownloadDanbooru}{12}{subsection.4.1}
+\contentsline {subsubsection}{\numberline {4.1.1}Hypoth\IeC {\`e}ses}{12}{subsubsection.4.1.1}
+\contentsline {subsubsection}{\numberline {4.1.2}Comportement}{12}{subsubsection.4.1.2}
+\contentsline {subsubsection}{\numberline {4.1.3}\IeC {\'E}volutions futures}{12}{subsubsection.4.1.3}
+\contentsline {subsubsection}{\numberline {4.1.4}Impl\IeC {\'e}mentation}{12}{subsubsection.4.1.4}
+\contentsline {paragraph}{\numberline {4.1.4.1}ListPicturesWithTags}{12}{paragraph.4.1.4.1}
+\contentsline {paragraph}{\numberline {4.1.4.2}DownloadPictures}{12}{paragraph.4.1.4.2}
 \contentsline {paragraph}{\numberline {4.1.4.3}Launch}{12}{paragraph.4.1.4.3}
-\contentsline {subsection}{\numberline {4.2}GateDivine}{12}{subsection.4.2}
-\contentsline {subsubsection}{\numberline {4.2.1}Hypoth\IeC {\`e}ses}{12}{subsubsection.4.2.1}
-\contentsline {subsubsection}{\numberline {4.2.2}Comportement}{12}{subsubsection.4.2.2}
-\contentsline {subsubsection}{\numberline {4.2.3}\IeC {\'E}volutions futures}{12}{subsubsection.4.2.3}
-\contentsline {subsubsection}{\numberline {4.2.4}Impl\IeC {\'e}mentation}{12}{subsubsection.4.2.4}
-\contentsline {paragraph}{\numberline {4.2.4.1}Pr\IeC {\'e}-traitement}{12}{paragraph.4.2.4.1}
-\contentsline {paragraph}{\numberline {4.2.4.2}Download}{12}{paragraph.4.2.4.2}
-\contentsline {subsection}{\numberline {4.3}NoiseFunctions}{12}{subsection.4.3}
-\contentsline {subsubsection}{\numberline {4.3.1}Hypoth\IeC {\`e}ses}{12}{subsubsection.4.3.1}
-\contentsline {subsubsection}{\numberline {4.3.2}Comportement}{12}{subsubsection.4.3.2}
+\contentsline {subsection}{\numberline {4.2}GateDivine}{13}{subsection.4.2}
+\contentsline {subsubsection}{\numberline {4.2.1}Hypoth\IeC {\`e}ses}{13}{subsubsection.4.2.1}
+\contentsline {subsubsection}{\numberline {4.2.2}Comportement}{13}{subsubsection.4.2.2}
+\contentsline {subsubsection}{\numberline {4.2.3}\IeC {\'E}volutions futures}{13}{subsubsection.4.2.3}
+\contentsline {subsubsection}{\numberline {4.2.4}Impl\IeC {\'e}mentation}{13}{subsubsection.4.2.4}
+\contentsline {paragraph}{\numberline {4.2.4.1}Pr\IeC {\'e}-traitement}{13}{paragraph.4.2.4.1}
+\contentsline {paragraph}{\numberline {4.2.4.2}Download}{13}{paragraph.4.2.4.2}
+\contentsline {subsection}{\numberline {4.3}NoiseFunctions}{13}{subsection.4.3}
+\contentsline {subsubsection}{\numberline {4.3.1}Hypoth\IeC {\`e}ses}{13}{subsubsection.4.3.1}
+\contentsline {subsubsection}{\numberline {4.3.2}Comportement}{13}{subsubsection.4.3.2}
 \contentsline {subsubsection}{\numberline {4.3.3}\IeC {\'E}volutions futures}{13}{subsubsection.4.3.3}
-\contentsline {subsubsection}{\numberline {4.3.4}Impl\IeC {\'e}mentation}{13}{subsubsection.4.3.4}
-\contentsline {paragraph}{\numberline {4.3.4.1}np\_from\_img}{13}{paragraph.4.3.4.1}
-\contentsline {paragraph}{\numberline {4.3.4.2}img\_from\_np}{13}{paragraph.4.3.4.2}
-\contentsline {paragraph}{\numberline {4.3.4.3}Grayscale}{13}{paragraph.4.3.4.3}
-\contentsline {paragraph}{\numberline {4.3.4.4}Intensity}{13}{paragraph.4.3.4.4}
-\contentsline {paragraph}{\numberline {4.3.4.5}Filter}{13}{paragraph.4.3.4.5}
-\contentsline {paragraph}{\numberline {4.3.4.6}MakeFilter}{13}{paragraph.4.3.4.6}
-\contentsline {paragraph}{\numberline {4.3.4.7}DetectJPG}{13}{paragraph.4.3.4.7}
-\contentsline {paragraph}{\numberline {4.3.4.8}FirstLocalMinimum}{14}{paragraph.4.3.4.8}
-\contentsline {paragraph}{\numberline {4.3.4.9}Test}{14}{paragraph.4.3.4.9}
-\contentsline {subsection}{\numberline {4.4}WaifuFunctions}{14}{subsection.4.4}
-\contentsline {subsubsection}{\numberline {4.4.1}Hypoth\IeC {\`e}ses}{14}{subsubsection.4.4.1}
-\contentsline {subsubsection}{\numberline {4.4.2}Comportement}{14}{subsubsection.4.4.2}
-\contentsline {subsubsection}{\numberline {4.4.3}\IeC {\'E}volutions futures}{14}{subsubsection.4.4.3}
-\contentsline {subsubsection}{\numberline {4.4.4}Impl\IeC {\'e}mentation}{14}{subsubsection.4.4.4}
-\contentsline {paragraph}{\numberline {4.4.4.1}LaunchWaifu}{14}{paragraph.4.4.4.1}
-\contentsline {paragraph}{\numberline {4.4.4.2}Remove\_Transparency}{14}{paragraph.4.4.4.2}
-\contentsline {paragraph}{\numberline {4.4.4.3}Convert\_to\_jpg}{14}{paragraph.4.4.4.3}
-\contentsline {paragraph}{\numberline {4.4.4.4}Unnoise}{15}{paragraph.4.4.4.4}
-\contentsline {subsection}{\numberline {4.5}WhiteFunctions}{15}{subsection.4.5}
-\contentsline {subsubsection}{\numberline {4.5.1}Hypoth\IeC {\`e}ses}{15}{subsubsection.4.5.1}
-\contentsline {subsubsection}{\numberline {4.5.2}Comportement}{15}{subsubsection.4.5.2}
-\contentsline {subsubsection}{\numberline {4.5.3}\IeC {\'E}volutions futures}{15}{subsubsection.4.5.3}
-\contentsline {subsubsection}{\numberline {4.5.4}Impl\IeC {\'e}mentation}{15}{subsubsection.4.5.4}
-\contentsline {paragraph}{\numberline {4.5.4.1}class bloc}{15}{paragraph.4.5.4.1}
-\contentsline {subparagraph}{def \_\_init\_\_}{15}{paragraph.4.5.4.1}
-\contentsline {subparagraph}{def CreateBloc}{15}{paragraph.4.5.4.1}
-\contentsline {paragraph}{\numberline {4.5.4.2}class IMG}{15}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def \_\_init\_\_}{15}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def GetBlocs}{16}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def TrimBloc}{16}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def Reduce}{16}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def Crop}{16}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def Remove\_Transparency}{16}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def Thumbnail}{16}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def Sym\_Y}{16}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def ImToArray}{16}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def ArrayToIm}{17}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def Show}{17}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def Save}{17}{paragraph.4.5.4.2}
-\contentsline {subparagraph}{def GetBorder}{17}{paragraph.4.5.4.2}
-\contentsline {paragraph}{\numberline {4.5.4.3}def Full}{17}{paragraph.4.5.4.3}
-\contentsline {paragraph}{\numberline {4.5.4.4}def onFolder}{17}{paragraph.4.5.4.4}
-\contentsline {paragraph}{\numberline {4.5.4.5}def Launch}{17}{paragraph.4.5.4.5}
-\contentsline {section}{\numberline {5}Post}{18}{section.5}
-\contentsline {subsection}{\numberline {5.1}DanbooruPost}{18}{subsection.5.1}
-\contentsline {subsubsection}{\numberline {5.1.1}Hypoth\IeC {\`e}ses}{18}{subsubsection.5.1.1}
-\contentsline {subsubsection}{\numberline {5.1.2}Comportement}{18}{subsubsection.5.1.2}
-\contentsline {subsubsection}{\numberline {5.1.3}\IeC {\'E}volutions futures}{18}{subsubsection.5.1.3}
-\contentsline {subsubsection}{\numberline {5.1.4}Impl\IeC {\'e}mentation}{18}{subsubsection.5.1.4}
-\contentsline {paragraph}{\numberline {5.1.4.1}Pr\IeC {\'e}-traitement}{18}{paragraph.5.1.4.1}
-\contentsline {paragraph}{\numberline {5.1.4.2}def CorrectorSample}{19}{paragraph.5.1.4.2}
-\contentsline {paragraph}{\numberline {5.1.4.3}def IsBanned}{19}{paragraph.5.1.4.3}
-\contentsline {paragraph}{\numberline {5.1.4.4}def ReplaceAll}{19}{paragraph.5.1.4.4}
-\contentsline {paragraph}{\numberline {5.1.4.5}def DelLine}{19}{paragraph.5.1.4.5}
-\contentsline {paragraph}{\numberline {5.1.4.6}def TrimHTML}{19}{paragraph.5.1.4.6}
-\contentsline {paragraph}{\numberline {5.1.4.7}def GenerateTXT}{19}{paragraph.5.1.4.7}
-\contentsline {paragraph}{\numberline {5.1.4.8}def GenerateHTML}{19}{paragraph.5.1.4.8}
-\contentsline {paragraph}{\numberline {5.1.4.9}def CountLine}{19}{paragraph.5.1.4.9}
-\contentsline {subsection}{\numberline {5.2}stats\_dan}{20}{subsection.5.2}
-\contentsline {subsubsection}{\numberline {5.2.1}Hypoth\IeC {\`e}ses}{20}{subsubsection.5.2.1}
-\contentsline {subsubsection}{\numberline {5.2.2}Comportement}{20}{subsubsection.5.2.2}
-\contentsline {subsubsection}{\numberline {5.2.3}\IeC {\'E}volutions futures}{20}{subsubsection.5.2.3}
-\contentsline {subsubsection}{\numberline {5.2.4}Impl\IeC {\'e}mentation}{20}{subsubsection.5.2.4}
-\contentsline {part}{II\hspace {1em}DownloadWebsite}{20}{part.2}
-\contentsline {subsection}{\numberline {5.3}DownloadWebsiteIMG}{20}{subsection.5.3}
-\contentsline {subsubsection}{\numberline {5.3.1}Hypoth\IeC {\`e}ses}{20}{subsubsection.5.3.1}
-\contentsline {subsubsection}{\numberline {5.3.2}Comportement}{20}{subsubsection.5.3.2}
-\contentsline {subsubsection}{\numberline {5.3.3}\IeC {\'E}volutions futures}{20}{subsubsection.5.3.3}
-\contentsline {subsubsection}{\numberline {5.3.4}Impl\IeC {\'e}mentation}{20}{subsubsection.5.3.4}
-\contentsline {paragraph}{\numberline {5.3.4.1}def EndTime}{20}{paragraph.5.3.4.1}
-\contentsline {paragraph}{\numberline {5.3.4.2}def GetDataLink}{21}{paragraph.5.3.4.2}
-\contentsline {paragraph}{\numberline {5.3.4.3}def GetDataWebsite}{21}{paragraph.5.3.4.3}
-\contentsline {paragraph}{\numberline {5.3.4.4}def IndividualGetData}{21}{paragraph.5.3.4.4}
-\contentsline {paragraph}{\numberline {5.3.4.5}def Download}{21}{paragraph.5.3.4.5}
-\contentsline {part}{III\hspace {1em}JapaneseApp}{21}{part.3}
-\contentsline {subsection}{\numberline {5.4}Questions}{21}{subsection.5.4}
-\contentsline {subsubsection}{\numberline {5.4.1}Hypoth\IeC {\`e}ses}{21}{subsubsection.5.4.1}
-\contentsline {subsubsection}{\numberline {5.4.2}Comportement}{21}{subsubsection.5.4.2}
-\contentsline {subsubsection}{\numberline {5.4.3}\IeC {\'E}volutions futures}{22}{subsubsection.5.4.3}
-\contentsline {subsubsection}{\numberline {5.4.4}Impl\IeC {\'e}mentation}{22}{subsubsection.5.4.4}
-\contentsline {paragraph}{\numberline {5.4.4.1}Pr\IeC {\'e}-traitement}{22}{paragraph.5.4.4.1}
-\contentsline {paragraph}{\numberline {5.4.4.2}class Question}{22}{paragraph.5.4.4.2}
-\contentsline {paragraph}{\numberline {5.4.4.3}class Question\_Canvas}{22}{paragraph.5.4.4.3}
-\contentsline {subparagraph}{def \_\_init\_\_}{22}{paragraph.5.4.4.3}
-\contentsline {subparagraph}{def Init}{22}{paragraph.5.4.4.3}
-\contentsline {subparagraph}{def on\_button\_check}{22}{paragraph.5.4.4.3}
-\contentsline {subparagraph}{def on\_button\_pass}{22}{paragraph.5.4.4.3}
-\contentsline {subparagraph}{def on\_button\_break}{23}{paragraph.5.4.4.3}
-\contentsline {part}{IV\hspace {1em}ToDoManager}{23}{part.4}
-\contentsline {subsection}{\numberline {5.5}ToDoManager}{23}{subsection.5.5}
-\contentsline {subsubsection}{\numberline {5.5.1}Hypoth\IeC {\`e}ses}{23}{subsubsection.5.5.1}
-\contentsline {subsubsection}{\numberline {5.5.2}Comportement}{23}{subsubsection.5.5.2}
-\contentsline {subsubsection}{\numberline {5.5.3}\IeC {\'E}volutions futures}{23}{subsubsection.5.5.3}
-\contentsline {subsubsection}{\numberline {5.5.4}Impl\IeC {\'e}mentation}{23}{subsubsection.5.5.4}
-\contentsline {paragraph}{\numberline {5.5.4.1}def ConvertTime}{23}{paragraph.5.5.4.1}
-\contentsline {paragraph}{\numberline {5.5.4.2}Traitement}{24}{paragraph.5.5.4.2}
-\contentsline {part}{V\hspace {1em}WatermarkDengeki}{24}{part.5}
-\contentsline {subsection}{\numberline {5.6}WatermarkDengeki}{24}{subsection.5.6}
-\contentsline {subsubsection}{\numberline {5.6.1}Hypoth\IeC {\`e}ses}{24}{subsubsection.5.6.1}
-\contentsline {subsubsection}{\numberline {5.6.2}Comportement}{24}{subsubsection.5.6.2}
-\contentsline {subsubsection}{\numberline {5.6.3}\IeC {\'E}volutions futures}{24}{subsubsection.5.6.3}
-\contentsline {subsubsection}{\numberline {5.6.4}Impl\IeC {\'e}mentation}{24}{subsubsection.5.6.4}
-\contentsline {paragraph}{\numberline {5.6.4.1}def InverseFunction}{24}{paragraph.5.6.4.1}
-\contentsline {paragraph}{\numberline {5.6.4.2}def Download}{25}{paragraph.5.6.4.2}
-\contentsline {paragraph}{\numberline {5.6.4.3}def RemoveWatermark}{25}{paragraph.5.6.4.3}
-\contentsline {paragraph}{\numberline {5.6.4.4}def onDengeki}{25}{paragraph.5.6.4.4}
-\contentsline {part}{VI\hspace {1em}Youtube}{25}{part.6}
-\contentsline {subsection}{\numberline {5.7}YoutubeDL}{25}{subsection.5.7}
-\contentsline {subsubsection}{\numberline {5.7.1}Hypoth\IeC {\`e}ses}{25}{subsubsection.5.7.1}
-\contentsline {subsubsection}{\numberline {5.7.2}Comportement}{25}{subsubsection.5.7.2}
-\contentsline {subsubsection}{\numberline {5.7.3}\IeC {\'E}volutions futures}{25}{subsubsection.5.7.3}
-\contentsline {subsubsection}{\numberline {5.7.4}Impl\IeC {\'e}mentation}{25}{subsubsection.5.7.4}
+\contentsline {subsubsection}{\numberline {4.3.4}Impl\IeC {\'e}mentation}{14}{subsubsection.4.3.4}
+\contentsline {paragraph}{\numberline {4.3.4.1}np\_from\_img}{14}{paragraph.4.3.4.1}
+\contentsline {paragraph}{\numberline {4.3.4.2}img\_from\_np}{14}{paragraph.4.3.4.2}
+\contentsline {paragraph}{\numberline {4.3.4.3}Grayscale}{14}{paragraph.4.3.4.3}
+\contentsline {paragraph}{\numberline {4.3.4.4}Intensity}{14}{paragraph.4.3.4.4}
+\contentsline {paragraph}{\numberline {4.3.4.5}Filter}{14}{paragraph.4.3.4.5}
+\contentsline {paragraph}{\numberline {4.3.4.6}MakeFilter}{14}{paragraph.4.3.4.6}
+\contentsline {paragraph}{\numberline {4.3.4.7}DetectJPG}{14}{paragraph.4.3.4.7}
+\contentsline {paragraph}{\numberline {4.3.4.8}FirstLocalMinimum}{15}{paragraph.4.3.4.8}
+\contentsline {paragraph}{\numberline {4.3.4.9}Test}{15}{paragraph.4.3.4.9}
+\contentsline {subsection}{\numberline {4.4}WaifuFunctions}{15}{subsection.4.4}
+\contentsline {subsubsection}{\numberline {4.4.1}Hypoth\IeC {\`e}ses}{15}{subsubsection.4.4.1}
+\contentsline {subsubsection}{\numberline {4.4.2}Comportement}{15}{subsubsection.4.4.2}
+\contentsline {subsubsection}{\numberline {4.4.3}\IeC {\'E}volutions futures}{15}{subsubsection.4.4.3}
+\contentsline {subsubsection}{\numberline {4.4.4}Impl\IeC {\'e}mentation}{15}{subsubsection.4.4.4}
+\contentsline {paragraph}{\numberline {4.4.4.1}LaunchWaifu}{15}{paragraph.4.4.4.1}
+\contentsline {paragraph}{\numberline {4.4.4.2}Remove\_Transparency}{15}{paragraph.4.4.4.2}
+\contentsline {paragraph}{\numberline {4.4.4.3}Convert\_to\_jpg}{15}{paragraph.4.4.4.3}
+\contentsline {paragraph}{\numberline {4.4.4.4}Unnoise}{16}{paragraph.4.4.4.4}
+\contentsline {subsection}{\numberline {4.5}WhiteFunctions}{16}{subsection.4.5}
+\contentsline {subsubsection}{\numberline {4.5.1}Hypoth\IeC {\`e}ses}{16}{subsubsection.4.5.1}
+\contentsline {subsubsection}{\numberline {4.5.2}Comportement}{16}{subsubsection.4.5.2}
+\contentsline {subsubsection}{\numberline {4.5.3}\IeC {\'E}volutions futures}{16}{subsubsection.4.5.3}
+\contentsline {subsubsection}{\numberline {4.5.4}Impl\IeC {\'e}mentation}{16}{subsubsection.4.5.4}
+\contentsline {paragraph}{\numberline {4.5.4.1}class bloc}{16}{paragraph.4.5.4.1}
+\contentsline {subparagraph}{def \_\_init\_\_}{16}{paragraph.4.5.4.1}
+\contentsline {subparagraph}{def CreateBloc}{16}{paragraph.4.5.4.1}
+\contentsline {paragraph}{\numberline {4.5.4.2}class IMG}{16}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def \_\_init\_\_}{16}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def GetBlocs}{17}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def TrimBloc}{17}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def Reduce}{17}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def Crop}{17}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def Remove\_Transparency}{17}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def Thumbnail}{17}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def Sym\_Y}{17}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def ImToArray}{17}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def ArrayToIm}{18}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def Show}{18}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def Save}{18}{paragraph.4.5.4.2}
+\contentsline {subparagraph}{def GetBorder}{18}{paragraph.4.5.4.2}
+\contentsline {paragraph}{\numberline {4.5.4.3}def Full}{18}{paragraph.4.5.4.3}
+\contentsline {paragraph}{\numberline {4.5.4.4}def onFolder}{18}{paragraph.4.5.4.4}
+\contentsline {paragraph}{\numberline {4.5.4.5}def Launch}{18}{paragraph.4.5.4.5}
+\contentsline {section}{\numberline {5}Post}{19}{section.5}
+\contentsline {subsection}{\numberline {5.1}DanbooruPost}{19}{subsection.5.1}
+\contentsline {subsubsection}{\numberline {5.1.1}Hypoth\IeC {\`e}ses}{19}{subsubsection.5.1.1}
+\contentsline {subsubsection}{\numberline {5.1.2}Comportement}{19}{subsubsection.5.1.2}
+\contentsline {subsubsection}{\numberline {5.1.3}\IeC {\'E}volutions futures}{19}{subsubsection.5.1.3}
+\contentsline {subsubsection}{\numberline {5.1.4}Impl\IeC {\'e}mentation}{19}{subsubsection.5.1.4}
+\contentsline {paragraph}{\numberline {5.1.4.1}Pr\IeC {\'e}-traitement}{19}{paragraph.5.1.4.1}
+\contentsline {paragraph}{\numberline {5.1.4.2}def CorrectorSample}{20}{paragraph.5.1.4.2}
+\contentsline {paragraph}{\numberline {5.1.4.3}def IsBanned}{20}{paragraph.5.1.4.3}
+\contentsline {paragraph}{\numberline {5.1.4.4}def ReplaceAll}{20}{paragraph.5.1.4.4}
+\contentsline {paragraph}{\numberline {5.1.4.5}def DelLine}{20}{paragraph.5.1.4.5}
+\contentsline {paragraph}{\numberline {5.1.4.6}def TrimHTML}{20}{paragraph.5.1.4.6}
+\contentsline {paragraph}{\numberline {5.1.4.7}def GenerateTXT}{20}{paragraph.5.1.4.7}
+\contentsline {paragraph}{\numberline {5.1.4.8}def GenerateHTML}{20}{paragraph.5.1.4.8}
+\contentsline {paragraph}{\numberline {5.1.4.9}def CountLine}{20}{paragraph.5.1.4.9}
+\contentsline {section}{\numberline {6}stats\_dan}{21}{section.6}
+\contentsline {subsection}{\numberline {6.1}stats\_dan}{21}{subsection.6.1}
+\contentsline {subsubsection}{\numberline {6.1.1}Hypoth\IeC {\`e}ses}{21}{subsubsection.6.1.1}
+\contentsline {subsubsection}{\numberline {6.1.2}Comportement}{21}{subsubsection.6.1.2}
+\contentsline {subsubsection}{\numberline {6.1.3}\IeC {\'E}volutions futures}{21}{subsubsection.6.1.3}
+\contentsline {subsubsection}{\numberline {6.1.4}Impl\IeC {\'e}mentation}{21}{subsubsection.6.1.4}
+\contentsline {part}{II\hspace {1em}DownloadWebsite}{21}{part.2}
+\contentsline {subsection}{\numberline {6.2}DownloadWebsiteIMG}{21}{subsection.6.2}
+\contentsline {subsubsection}{\numberline {6.2.1}Hypoth\IeC {\`e}ses}{21}{subsubsection.6.2.1}
+\contentsline {subsubsection}{\numberline {6.2.2}Comportement}{21}{subsubsection.6.2.2}
+\contentsline {subsubsection}{\numberline {6.2.3}\IeC {\'E}volutions futures}{21}{subsubsection.6.2.3}
+\contentsline {subsubsection}{\numberline {6.2.4}Impl\IeC {\'e}mentation}{22}{subsubsection.6.2.4}
+\contentsline {paragraph}{\numberline {6.2.4.1}def EndTime}{22}{paragraph.6.2.4.1}
+\contentsline {paragraph}{\numberline {6.2.4.2}def GetDataLink}{22}{paragraph.6.2.4.2}
+\contentsline {paragraph}{\numberline {6.2.4.3}def GetDataWebsite}{22}{paragraph.6.2.4.3}
+\contentsline {paragraph}{\numberline {6.2.4.4}def IndividualGetData}{22}{paragraph.6.2.4.4}
+\contentsline {paragraph}{\numberline {6.2.4.5}def Download}{22}{paragraph.6.2.4.5}
+\contentsline {part}{III\hspace {1em}JapaneseApp}{22}{part.3}
+\contentsline {subsection}{\numberline {6.3}Questions}{22}{subsection.6.3}
+\contentsline {subsubsection}{\numberline {6.3.1}Hypoth\IeC {\`e}ses}{22}{subsubsection.6.3.1}
+\contentsline {subsubsection}{\numberline {6.3.2}Comportement}{23}{subsubsection.6.3.2}
+\contentsline {subsubsection}{\numberline {6.3.3}\IeC {\'E}volutions futures}{23}{subsubsection.6.3.3}
+\contentsline {subsubsection}{\numberline {6.3.4}Impl\IeC {\'e}mentation}{23}{subsubsection.6.3.4}
+\contentsline {paragraph}{\numberline {6.3.4.1}Pr\IeC {\'e}-traitement}{23}{paragraph.6.3.4.1}
+\contentsline {paragraph}{\numberline {6.3.4.2}class Question}{23}{paragraph.6.3.4.2}
+\contentsline {paragraph}{\numberline {6.3.4.3}class Question\_Canvas}{23}{paragraph.6.3.4.3}
+\contentsline {subparagraph}{def \_\_init\_\_}{23}{paragraph.6.3.4.3}
+\contentsline {subparagraph}{def Init}{23}{paragraph.6.3.4.3}
+\contentsline {subparagraph}{def on\_button\_check}{23}{paragraph.6.3.4.3}
+\contentsline {subparagraph}{def on\_button\_pass}{24}{paragraph.6.3.4.3}
+\contentsline {subparagraph}{def on\_button\_break}{24}{paragraph.6.3.4.3}
+\contentsline {part}{IV\hspace {1em}ToDoManager}{24}{part.4}
+\contentsline {subsection}{\numberline {6.4}ToDoManager}{24}{subsection.6.4}
+\contentsline {subsubsection}{\numberline {6.4.1}Hypoth\IeC {\`e}ses}{24}{subsubsection.6.4.1}
+\contentsline {subsubsection}{\numberline {6.4.2}Comportement}{24}{subsubsection.6.4.2}
+\contentsline {subsubsection}{\numberline {6.4.3}\IeC {\'E}volutions futures}{24}{subsubsection.6.4.3}
+\contentsline {subsubsection}{\numberline {6.4.4}Impl\IeC {\'e}mentation}{24}{subsubsection.6.4.4}
+\contentsline {paragraph}{\numberline {6.4.4.1}def FromYoutube}{24}{paragraph.6.4.4.1}
+\contentsline {paragraph}{\numberline {6.4.4.2}def CutMP4}{25}{paragraph.6.4.4.2}
+\contentsline {paragraph}{\numberline {6.4.4.3}def ToMP3}{25}{paragraph.6.4.4.3}
+\contentsline {paragraph}{\numberline {6.4.4.4}def ConvertTime}{25}{paragraph.6.4.4.4}
+\contentsline {paragraph}{\numberline {6.4.4.5}Traitement}{25}{paragraph.6.4.4.5}
+\contentsline {part}{V\hspace {1em}WatermarkDengeki}{25}{part.5}
+\contentsline {subsection}{\numberline {6.5}WatermarkDengeki}{25}{subsection.6.5}
+\contentsline {subsubsection}{\numberline {6.5.1}Hypoth\IeC {\`e}ses}{25}{subsubsection.6.5.1}
+\contentsline {subsubsection}{\numberline {6.5.2}Comportement}{25}{subsubsection.6.5.2}
+\contentsline {subsubsection}{\numberline {6.5.3}\IeC {\'E}volutions futures}{26}{subsubsection.6.5.3}
+\contentsline {subsubsection}{\numberline {6.5.4}Impl\IeC {\'e}mentation}{26}{subsubsection.6.5.4}
+\contentsline {paragraph}{\numberline {6.5.4.1}def InverseFunction}{26}{paragraph.6.5.4.1}
+\contentsline {paragraph}{\numberline {6.5.4.2}def Download}{26}{paragraph.6.5.4.2}
+\contentsline {paragraph}{\numberline {6.5.4.3}def RemoveWatermark}{26}{paragraph.6.5.4.3}
+\contentsline {paragraph}{\numberline {6.5.4.4}def onDengeki}{26}{paragraph.6.5.4.4}
+\contentsline {part}{VI\hspace {1em}Myanimelist}{26}{part.6}
+\contentsline {section}{\numberline {7}MakeJSON}{27}{section.7}
+\contentsline {subsection}{\numberline {7.1}Hypoth\IeC {\`e}ses}{27}{subsection.7.1}
+\contentsline {subsection}{\numberline {7.2}Comportement}{27}{subsection.7.2}
+\contentsline {subsection}{\numberline {7.3}Impl\IeC {\'e}mentation}{27}{subsection.7.3}
+\contentsline {subsubsection}{\numberline {7.3.1}def GetTuple}{27}{subsubsection.7.3.1}
+\contentsline {subsubsection}{\numberline {7.3.2}def Month2Int}{28}{subsubsection.7.3.2}
+\contentsline {subsubsection}{\numberline {7.3.3}def FormatD}{28}{subsubsection.7.3.3}
+\contentsline {subsubsection}{\numberline {7.3.4}def Date}{28}{subsubsection.7.3.4}
+\contentsline {subsubsection}{\numberline {7.3.5}def GetTitle}{28}{subsubsection.7.3.5}
+\contentsline {subsubsection}{\numberline {7.3.6}def IndividualNb}{28}{subsubsection.7.3.6}
+\contentsline {subsubsection}{\numberline {7.3.7}def CreateDic}{28}{subsubsection.7.3.7}
+\contentsline {section}{\numberline {8}MakeGraph}{28}{section.8}
+\contentsline {subsection}{\numberline {8.1}Hypoth\IeC {\`e}ses}{28}{subsection.8.1}
+\contentsline {subsection}{\numberline {8.2}Comportement}{28}{subsection.8.2}
+\contentsline {subsection}{\numberline {8.3}Impl\IeC {\'e}mentation}{29}{subsection.8.3}
+\contentsline {subsubsection}{\numberline {8.3.1}def UserListCompleted}{29}{subsubsection.8.3.1}
+\contentsline {subsubsection}{\numberline {8.3.2}def LoadDic}{29}{subsubsection.8.3.2}
+\contentsline {subsubsection}{\numberline {8.3.3}def ReduceDic}{29}{subsubsection.8.3.3}
+\contentsline {subsubsection}{\numberline {8.3.4}def CheckCondition}{29}{subsubsection.8.3.4}
+\contentsline {subsubsection}{\numberline {8.3.5}def ReduceOnConditions}{29}{subsubsection.8.3.5}
+\contentsline {subsubsection}{\numberline {8.3.6}def CountYear}{29}{subsubsection.8.3.6}
+\contentsline {subsubsection}{\numberline {8.3.7}def GetData}{29}{subsubsection.8.3.7}
+\contentsline {subsubsection}{\numberline {8.3.8}def GetProportion}{30}{subsubsection.8.3.8}
+\contentsline {subsubsection}{\numberline {8.3.9}def Plt}{30}{subsubsection.8.3.9}
