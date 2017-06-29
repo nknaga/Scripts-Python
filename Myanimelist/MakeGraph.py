@@ -115,7 +115,6 @@ def GetData():
     else:
         ylabel = 'nb'
         data, legend = [nbs_total], ['all']
-
     Plt(years, data, legend, ylabel)
 
 def GetProportion(l1, l2):
