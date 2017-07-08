@@ -17,11 +17,31 @@ blacklist = ['やおい', 'BL', '腐', '腐向け', # yaoi
 with open("../Danbooru_Codes.txt", 'r') as f:
     api_key = f.readline().split()[1]
     dan_username = f.readline().split()[1]
+with open("../Pixiv_Codes.txt", 'r') as f:
+    pixiv_mail = f.readline().split()[1]
+    pixiv_code = f.readline().split()[1]
 
 headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
 api_url = 'http://danbooru.donmai.us/posts.json'
 prefix = 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id='
-
+case = True
+controller = False
+from stem import Signal
+from stem.control import Controller
+import socks
+import socket
+def renew_tor():
+    """Create a connexion to Tor or renew it if it already exist"""
+    global case
+    global controller
+    if case:
+        controller = Controller.from_port(port=9151)
+        case = False
+    controller.authenticate()
+    controller.signal(Signal.NEWNYM)
+    socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1",
+                          9150, True)
+    socket.socket = socks.socksocket
 
 def PixIsOnDan(pixivId):
     payload = {'limit': '1',
@@ -44,24 +64,24 @@ def PixIsOnDan(pixivId):
         return False
 
 def IndividualWritePixiv(index, score):
-    global api
     global pixiv_dic
     try:
-        json = api.illust_detail(index)
-        if 'illust' in json and json['illust']['type'] == 'illust' \
-            and json['illust']['total_bookmarks'] > score \
-            and json['illust']['page_count'] < 10:
-            new_dic = {}
-            new_dic['t'] = [json['illust']['tags'][i]['name'] for i in range(len(json['illust']['tags']))]
-            new_dic['u'] = json['illust']['image_urls']['medium']
-            new_dic['n'] = json['illust']['page_count']
-            new_dic['d'] = json['illust']['create_date']
-            new_dic['s'] = json['illust']['total_bookmarks']
-            new_dic['r'] = json['illust']['height']/json['illust']['width']
-            pixiv_dic[index] = new_dic
+        json = illust_detail(index, req_auth=True)
+        if 'illust' in json:
+            json = json.illust
+            if json.total_bookmarks > score and json.page_count < 10:
+                new_dic = {}
+                new_dic['t'] = [tag.name for tag in json.tags]
+                new_dic['u'] = json.image_urls.medium
+                new_dic['n'] = json.page_count
+                new_dic['d'] = json.create_date
+                new_dic['s'] = json.total_bookmarks
+                new_dic['r'] = json.height/json.width
+                pixiv_dic[index] = new_dic
     except Exception as e:
         global find
         find += 1
+        print(e)
         pass
 
 def IndividualFromDic(i, score):
@@ -90,19 +110,17 @@ def PixivNotDanbooru(mode = 0, data = None):
     global pixiv_dic
     score = int(input('Minimum score? '))
     if mode == 0:
+        global illust_detail
         last = int(input('Where to begin? '))
         limit = int(input('How many to check? '))
         function = IndividualWritePixiv
         pixiv_dic = {}
-        index = range(last, last-limit, -1)
-        global api
-        with open("../Pixiv_Codes.txt", 'r') as f:
-            pixiv_username = f.readline().split()[1]
-            pixiv_password = f.readline().split()[1]
+        index = range(last-limit,last)
         api = AppPixivAPI()
+        illust_detail = api.illust_detail
     elif mode == 1:
-        score = [score, int(input('maximum score? ')), input('tags? ')]
         global result
+        score = [score, int(input('maximum score? ')), input('tags? ')]
         result = {key:0 for key in score[2].split()}
         file = open('NotDanbooru_Result.html', 'w')
         function = IndividualFromDic
@@ -110,28 +128,28 @@ def PixivNotDanbooru(mode = 0, data = None):
         index = list(data.keys())
         index.sort()
         limit = len(index)
-    nb, limit_active, k, p, find  = 10, int(input('Number of threads ? ')), 0, 0.0, 0
+    limit_active = int(input('Number of threads ? '))+threading.active_count()
+    p, find = 0.0, 0
+    #renew_tor()
     try:
         begin = datetime.now()
-        last_login = begin
-        for i in range(int(limit/nb)):
-            diff = (datetime.now()-last_login).total_seconds()
-            if not mode and diff > 3500 or i == 0:
-                api.login(pixiv_username, pixiv_password)
-                last_login = datetime.now()
+        lastLogin = begin
+        for i, x in enumerate(index):
             while threading.active_count() > limit_active:
                 time.sleep(0.5)
-            for j in range(nb):
-                Thread(target=function, args=(index[k], score)).start()
-                k += 1
-            if p != int(k/limit*1000)/10:
-                ending = ((datetime.now() - begin)/k*limit + begin).strftime('%H:%M')
-                print(str(p)+'%', '|', ending, '|', find)
-                p = int(k/limit*1000)/10
+            if mode == 0 and ((lastLogin-begin).seconds > 3500 or i == 0):
+                api.login(pixiv_mail, pixiv_code)
+                lastLogin = datetime.now()
+            Thread(target=function, args=(x, score)).start()
+            if p != int(i/limit*1000)/10:
+                ending = ((datetime.now() - begin)/(i+1)*limit + begin).strftime('%H:%M')
+                print(str(p)+'%', '|', ending, '|', find, len(pixiv_dic))
+                p = int(i/limit*1000)/10
     except Exception as e:
         print(e)
-        print('Stop at', k)
+        print('Stop at', i)
     finally:
+        time.sleep(10)
         if not mode:
             name = 'pixiv/'+str((last-limit)//1000000)+'.json'
             with open(name, 'w') as file:
@@ -140,7 +158,7 @@ def PixivNotDanbooru(mode = 0, data = None):
             for key, value in result.items():
                 print(key, ':', value)
         print('FOUND:', find)
-        print('MEAN TIME:', (datetime.now()-begin)/k)
+        print('MEAN TIME:', (datetime.now()-begin)/(i+1))
         file.close()
 
 
