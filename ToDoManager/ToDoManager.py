@@ -9,12 +9,18 @@ from os.path import join
 import pytube
 
 def FromYoutube(line):
-    name, link, ext = line.split('\t')
+    line = line.split('\t')
+    if len(line) == 3:
+        name, link, ext = line
+        begin, end = '0000', '0000'
+    else:
+        name, link, ext, begin, end = line
     yt = pytube.YouTube(link)
     yt.set_filename(name)
     yt.filter('mp4')[-1].download(join(local, 'mp3'))
     if ext == 'mp3':
-        ToMP3(name+'.mp4')
+        line = name + '.mp4\t' + begin + '\t' + end
+        ToMP3(name + '.mp4\t' + begin + '\t' + end)
 
 def CutMP4(line):
     l1 = line.split('\t')
@@ -34,10 +40,17 @@ def CutMP4(line):
     os.system('ffmpeg.exe -i "' + path + '" -ss ' + begin + end \
                 + opt +'"' + res_name + '"')
 
-def ToMP3(name):
+def ToMP3(line):
+    name, begin, end = line.split('\t')
     name = join(local, 'mp3', name)
     res = name.replace(name.split('.')[-1], 'mp3').replace('\mp3\\', '\ok\\')
-    os.system('ffmpeg.exe -i "' + name + '" "' + res + '"')
+
+    begin, end = [ConvertTime(d) for d in [begin, end]]
+    if end != '00:00:00':
+        end =  " -to " + end
+    else:
+        end = ""
+    os.system('ffmpeg.exe -i "' + name + '" -ss ' + begin + end + ' "' + res + '"')
 
 def ConvertTime(d):
     res = d[0:2] + ':' + d[2:4]
