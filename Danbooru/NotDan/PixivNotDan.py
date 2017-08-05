@@ -32,8 +32,7 @@ import socks
 import socket
 def renew_tor():
     """Create a connexion to Tor or renew it if it already exist"""
-    global case
-    global controller
+    global case, controller
     if case:
         controller = Controller.from_port(port=9151)
         case = False
@@ -56,8 +55,7 @@ def PixIsOnDan(pixivId):
     if len(res.content) >= 100 or t == 5:
         return True
     else:
-        global file
-        global find
+        global file, find
         url = prefix+str(pixivId)
         file.write('<A HREF="' + url + '"> ' + url + '<br/>')
         find += 1
@@ -78,97 +76,101 @@ def IndividualWritePixiv(index, score):
                 new_dic['s'] = json.total_bookmarks
                 new_dic['r'] = json.height/json.width
                 pixiv_dic[index] = new_dic
+        elif 'error' in json and 'ID' not in json.error.user_message:
+            print(json.error)
     except Exception as e:
         global find
         find += 1
         print(e)
         pass
 
-def IndividualFromDic(i, score):
-    global pixiv_dic
-    global result
-    small_dic = pixiv_dic[i]
-    if (small_dic['s'] > score[0] and small_dic['s'] < score[1])\
-        and (str(i) in small_dic['u'] or 'r18' in small_dic['u']):
-        if 'r' in small_dic and small_dic['r']>2.5:
-            return
-        for tag in blacklist:
-            if tag in small_dic['t']:
-                return
-        if score[2]:
-            for tag in score[2].split():
-                if tag in small_dic['t']:
-                    if PixIsOnDan(i):
-                        result[tag] += 1
-                    return
-        else:
-            PixIsOnDan(i)
-
 def PixivNotDanbooru(mode = 0, data = None):
-    global find
-    global file
-    global pixiv_dic
-    score = int(input('Minimum score? '))
-    if mode == 0:
-        global illust_detail
-        last = int(input('Where to begin? '))
-        limit = int(input('How many to check? '))
-        function = IndividualWritePixiv
-        pixiv_dic = {}
-        index = range(last-limit,last)
-        api = AppPixivAPI()
-        illust_detail = api.illust_detail
-    elif mode == 1:
-        global result
-        score = [score, int(input('maximum score? ')), input('tags? ')]
-        result = {key:0 for key in score[2].split()}
-        file = open('NotDanbooru_Result.html', 'w')
-        function = IndividualFromDic
-        pixiv_dic = data
-        index = list(data.keys())
-        index.sort()
-        limit = len(index)
-    limit_active = int(input('Number of threads ? '))+threading.active_count()
+    global find, file, pixiv_dic, illust_detail, result
     p, find = 0.0, 0
+    if mode == 0:
+        score = int(input('Minimum score? '))
+        ran = input('Range? ').split()
+        index = []
+        for ele in ran:
+            x,y = ele.split(':')
+            index += list(range(int(x), int(y)))
+        pixiv_dic = {}
+    elif mode == 1:
+        file = open('NotDanbooru_Result.html', 'w')
+        data.sort()
+        pixiv_dic = data
+        index = data
+    limit = len(index)
+    limit_active = int(input('Number of threads ? '))+threading.active_count()
     #renew_tor()
     try:
         begin = datetime.now()
+        print('Begin at', begin.strftime('%H:%M'))
         lastLogin = begin
         for i, x in enumerate(index):
             while threading.active_count() > limit_active:
-                time.sleep(0.5)
-            if mode == 0 and ((lastLogin-begin).seconds > 3500 or i == 0):
-                api.login(pixiv_mail, pixiv_code)
-                lastLogin = datetime.now()
-            Thread(target=function, args=(x, score)).start()
+                time.sleep(0.1)
+            if mode == 0 and ((datetime.now()-lastLogin).seconds > 3590 or i == 0):
+                if i == 0:
+                    api = AppPixivAPI()
+                    illust_detail = api.illust_detail
+                    api.login(pixiv_mail, pixiv_code)
+                else:
+                    api.login(pixiv_mail, pixiv_code)
+                    lastLogin = datetime.now()
+                    #break
+            if mode == 0:
+                Thread(target=IndividualWritePixiv, args=(x, score)).start()
+            elif mode == 1:
+                Thread(target=PixIsOnDan, args=(data[i],)).start()
+
             if p != int(i/limit*1000)/10:
                 ending = ((datetime.now() - begin)/(i+1)*limit + begin).strftime('%H:%M')
-                print(str(p)+'%', '|', ending, '|', find, len(pixiv_dic))
+                print(str(p)+'%', '|', ending, '|', find, len(pixiv_dic), '|', x)
                 p = int(i/limit*1000)/10
+        time.sleep(10)
     except Exception as e:
         print(e)
         print('Stop at', i)
     finally:
-        time.sleep(10)
-        if not mode:
-            name = 'pixiv/'+str((last-limit)//1000000)+'.json'
+        if not mode and pixiv_dic:
+            name = 'pixiv/'+str((index[0])//1000000)+'.json'
             with open(name, 'w') as file:
                 json.dump(pixiv_dic, file, sort_keys=True, indent=4)
-        if mode == 1:
-            for key, value in result.items():
-                print(key, ':', value)
         print('FOUND:', find)
         print('MEAN TIME:', (datetime.now()-begin)/(i+1))
         file.close()
 
 
 def ReadJSON(files):
-    data = {}
+    scm, scM = input("score range ? ").split(':')
+    score = [int(scm), int(scM), input('tags? ')]
+    data = []
+    scm, scM, tags = score
     for file in files:
         with open('pixiv/'+file+'.json', 'r') as file:
-            data.update(json.load(file))
-    PixivNotDanbooru(mode = 1, data = data)
-
+            temp = json.load(file)
+            for i, v in temp.items():
+                blacklisted = False
+                long = False
+                if (v['s'] > scm and v['s'] < scM )\
+                and (str(i) in v['u'] or 'r18' in v['u'] or 'r18' in v['t']):
+                    if 'r' in v and v['r']>2.5:
+                        long = True
+                    for tag in blacklist:
+                        if tag in v['t']:
+                            blacklisted = True
+                    if long or blacklisted:
+                        continue
+                    if tags:
+                        for tag in tags.split():
+                            if tag in v['t']:
+                                data.append(int(i))
+                                break
+                    else:
+                        data.append(i)
+    if input(str(len(data))+' images found. Continue ? (y/n) ') == 'y':
+        PixivNotDanbooru(mode = 1, data = data)
 
 def SplitJSON(files):
     l = 1000000
