@@ -52,11 +52,10 @@ def IsOnDan(url_sample, mode=False):
         strpage = page.read().decode('utf-8')
     except Exception as e:
         if "Flood detected" in str(e):
-            if mode:
-                print('Flood detected, renew tor')
-                renew_tor(url_sample)
-            else:
-                print('Flood detected')
+            print('Flood detected, renew tor')
+            renew_tor(url_sample)
+            if not mode:
+                return IsOnDan(url_sample)
             return True
         else:
             print(e)
