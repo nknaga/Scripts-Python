@@ -111,7 +111,7 @@ def CreateListAllURL(tags, limit,tag_add):
             continue
         print(tag, len(urls))
         tag = tag + "+" + tag_add  # Add a tag for all search
-        while i <= int(limit/1000):
+        while i <= int(limit/1000)+1:
             # do it for each page
             url = 'https://yande.re/post?page=' + str(i)
             url = url + '&tags=' + tag + '+limit%3A' + str(limit)

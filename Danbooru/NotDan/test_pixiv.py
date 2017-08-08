@@ -30,8 +30,9 @@ def IndividualWritePixiv(index):
     except Exception as e:
         print(e)
 
+renew_tor()
 limit_active = list(range(50,300,25))
-begin, limit = 30000000, 10000
+begin, limit = 30000000, 1000
 index = list(range(begin, begin+limit))
 global api
 api = AppPixivAPI()

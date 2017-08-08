@@ -12,7 +12,7 @@ if __name__ == '__main__':
     for directory, subdirectories, files in os.walk(folder):
         for file in files:
             if not begin:
-                if "Katte ni Kaizou 05" in file:
+                if "." in file:
                     begin = True
                 else:
                     continue
