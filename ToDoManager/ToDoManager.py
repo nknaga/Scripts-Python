@@ -15,9 +15,9 @@ def FromYoutube(line):
         begin, end = '0000', '0000'
     else:
         name, link, ext, begin, end = line
-    yt = pytube.YouTube(link)
-    yt.set_filename(name)
-    yt.filter('mp4')[-1].download(join(local, ext))
+    #yt = pytube.YouTube(link)
+    #yt.set_filename(name)
+    #yt.filter('mp4')[-1].download(join(local, ext))
     if ext == 'mp3':
         line = name + '.mp4\t' + begin + '\t' + end
         ToMP3(name + '.mp4\t' + begin + '\t' + end)
@@ -39,6 +39,18 @@ def CutVideo(line):
     opt = " -c:v libx265 -map 0 -force_key_frames 0  -crf 23 "
     line = 'ffmpeg.exe -i "' + path + '" -ss ' + begin + end \
                 + opt +'"' + res_name + '"'
+    os.system(line)
+    
+def FuseVideo(line):
+    line = line.split('\t')
+    res_name = line[0]
+    files = 'concat:'
+    for file in line[1:]:
+        files+=join(local, 'ok', file)+'|'
+    files = files[:-1]
+    res_name = join(local, 'ok', res_name +'.mkv')
+    line = 'ffmpeg -i "'+files+'"  -codec copy "'+res_name+'"'
+    print(line)
     os.system(line)
 
 def ToMP3(line):
@@ -67,7 +79,7 @@ if __name__ == '__main__':
     local = "E:\Telechargements\Anime\\to do"
     with open(join(local, 'To Do.txt'), 'r') as file:
         lines = [line.replace('\n', '') for line in file.readlines()]
-    youtube, video, mp3 = False, False, False
+    youtube, video, mp3, fusion = False, False, False, False
     for line in lines:
         if line.startswith('youtube'):
             youtube = True
@@ -76,16 +88,22 @@ if __name__ == '__main__':
             youtube = False
             video = True
             continue
-        elif line.startswith('audio'):
+        elif line.startswith('fusion'):
             video = False
+            fusion = True
+            continue
+        elif line.startswith('audio'):
+            fusion = False
             mp3 = True
             continue
-        elif line.startswith('--') or not (video or mp3 or youtube):
+        elif line.startswith('--') or not (video or mp3 or youtube or fusion):
             continue
         if youtube:
             FromYoutube(line)
         elif video:
             CutVideo(line)
+        elif fusion:
+            FuseVideo(line)
         elif mp3:
             ToMP3(line)
         print(line.split('\t')[0])
