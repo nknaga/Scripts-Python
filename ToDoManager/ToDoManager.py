@@ -8,6 +8,17 @@ import os
 from os.path import join
 import pytube
 
+
+local = "E:\Telechargements\Anime\\to_do"
+try:
+    os.makedirs(join(local, 'input'))
+except:
+    pass
+try:
+    os.makedirs(join(local, 'ouput'))
+except:
+    pass
+    
 def FromYoutube(line):
     line = line.split('\t')
     if len(line) == 3:
@@ -15,12 +26,17 @@ def FromYoutube(line):
         begin, end = '0000', '0000'
     else:
         name, link, ext, begin, end = line
-    #yt = pytube.YouTube(link)
-    #yt.set_filename(name)
-    #yt.filter('mp4')[-1].download(join(local, ext))
+    yt = pytube.YouTube(link)
+    yt.set_filename(name)
     if ext == 'mp3':
-        line = name + '.mp4\t' + begin + '\t' + end
-        ToMP3(name + '.mp4\t' + begin + '\t' + end)
+        yt.filter('mp4')[-1].download(join(local,"input"))
+        ToMP3('\t'.join([name + '.mp4', begin, end]))
+    else:
+        if begin == "0000" and end == begin:
+            yt.filter('mp4')[-1].download(join(local,"output"))
+        else:
+            yt.filter('mp4')[-1].download(join(local,"input"))
+            CutVideo('\t'.join([name, begin, end, '0', file]))
 
 def CutVideo(line):
     l1 = line.split('\t')
@@ -29,8 +45,8 @@ def CutVideo(line):
         if x:
             l2.append(x)
     res_name, begin, end, epi, path = l2
-    res_name = join(local, 'ok', res_name +'.mkv')
-    path = join(local, 'mkv', path)
+    res_name = join(local, 'output', res_name +'.mkv')
+    path = join(local, 'input', path)
     begin, end = [ConvertTime(d) for d in [begin, end]]
     if end != '00:00:00':
         end =  " -to " + end
@@ -39,25 +55,29 @@ def CutVideo(line):
     opt = " -c:v libx265 -map 0 -force_key_frames 0  -crf 23 "
     line = 'ffmpeg.exe -i "' + path + '" -ss ' + begin + end \
                 + opt +'"' + res_name + '"'
+    print(line)
     os.system(line)
     
 def FuseVideo(line):
     line = line.split('\t')
     res_name = line[0]
-    files = 'concat:'
+    files = open('concat.txt', "w")
     for file in line[1:]:
-        files+=join(local, 'ok', file)+'|'
-    files = files[:-1]
-    res_name = join(local, 'ok', res_name +'.mkv')
-    line = 'ffmpeg -i "'+files+'"  -codec copy "'+res_name+'"'
+        os.rename(join(local, 'output', file), file)
+        files.write('file '+ file + '\n')
+    files.close()
+    res_name = join(local, 'output', res_name +'.mkv')
+    line = 'ffmpeg -f concat -safe 0 -i concat.txt -c copy -fflags +genpts "'+res_name + '"'
     print(line)
     os.system(line)
+    for file in line[1:]:
+        os.rename(file, join(local, 'input', file))
+    
 
 def ToMP3(line):
     name, begin, end = line.split('\t')
-    name = join(local, 'mp3', name)
-    res = name.replace(name.split('.')[-1], 'mp3').replace('\mp3\\', '\ok\\')
-
+    name = join(local, 'input', name)
+    res = name.replace(name.split('.')[-1], 'mp3').replace('input', 'output')
     begin, end = [ConvertTime(d) for d in [begin, end]]
     if end != '00:00:00':
         end =  " -to " + end
@@ -65,7 +85,8 @@ def ToMP3(line):
         end = ""
     while os.path.exists(res):
         res+='1'
-    os.system('ffmpeg.exe -i "' + name + '" -ss ' + begin + end + ' "' + res + '"')
+    line = 'ffmpeg.exe -i "' + name + '" -ss ' + begin + end + ' "' + res + '"'
+    os.system(line)
 
 def ConvertTime(d):
     res = d[0:2] + ':' + d[2:4]
@@ -76,7 +97,6 @@ def ConvertTime(d):
     return res
 
 if __name__ == '__main__':
-    local = "E:\Telechargements\Anime\\to do"
     with open(join(local, 'To Do.txt'), 'r') as file:
         lines = [line.replace('\n', '') for line in file.readlines()]
     youtube, video, mp3, fusion = False, False, False, False
