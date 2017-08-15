@@ -15,11 +15,26 @@ try:
 except:
     pass
 try:
-    os.makedirs(join(local, 'ouput'))
+    os.makedirs(join(local, 'output'))
 except:
     pass
+
+def SubDate(str1, str2):
+    int1 = int(str1[0:2])*3600+int(str1[3:5])*60+int(str1[6:8])
+    int2 = int(str2[0:2])*3600+int(str2[3:5])*60+int(str2[6:8])
+    int3 = int2-int1
+    a, b, c = str(int3//3600), str(int3%3600//60), str(int3%60)
+    if len(a) < 2:
+        a = '0'+a
+    if len(b) < 2:
+        b = '0'+b
+    if len(c) < 2:
+        c = '0'+c
+    str3 = ':'.join([a, b, c])
+    return str3
     
 def FromYoutube(line):
+    return
     line = line.split('\t')
     if len(line) == 3:
         name, link, ext = line
@@ -37,6 +52,7 @@ def FromYoutube(line):
         else:
             yt.filter('mp4')[-1].download(join(local,"input"))
             CutVideo('\t'.join([name, begin, end, '0', file]))
+            
 
 def CutVideo(line):
     l1 = line.split('\t')
@@ -49,13 +65,12 @@ def CutVideo(line):
     path = join(local, 'input', path)
     begin, end = [ConvertTime(d) for d in [begin, end]]
     if end != '00:00:00':
-        end =  " -to " + end
+        end = SubDate(begin, end)
+        end =  "-t " + end
     else:
         end = ""
-    opt = " -c:v libx265 -map 0 -force_key_frames 0  -crf 23 "
-    line = 'ffmpeg.exe -i "' + path + '" -ss ' + begin + end \
-                + opt +'"' + res_name + '"'
-    print(line)
+    opt = "-c:v libx265 -c:a aac -map 0 -force_key_frames 0 -crf 23"
+    line = ' '.join(["ffmpeg", "-ss", begin, '-i', '"'+path+'"', end,  opt, '"'+res_name+'"'])
     os.system(line)
     
 def FuseVideo(line):
@@ -68,7 +83,6 @@ def FuseVideo(line):
     files.close()
     res_name = join(local, 'output', res_name +'.mkv')
     line = 'ffmpeg -f concat -safe 0 -i concat.txt -c copy -fflags +genpts "'+res_name + '"'
-    print(line)
     os.system(line)
     for file in line[1:]:
         os.rename(file, join(local, 'input', file))
