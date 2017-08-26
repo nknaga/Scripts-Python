@@ -24,34 +24,26 @@ def SubDate(str1, str2):
     int2 = int(str2[0:2])*3600+int(str2[3:5])*60+int(str2[6:8])
     int3 = int2-int1
     a, b, c = str(int3//3600), str(int3%3600//60), str(int3%60)
-    if len(a) < 2:
-        a = '0'+a
-    if len(b) < 2:
-        b = '0'+b
-    if len(c) < 2:
-        c = '0'+c
+    for o in [a, b, c]:
+        if len(o) < 2:
+            o = '0'+o
     str3 = ':'.join([a, b, c])
     return str3
     
 def FromYoutube(line):
-    return
     line = line.split('\t')
     if len(line) == 3:
-        name, link, ext = line
+        name, link, ext = line[:3]
         begin, end = '0000', '0000'
     else:
-        name, link, ext, begin, end = line
+        name, link, ext, begin, end = line[:5]
     yt = pytube.YouTube(link)
     yt.set_filename(name)
+    yt.filter('mp4')[-1].download(join(local,"input"))
     if ext == 'mp3':
-        yt.filter('mp4')[-1].download(join(local,"input"))
         ToMP3('\t'.join([name + '.mp4', begin, end]))
     else:
-        if begin == "0000" and end == begin:
-            yt.filter('mp4')[-1].download(join(local,"output"))
-        else:
-            yt.filter('mp4')[-1].download(join(local,"input"))
-            CutVideo('\t'.join([name, begin, end, '0', file]))
+        CutVideo('\t'.join([name, begin, end, '0', name + '.mp4']))
             
 
 def CutVideo(line):
@@ -60,7 +52,7 @@ def CutVideo(line):
     for x in l1:
         if x:
             l2.append(x)
-    res_name, begin, end, epi, path = l2
+    res_name, begin, end, epi, path = l2[:5]
     res_name = join(local, 'output', res_name +'.mkv')
     path = join(local, 'input', path)
     begin, end = [ConvertTime(d) for d in [begin, end]]
@@ -71,6 +63,7 @@ def CutVideo(line):
         end = ""
     opt = "-c:v libx265 -c:a aac -map 0 -force_key_frames 0 -crf 23"
     line = ' '.join(["ffmpeg", "-ss", begin, '-i', '"'+path+'"', end,  opt, '"'+res_name+'"'])
+    print(line)
     os.system(line)
     
 def FuseVideo(line):
@@ -89,7 +82,7 @@ def FuseVideo(line):
     
 
 def ToMP3(line):
-    name, begin, end = line.split('\t')
+    name, begin, end = line.split('\t')[:3]
     name = join(local, 'input', name)
     res = name.replace(name.split('.')[-1], 'mp3').replace('input', 'output')
     begin, end = [ConvertTime(d) for d in [begin, end]]
@@ -99,7 +92,7 @@ def ToMP3(line):
         end = ""
     while os.path.exists(res):
         res+='1'
-    line = 'ffmpeg.exe -i "' + name + '" -ss ' + begin + end + ' "' + res + '"'
+    line = " ".join(['ffmpeg -i', '"'+name+'"', "-ss", begin, end, '"'+res+'"'])
     os.system(line)
 
 def ConvertTime(d):
@@ -115,6 +108,7 @@ if __name__ == '__main__':
         lines = [line.replace('\n', '') for line in file.readlines()]
     youtube, video, mp3, fusion = False, False, False, False
     for line in lines:
+        line = '\t'.join([e for e in line.split('\t') if e])
         if line.startswith('youtube'):
             youtube = True
             continue
