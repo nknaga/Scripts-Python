@@ -84,7 +84,7 @@ def FuseVideo(line):
 def ToMP3(line):
     name, begin, end = line.split('\t')[:3]
     name = join(local, 'input', name)
-    res = name.replace(name.split('.')[-1], 'mp3').replace('input', 'output')
+    res = (name[:-3]+'mp3').replace('input', 'output')
     begin, end = [ConvertTime(d) for d in [begin, end]]
     if end != '00:00:00':
         end =  " -to " + end
