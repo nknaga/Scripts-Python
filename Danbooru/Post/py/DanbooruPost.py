@@ -17,13 +17,13 @@ list_HTML = ["F1.html", "F2.html", "F3.html", "F4.html", "FP.html"]
 list_HTML = [join(root,'html', e) for e in list_HTML]
 
 # Create a list of error to correct
-dic_error = {}
+lst_error = []
 error_f = open(join(root, "error.txt"), "r")
 for line in error_f:
     if len(line) > 3:
         l = line.split('\t')
         try:
-            dic_error[l[0]] = l[1].split('\n')[0]
+            lst_error.append([l[0],l[1].split('\n')[0]])
         except:
             print(l)
 
@@ -59,16 +59,16 @@ def IsBanned(tags):
             return True
     return False
 
-def ReplaceAll(text, dic_error):
+def ReplaceAll(text, lst_error):
     """Correct line with the dictionnary
     Input:
     text - A string
-    dic_error - A dictionnary (error : corrected_string)
+    lst_error - A list ([[error,corrected_string]])
 
     Output:
     text - A corrected string"""
     global number_replacements
-    for i, j in dic_error.items():
+    for i, j in lst_error:
         text2 = text.replace(i, j)
         if text2 != text:
             number_replacements += 1
@@ -138,7 +138,7 @@ def GenerateTXT():
                 lineL = line.split("\"")[-2] + "\n"
                 fileL.write(CorrectorSample(lineL))
                 lineT = line.split("\"")[-1][2:] + "--\n"
-                fileT.write(ReplaceAll(lineT, dic_error))
+                fileT.write(ReplaceAll(lineT, lst_error))
             except:
                 continue
     global number_replacements
@@ -164,7 +164,7 @@ def GenerateHTML():
                 print(lineL, 'Banned\n')
                 continue
             l = '<A HREF="' + CorrectorSample(lineL[:-1]) + '"> ' \
-            + ReplaceAll(lineT, dic_error) + '<br></br> \n'
+            + ReplaceAll(lineT, lst_error) + '<br></br> \n'
             l = l.replace('<br></br><br></br>','<br></br>')
             l = l.replace('<br></br> <br></br>','<br></br>')
             file.write(l)
