@@ -9,6 +9,10 @@ from urllib.request import urlopen
 import bs4
 import json
 import matplotlib.pyplot as plt
+from datetime import date
+
+from IPython import get_ipython
+get_ipython().run_line_magic('matplotlib', 'qt')
 
 def UserListCompleted(username):
     url = 'https://myanimelist.net/animelist/' + username + '?status=2'
@@ -79,7 +83,7 @@ def CountYear(dic, years):
     return nbs
 
 def GetData():
-    years = range(1970, 2018)
+    years = range(1970, date.today().year-1)
     data0 = LoadDic()
     nbs_total = CountYear(data0, years)
     print('You can choose conditions from :\n', '\n'.join(list(data0['1'].keys())))
