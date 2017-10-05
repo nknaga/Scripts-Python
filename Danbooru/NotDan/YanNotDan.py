@@ -3,40 +3,18 @@
     Author: Rignak
     Python version: 3.5
 """
-print('Begin')
-import socks
-import socket
-
 import urllib
 import bs4 as BeautifulSoup
 from datetime import datetime
-from stem import Signal
-from stem.control import Controller
 from os.path import join
 from threading import Thread
-case = True
-controller = None
+from TOR.tor import renew_tor
 api = None
 find = 0
 file = None
 dic_index = {}
 
-
-def renew_tor(test):
-    """Create a connexion to Tor or renew it if it already exist"""
-    global case
-    global controller
-    if case:
-        controller = Controller.from_port(port=9151)
-        case = False
-    controller.authenticate()
-    controller.signal(Signal.NEWNYM)
-    socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1",
-                          9150, True)
-    socket.socket = socks.socksocket
-    IsOnDan(test, mode = True)
-
-def IsOnDan(url_sample, mode=False):
+def IsOnDan(url_sample):
     """Check if a sample is on dan
     Input:
     url_sample - string: url of a picture
@@ -45,6 +23,7 @@ def IsOnDan(url_sample, mode=False):
     False if the image is not on danbooru (or error)
     True else """
     global file
+    global urls_yan
     try:
         # Look if the sample is already on Danbooru
         url = 'http://danbooru.iqdb.org/?url=' + url_sample
@@ -52,10 +31,7 @@ def IsOnDan(url_sample, mode=False):
         strpage = page.read().decode('utf-8')
     except Exception as e:
         if "Flood detected" in str(e):
-            print('Flood detected, renew tor')
-            renew_tor(url_sample)
-            if not mode:
-                return IsOnDan(url_sample)
+            urls_yan.append(url_yan)
             return True
         else:
             print(e)
@@ -156,16 +132,16 @@ def YandereNotDanbooru():
     if check=='y':
         urls_yan = AlreadyFound(urls_yan)
     print("The number of url is :", len(urls_yan))
-    test = URLSample(urls_yan[0])
-    n, nb, k = len(urls_yan), 24, 0
+    nb, k = 24, 0
     global file
     global find
+    global urls_yan
     file = open('NotDanbooru_Result.html', 'w')
     try:
         begin = datetime.now()
-        for i in range(int(n/nb)+1):
+        for i in range(int(len(urls_yan)/nb)+1):
             ts = []
-            renew_tor(test)
+            renew_tor()
             for j in range(nb):
                 if k < len(urls_yan)-1:
                     k += 1
@@ -173,12 +149,12 @@ def YandereNotDanbooru():
                                      args=(urls_yan[k],)))
                     ts[-1].start()
             [t.join() for t in ts]
-            ending = (datetime.now() - begin) / (k + 1) * n + begin
-            print(k + 1, 'on', n, '|', ending.strftime('%H:%M'), '|', find)
+            ending = (datetime.now() - begin) / (k + 1) * len(urls_yan) + begin
+            print(k + 1, 'on', len(urls_yan), '|', ending.strftime('%H:%M'), '|', find)
     except Exception as e:
         print(e)
     finally:
-        print('MEAN TIME:', (datetime.now()-begin)/n)
+        print('MEAN TIME:', (datetime.now()-begin)/len(urls_yan))
         file.close()
 
 def IndividualYandereNotDan(url_yan):
@@ -186,7 +162,7 @@ def IndividualYandereNotDan(url_yan):
     global find
     url_sample = URLSample(url_yan)
     try:
-        if not IsOnDan(url_sample):
+        if not IsOnDan(url_sample, url_yan):
             find += 1
             file.write('<A HREF="' + url_yan + '"> ' + url_yan + '<br/>')
     except:
