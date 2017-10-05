@@ -6,16 +6,11 @@ Created on Mon Mar 27 14:58:32 2017
 """
 
 import tkinter as tk
-from os.path import join, dirname, realpath
+from os.path import join
 import sys
 import codecs
 import random
 
-result = [0, 0]
-index = 0
-
-standart_root = dirname(realpath(__file__))
-standart_file = join(standart_root, 'kanjis.txt')
 
 class Question:
     def __init__(self, line, question, answer):
@@ -72,36 +67,59 @@ class Question_Canvas(tk.Tk):
         return
 
     def on_button_break(self):
-        print("The number of good answer:", self._result[0])
-        print("The number of bad answer:", self._result[1])
-        self.destroy()
-        sys.exit()
+        frame.destroy()
 
+def FileSelection():
+    print("Vocabulaire par cours : 1")
+    print("Verbes : 2")
+    print("Kanjis : 3")
+    choice = int(input("Selectionner le mode : "))
+    if choice == 1:
+        namefiles = [join('res', 'cours', x + '.txt') for x in input("Numéro (ex : 1 2 5) : ").split()]
+        header = join('res', 'cours', 'header.txt')
+        r = (0, -1)
+    elif choice in [2,3]:
+        if choice  == 2:
+            namefiles = [join('res', 'verbes.txt')]
+            header = join('res', 'verbes_header.txt')
+        elif choice == 3:
+            namefiles = [join('res', 'kanjis.txt')]
+            header = join('res', 'kanjis_header.txt')
+        r = [int(x) for x in input("Range (ex : 10:20) : ").split(':')]
+    return namefiles, header, r
+    
 if __name__ == '__main__':
-    result = [0, 0]
-    file = codecs.open(input('File to work? ')+'.txt', encoding='utf-16')
-    head = file.readline()[:-2].split('\t')
-    question, answer = input(' | '.join([str(i) + ': ' + head[i] for i in range(len(head))]) + ' : ').split()
-    question, answer = int(question), int(answer)
+    namefiles, header, r = FileSelection()
+    head = codecs.open(header, encoding='utf-16').readline().split('\t')
+    print('Quel binôme question/réponse ? (ex : 1 3)')
+    print('! signifie symboles non-alphabétiques')
+    question, answer = [int(x) for x in (input(' | '.join([str(i) + ': ' + head[i] for i in range(len(head))]) + ' : ').split())]
     if head[answer].startswith('!'):
         answer += 1
     worklist = []
-    while True:
-        line = file.readline()
-        if not line:
-            break
-        worklist.append(Question(line[:-2], question, answer))
+    for namefile in namefiles:
+        file = codecs.open(namefile, encoding='utf-16')
+        for line in file:
+            if line:
+                worklist.append(Question(line[:-2], question, answer))
+    worklist = worklist[r[0]:r[1]]
     print('You have', len(worklist),'questions')
     sys.stdout.flush()
     frame = Question_Canvas()
     while True:
         question = random.choice(worklist)
-        frame.Init(question)
-        while True:
-            try:
-                frame.update()
-                if frame._update:
-                    frame.canvas.delete(frame._text)
-                    break
-            except:
-                sys.exit()
+        try:
+            frame.Init(question)
+            while True:
+                    frame.update()
+                    if frame._update:
+                        frame.canvas.delete(frame._text)
+                        break
+        except:
+            print()
+            print('--------------------------------')
+            print("Nombre de bonnes réponses :   ", frame._result[0])
+            print("Nombre de mauvaise réponses : ", frame._result[1])
+            print('Terminaison du programe')
+            print('--------------------------------')
+            break
