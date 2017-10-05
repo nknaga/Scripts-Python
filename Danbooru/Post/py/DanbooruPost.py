@@ -68,10 +68,12 @@ def ReplaceAll(text, lst_error):
     Output:
     text - A corrected string"""
     global number_replacements
+    text = ' ' + text + ' '
     for i, j in lst_error:
         text2 = text.replace(i, j)
         if text2 != text:
-            number_replacements += 1
+            if i != '  ':
+                number_replacements += 1
             text = text2
     return text
 
@@ -128,19 +130,21 @@ def TrimHTML():
 def GenerateTXT():
     """Creation of two .txt (url and tags) for each .html"""
     print("Generation of .txt")
+    for file in list_T:
+        remove(file[:-4] + '_old.txt')
+        rename(file, file[:-4] + '_old.txt')
     for i in range(len(list_T)):
         file = open(list_HTML[i], 'r')
         fileT = open(list_T[i], 'w')
         fileL = open(list_L[i], 'w')
         for line in file:
-
             try:
                 lineL = line.split("\"")[-2] + "\n"
+                lineT = line.split(">")[1] + "\n"
                 fileL.write(CorrectorSample(lineL))
-                lineT = line.split("\"")[-1][2:] + "--\n"
                 fileT.write(ReplaceAll(lineT, lst_error))
-            except:
-                continue
+            except Exception as e:
+                print(e)
     global number_replacements
     print('Number of remplacements :',number_replacements)
     return
@@ -177,11 +181,12 @@ def GenerateHTML():
 def CountLine():
     """Count the number of line of each .txt"""
     s = 0
-    for file in list_L:
+    for file in list_T:
         j = 0
         current = open(file, 'r')
         for line in current:
-            j += 1
+            if len(line) > 10:
+                j += 1
         s += j
         print(j)
     print(s)
