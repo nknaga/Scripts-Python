@@ -14,10 +14,14 @@ from io import BytesIO
 from PIL import Image
 from os import system
 import urllib
+from lib.progress import Progress
+import io
 
+with io.open("blacklist.txt",'r',encoding='utf8') as f:
+    blacklist = []
+    for line in f:
+        blacklist.append(line[:-1])
 
-blacklist = ['やおい', 'BL', '腐', '腐向け', # yaoi
-            '漫画', 'マンガ'] # manga
 with open("../Danbooru_Codes.txt", 'r') as f:
     api_key = f.readline().split()[1]
     dan_username = f.readline().split()[1]
@@ -35,7 +39,6 @@ class Sample:
     - the data of the image (BytesIO(urllib.request.urlopen))
     - the tags corresponding to the image (a str)"""
 
-
     def __init__(self, url):
         ok = False
         self._url = url
@@ -49,7 +52,7 @@ class Sample:
             except Exception as e:
                 print("Sample init - error on", self._url, e)
                 break
-            
+
     def InputTags(self):
         """Display a sample, and ask an input to add tags"""
         try:
@@ -57,82 +60,81 @@ class Sample:
             temp_img.show()
         except:
             return 'pass'
-
         while self._adds == '':
             self._adds = input('tags ? ')
         system("taskkill /f /im dllhost.exe")
         return self._adds
-        
+
 def CheckOnDan(pixivId):
     payload = {'limit': '1',
                'tags':'pixiv:'+str(pixivId),
                'api_key':api_key,
                'login':dan_username}
-    res = requests.get(api_url,data=payload, headers=headers, stream=True)
+    req = requests.get(api_url,data=payload, headers=headers, stream=True)
     t = 0
     while res.status_code != 200 and t<5:
-        res = requests.get(api_url,data=payload, headers=headers, stream=True)
+        req = requests.get(api_url,data=payload, headers=headers, stream=True)
         t+=1
-    if len(res.content) >= 100 or t == 5:
+    if len(req.content) >= 100 or t == 5:
         return True
     else:
-        global file, find
+        global file
         url = prefix+str(pixivId)
+        req.append(pixivId)
         file.write('<A HREF="' + url + '"> ' + url + '<br/>')
-        find += 1
         return False
 
-def AddEntry(index, score):
-    global pixiv_dic
+def AddEntry(index):
     try:
         json = illust_detail(index, req_auth=True)
         if 'illust' in json:
             json = json.illust
             if json.total_bookmarks > score and json.page_count < 10:
                 new_dic = {}
-                new_dic['t'] = [tag.name for tag in json.tags]
-                new_dic['u'] = json.image_urls.medium
+                new_dic['t'] = [tag.name for tag in json.tags] + [str(json.user.id)]
+                #new_dic['u'] = json.image_urls.medium
                 new_dic['n'] = json.page_count
-                new_dic['d'] = json.create_date
+                #new_dic['d'] = json.create_date
                 new_dic['s'] = json.total_bookmarks
                 new_dic['r'] = json.height/json.width
-                pixiv_dic[index] = new_dic
+                global res
+                res[index] = new_dic
         elif 'error' in json and 'ID' not in json.error.user_message:
             print(json.error)
     except Exception as e:
-        global find
-        find += 1
         print(e)
-        pass
+        print()
 
-def PixivNotDanbooru(mode = 0, data = None):
-    print('-------------------------------')
-    print('---- BEGIN CHECKING ON DAN ----')
-    global find, file, pixiv_dic, illust_detail, result
-    p, find = 0.0, 0
+def Routeur(mode = 0, data = None):
+    global file, res, illust_detail
+    index = data
+    res = []
     if mode == 0:
+        global score
         score = int(input('Minimum score? '))
         ran = input('Range? ').split()
         index = []
         for ele in ran:
             x,y = ele.split(':')
             index += list(range(int(x), int(y)))
-        pixiv_dic = {}
+        res = {}
     elif mode == 1:
         file = open('NotDanbooru_Result.html', 'w')
         data.sort()
-        pixiv_dic = data
-        index = data
+    elif mode == 3:
+        res = {}
     limit = len(index)
     limit_active = int(input('Number of threads ? '))+threading.active_count()
+    function = [AddEntry, CheckOnDan, getImg, getUrl][mode]
     try:
         begin = datetime.now()
+        p = 0.0
         print('Begin at', begin.strftime('%H:%M'))
         lastLogin = begin
         for i, x in enumerate(index):
             while threading.active_count() > limit_active:
                 time.sleep(0.1)
-            if mode == 0 and ((datetime.now()-lastLogin).seconds > 3590 or i == 0):
+            if mode in [0,3] and ((datetime.now()-lastLogin).seconds > 3590 or i == 0):
                 if i == 0:
                     api = AppPixivAPI()
                     illust_detail = api.illust_detail
@@ -140,67 +142,64 @@ def PixivNotDanbooru(mode = 0, data = None):
                 else:
                     api.login(pixiv_mail, pixiv_code)
                     lastLogin = datetime.now()
-            if mode == 0:
-                Thread(target=AddEntry, args=(x, score)).start()
-            elif mode == 1:
-                Thread(target=CheckOnDan, args=(data[i],)).start()
-
-            if p != int(i/limit*1000)/10:
-                ending = ((datetime.now() - begin)/(i+1)*limit + begin).strftime('%H:%M')
-                print(str(p)+'%', '|', ending, '|', find, len(pixiv_dic), '|', x)
-                p = int(i/limit*1000)/10
+            Thread(target=function, args=(x, )).start()
+            if p != int(i/limit*10000)/100:
+                ending = ((datetime.now() - begin)/(i+1)*limit + begin).strftime('%D-%H:%M')
+                Progress(str(p)+'% | '+ending)
+                p = int(i/limit*10000)/100
         time.sleep(10)
     except Exception as e:
         print(e)
         print('Stop at', i)
     finally:
-        if not mode and pixiv_dic:
-            name = 'pixiv/'+str((index[0])//1000000)+'.json'
-            with open(name, 'w') as file:
-                json.dump(pixiv_dic, file, sort_keys=True, indent=4)
-        print('FOUND:', find)
-        file.close()
-        print('---- CHECKING ON DAN OK ----')
-        
+        print()
+        print('FOUND:', len(res))
+        if mode in [0, 1]:
+            if not mode and res:
+                name = 'pixiv/temp'+str((index[0])//1000000)+'.json'
+                with open(name, 'w') as file:
+                    json.dump(res, file, sort_keys=True, indent=4)
+            file.close()
+        elif mode == 3:
+            res = []
+            for value in res.values():
+                for url in value:
+                    res.append(url)
+            res.sort()
+            return res
+        elif mode ==2:
+            return res
 
 def ReadJSON(files):
     print('----------------------------')
     print('---- BEGIN JSON READING ----')
     r = input("score range ? ")
-    if ':' in r:
-        scm, scM = r.split(':')
-    else:
-        scm, scM = 0, 9999999
+    if ':' in r: scm, scM = r.split(':')
+    else: scm, scM = 0, 9999999
     score = [int(scm), int(scM), input('tags? ')]
+    tag_f = input('Enforce tags? : ').split()
     data = []
     scm, scM, tags = score
-    for file in files:
-        print("read :",file)
+    nb = {key:0 for key in tags.split()}
+    for j,file in enumerate(files):
+        Progress("read : "+str(j)+'/'+str(len(files)))
         with open('pixiv/'+file+'.json', 'r') as file:
             temp = json.load(file)
             for i, v in temp.items():
-                blacklisted = False
-                long = False
-                if (v['s'] > scm and v['s'] < scM )\
-                and (str(i) in v['u'] or 'r18' in v['u'] or 'r18' in v['t']):
-                    if 'r' in v and v['r']>2.5:
-                        long = True
-                    for tag in blacklist:
-                        if tag in v['t']:
-                            blacklisted = True
-                    if long or blacklisted:
-                        continue
-                    if tags:
-                        for tag in tags.split():
-                            if tag in v['t']:
-                                data.append(int(i))
-                                break
-                    else:
-                        data.append(i)
+                if (v['s'] > scm and v['s'] < scM ) \
+                and (not any(tag in v['t'] for tag in blacklist))\
+                and (not tag_f or any(tag in v['t'] for tag in tag_f))\
+                and (not tags or any(tag in v['t'] for tag in tags.split())):
+                    data.append(int(i))
+                    for tag in set(tags.split()).intersection(set(v['t'])):
+                        nb[tag]+=1
+    print()
+    for key, value in nb.items():
+        print(key, ':', value)
     print('---- JSON READING OK ----')
     if input(str(len(data))+' images found. Check on Dan ? (y/n) ') == 'y':
-        PixivNotDanbooru(mode = 1, data = data)
-        if input('Continue to extract urls ? (y/n) :')=='y':
+        Routeur(mode = 1, data = data)
+        if input('Continue to extract urls ? (y/n) : ')=='y':
             ShowPixiv()
 
 def SplitJSON(files):
@@ -215,65 +214,24 @@ def SplitJSON(files):
             dic[int(key)//l] = {}
         dic[int(key)//l][key] = value
     for key, value in dic.items():
-        name = 'pixiv/' + str(key)+'.json'
+        name = 'pixiv/temp' + str(key)+'.json'
         with open(name, 'w') as file:
             json.dump(value, file, sort_keys=True, indent=4)
-        print('Done on', key)
-
-
+        Progress('Done on '+key)
 
 def getUrl(i):
     try:
         res1 = illust_detail(i, req_auth=True)
-        res2 = [dic.image_urls.original for dic in res1.illust.meta_pages]
-        if not res2:
-            res2 = [res1.illust.meta_single_page.original_image_url]
-        pixiv_dic[i] = res2
+        if 'illust' in res1:
+            res2 = [dic.image_urls.original for dic in res1.illust.meta_pages]
+            if not res2:
+                res2 = [res1.illust.meta_single_page.original_image_url]
+            res[i] = res2
     except Exception as e:
         print('IndividualUrl - error on :', i, e)
-   
-def getUrls(index, limit_active):
-    print('-----------------------')
-    print('---- BEGIN GET URL ----')
-    global find, file, pixiv_dic, illust_detail, result
-    pixiv_dic = {}
-    p = 0.0
-    try:
-        begin = datetime.now()
-        print('Begin at', begin.strftime('%H:%M'))
-        lastLogin = begin
-        for i, x in enumerate(index):
-            while threading.active_count() > limit_active:
-                time.sleep(0.1)
-            if (datetime.now()-lastLogin).seconds > 3590 or i == 0:
-                if i == 0:
-                    api = AppPixivAPI()
-                    illust_detail = api.illust_detail
-                    api.login(pixiv_mail, pixiv_code)
-                else:
-                    api.login(pixiv_mail, pixiv_code)
-                    lastLogin = datetime.now()
-            Thread(target=getUrl, args=(x,)).start()
-            if p != int(i/len(index)*100)/1:
-                ending = ((datetime.now() - begin)/(i+1)*len(index) + begin).strftime('%H:%M')
-                print(str(p)+'%', '|', ending)
-                p = int(i/len(index)*100)/1
-        time.sleep(10)
-    except Exception as e:
-        print("getUrls",e)
-    file = open('no_result.html', 'w')
-    res = []
-    for value in pixiv_dic.values():
-        for url in value:
-            if 'limit' in url or 'r18' in url or 'R18' in url:
-                url = "https://www.pixiv.net/member_illust.php?mode=medium&illust_id=" + str(i)
-                file.write('<A HREF="' + url + '"> ' + url + '<br/>')
-            else:
-                res.append(url)
-    res.sort()
-    print(len(res), 'results')
-    print('---- GET URL OK ----')
-    return res
+
+def getImg(url):
+    res.append(Sample(url))
 
 def Index():
     file = open('NotDanbooru_Result.html', 'r')
@@ -286,52 +244,15 @@ def Index():
     else:
         line = file.readline().split('<br/>')
         return [int(ele.split('=')[-1]) for ele in line[:-1]]
-    
-def getImg(url):
-    imgs.append(Sample(url))
 
-def getImgs(urls, limit_active):
-    print('-----------------------')
-    print('---- BEGIN GET PIC ----')
-    global imgs
-    imgs = []
-    p = 0.0
-    ini = threading.active_count()
-    try:
-        begin = datetime.now()
-        print('Begin at', begin.strftime('%H:%M'))
-        for i, x in enumerate(urls):
-            now = datetime.now()
-            while threading.active_count() > limit_active:
-                time.sleep(0.1)
-                if (datetime.now()-now).seconds > 60:
-                    break
-            if (datetime.now()-now).seconds > 60:
-                break
-            Thread(target=getImg, args=(x,)).start()
-            if p != int(i/len(urls)*1000)/10:
-                ending = ((datetime.now() - begin)/(i+1)*len(urls) + begin).strftime('%H:%M')
-                print(str(p)+'%', '|', ending)
-                p = int(i/len(urls)*1000)/10
-        while threading.active_count() > ini:
-            if (datetime.now()-now).seconds > 60:
-                break
-            time.sleep(1)
-
-    except Exception as e:
-        print('getImgs',e)
-    print(len(imgs), 'results')
-    print('---- GET PIC OK ----')
-    return imgs
-        
 def ShowImgs(imgs):
     input('Press a key to begin')
-    file = open('result.html', 'w')
     begin = datetime.now()
     print('-----------------------')
     print('--- BEGIN SHOW IMGS ---')
     print('Begin at', begin.strftime('%H:%M'), len(imgs))
     i, l = 0, len(imgs)
+    file = open('final.html', 'w')
     while imgs:
         img = imgs[0]
         imgs = imgs[1:]
@@ -342,30 +263,29 @@ def ShowImgs(imgs):
             break
         i+=1
         ending = ((datetime.now() - begin)/i*l+ begin).strftime('%H:%M')
-        print(i, '/', l, '|', ending, '|', img._url.split('/')[-1])
+        s = str(i)+'/'+str(l)+' | '+ending+' | ' + img._url.split('/')[-1]
+        Progress(s)
+    print()
     print('--- SHOW IMGS OK ---')
-    
+
 def ShowPixiv():
-    limit_active = int(input('Number of threads ? '))+threading.active_count()
-    tor = input('Use tor ? (y/n) : ') == 'y'
-    if tor:
-        from TOR.tor import renew_tor
-        renew_tor()
-        index = Index()
-        urls = getUrls(index, limit_active)
-        file = open('tor_result.html', 'w')
+    n = int(input('Proxy number ? '))
+    if n:
+        from lib.tor import SetProxy
+        SetProxy(n)
+        urls = Routeur(mode=3, data=Index())
+        file = open('directlink.html', 'w')
         for url in urls:
             file.write(url)
     else:
         if input('import url from file ? (y/n) : ') == 'y':
-            urls = open('tor_result.html', 'r').readline().split('https')
+            urls = open('directlink.html', 'r').readline().split('https')
             urls = ['https'+url for url in urls]
         else:
-            index = Index()
-            urls = getUrls(index, limit_active)
-        imgs = getImgs(urls, limit_active)
+            urls = Routeur(mode=3, data=Index())
+        imgs = Routeur(mode=2, data=urls[1:])
         ShowImgs(imgs)
-            
+
 if __name__ == '__main__':
     print('mode 0 : go to pixiv and write a .json')
     print('mode 1 : read .json and check on dan')
@@ -380,13 +300,11 @@ if __name__ == '__main__':
         else:
             files = files.split()
     if mode == 0:
-        if input('Use tor ? (y/n) : ') == 'y':
-            from TOR.tor import renew_tor
-            renew_tor()
-        PixivNotDanbooru(mode = 0)
-    elif mode == 1:
-        ReadJSON(files)
-    elif mode == 2:
-        SplitJSON(files)
-    elif mode == 3:
-        ShowPixiv()
+        n = int(input('Proxy number ? '))
+        if n:
+            from lib.tor import SetProxy
+            SetProxy(n)
+        Routeur(mode = 0)
+    elif mode == 1: ReadJSON(files)
+    elif mode == 2: SplitJSON(files)
+    elif mode == 3: ShowPixiv()
