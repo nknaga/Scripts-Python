@@ -139,10 +139,11 @@ def GenerateTXT():
         fileL = open(list_L[i], 'w')
         for line in file:
             try:
-                lineL = line.split("\"")[-2] + "\n"
-                lineT = line.split(">")[1] + "\n"
+                lineL = line.split("\"")[-2]+ "\n"
+                lineT = line.split(">")[1][:-3]
                 fileL.write(CorrectorSample(lineL))
                 fileT.write(ReplaceAll(lineT, lst_error))
+                fileT.write('\n\n')
             except Exception as e:
                 print(e)
     global number_replacements
