@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from datetime import date
 import urllib
 from os.path import join, exists
+import sys
 
 from IPython import get_ipython
 get_ipython().run_line_magic('matplotlib', 'qt')
@@ -61,15 +62,23 @@ def Plt(data):
     ax1.set_xlabel('Month')
     ax1.set_ylabel('Nb')
 
+def ProgressBar(p):
+    r = 40
+    i = int(p/100*r)
+    sys.stdout.write('\r')
+    sys.stdout.write("[%-40s] %d%%" % ('='*i, p))
+    sys.stdout.flush()
+    sleep(0.25)
+
 def Count(tags, forced=False):
-    if not forced and CheckIfAlready(tags):
-        return CountFromFile(tags)
+    namefile = tags.replace(':', '-').replace('/', '-')
+    if not forced and CheckIfAlready(namefile):
+        return CountFromFile(namefile)
     results = {}
     i = 0
     j = len(range(date.today().year,2004,-1 ))*12
     for year in range(date.today().year,2004,-1 ):
         for month in range(12, 0, -1):
-            i+=1
             if month == 12:
                 nMonth = 1
                 nYear = year+1
@@ -80,8 +89,10 @@ def Count(tags, forced=False):
             current_tags = tags +'%20' + dateframe
             nb = NbTags(current_tags)
             results[str(month)+'-'+str(year)] = nb
-            print(i, j)
-    LogCount(tags, results)
+
+            i+=1
+            ProgressBar(i/j*100)
+    LogCount(namefile, results)
     return results
 
 def CountFromFile(tags):
