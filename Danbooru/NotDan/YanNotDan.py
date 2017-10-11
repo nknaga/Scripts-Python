@@ -8,13 +8,14 @@ import bs4 as BeautifulSoup
 from datetime import datetime
 from os.path import join
 from threading import Thread
-from TOR.tor import renew_tor
+from lib.tor import renew_tor
+from lib.progress import Progress
 api = None
 find = 0
 file = None
 dic_index = {}
 
-def IsOnDan(url_sample):
+def IsOnDan(url_sample, url_yan):
     """Check if a sample is on dan
     Input:
     url_sample - string: url of a picture
@@ -64,8 +65,8 @@ def AlreadyFound(urls):
             i = i -1
         ending = (datetime.now() - begin) / (i + 1 + len(already)) * (len(urls) +\
                 len(already)) + begin
-        print(len(already), 'found |', i + 1 + len(already), "on",
-              len(urls) + len(already), '|', ending.strftime('%D - %H:%M'))
+        Progress(str(len(already))+' found | '+str(i+1+len(already))+" on "+
+              str(len(urls) + len(already))+' | '+ending.strftime('%D - %H:%M'))
     return urls
 
 
@@ -100,8 +101,9 @@ def CreateListAllURL(tags, limit,tag_add):
                 turl = turl.get_text()[3:]
                 if turl not in urls:
                     urls.append(turl)
-            print(i, '/', limit//1000 + 1)
+            Progress(str(i)+'/'+str(limit//1000+1))
             i = i + 1
+    print()
     return urls
 
 def URLSample(url_yan):
@@ -128,6 +130,7 @@ def YandereNotDanbooru():
     tag_add = input("Perhaps a tag for all searchs ? ")
     limit = int(input("Choose a limit: "))
     check = input("Check for Already found: ")
+    global urls_yan
     urls_yan = CreateListAllURL(tags, limit, tag_add)
     if check=='y':
         urls_yan = AlreadyFound(urls_yan)
@@ -135,25 +138,29 @@ def YandereNotDanbooru():
     nb, k = 24, 0
     global file
     global find
-    global urls_yan
     file = open('NotDanbooru_Result.html', 'w')
     try:
         begin = datetime.now()
-        for i in range(int(len(urls_yan)/nb)+1):
+        l = len(urls_yan)
+        i = 0
+        while i < int(l/nb)+1:
+            l = len(urls_yan)
             ts = []
             renew_tor()
             for j in range(nb):
-                if k < len(urls_yan)-1:
+                if k < l-1:
                     k += 1
                     ts.append(Thread(target=IndividualYandereNotDan,
                                      args=(urls_yan[k],)))
                     ts[-1].start()
             [t.join() for t in ts]
-            ending = (datetime.now() - begin) / (k + 1) * len(urls_yan) + begin
-            print(k + 1, 'on', len(urls_yan), '|', ending.strftime('%H:%M'), '|', find)
+            ending = (datetime.now() - begin) / (k + 1) * l+ begin
+            Progress(str(k+1)+' on '+str(l)+' | '+ending.strftime('%H:%M')+' | '+str(find))
+            i+=1
     except Exception as e:
         print(e)
     finally:
+        print()
         print('MEAN TIME:', (datetime.now()-begin)/len(urls_yan))
         file.close()
 
@@ -165,8 +172,8 @@ def IndividualYandereNotDan(url_yan):
         if not IsOnDan(url_sample, url_yan):
             find += 1
             file.write('<A HREF="' + url_yan + '"> ' + url_yan + '<br/>')
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
 if __name__ == '__main__':
     YandereNotDanbooru()
