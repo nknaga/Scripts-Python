@@ -15,6 +15,7 @@ import random
 class Question:
     def __init__(self, line, question, answer):
         l = line.split('\t')
+        print(l)
         self.question = l[int(question)].replace(u'\xa0', u'')
         self.answer = l[int(answer)].replace(u'\xa0', u'')
         self.all = [l[i].replace(u'\xa0', u'') for i in range(len(l))]
@@ -87,7 +88,7 @@ def FileSelection():
             header = join('res', 'kanjis_header.txt')
         r = [int(x) for x in input("Range (ex : 10:20) : ").split(':')]
     return namefiles, header, r
-    
+
 if __name__ == '__main__':
     namefiles, header, r = FileSelection()
     head = codecs.open(header, encoding='utf-16').readline().split('\t')
