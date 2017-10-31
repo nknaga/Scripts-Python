@@ -13,6 +13,7 @@ from datetime import date
 import urllib
 from os.path import join, exists
 import sys
+from datetime import datetime
 
 from IPython import get_ipython
 get_ipython().run_line_magic('matplotlib', 'qt')
@@ -62,37 +63,44 @@ def Plt(data):
     ax1.set_xlabel('Month')
     ax1.set_ylabel('Nb')
 
-def ProgressBar(p):
-    r = 40
-    i = int(p/100*r)
+def Progress(s):
     sys.stdout.write('\r')
-    sys.stdout.write("[%-40s] %d%%" % ('='*i, p))
+    sys.stdout.write(s)
     sys.stdout.flush()
-    sleep(0.25)
 
-def Count(tags, forced=False):
-    namefile = tags.replace(':', '-').replace('/', '-')
+def Count(tags, mode, forced=False):
+    namefile = tags.replace(':', '-').replace('/', '-').replace('>', '-')
     if not forced and CheckIfAlready(namefile):
-        return CountFromFile(namefile)
-    results = {}
-    i = 0
-    j = len(range(date.today().year,2004,-1 ))*12
-    for year in range(date.today().year,2004,-1 ):
-        for month in range(12, 0, -1):
-            if month == 12:
-                nMonth = 1
-                nYear = year+1
-            else:
-                nMonth = month+1
-                nYear = year
-            dateframe = 'date:'+str(year)+'-'+str(month)+'-'+'01..'+str(nYear)+'-'+str(nMonth)+'-'+'01'
-            current_tags = tags +'%20' + dateframe
-            nb = NbTags(current_tags)
-            results[str(month)+'-'+str(year)] = nb
+        results = CountFromFile(namefile)
+    else:
+        results = {}
+        i = 0
+        j = len(range(date.today().year,2004,-1 ))*12
+        begin = datetime.now()
+        for year in range(date.today().year,2004,-1 ):
+            for month in range(12, 0, -1):
+                if month == 12:
+                    nMonth = 1
+                    nYear = year+1
+                else:
+                    nMonth = month+1
+                    nYear = year
+                dateframe = 'date:'+str(year)+'-'+str(month)+'-'+'01..'+str(nYear)+'-'+str(nMonth)+'-'+'01'
+                current_tags = tags +'%20' + dateframe
+                nb = NbTags(current_tags)
+                results[str(month)+'-'+str(year)] = nb
 
-            i+=1
-            ProgressBar(i/j*100)
-    LogCount(namefile, results)
+                i+=1
+                mean_time = (datetime.now()-begin)/i
+                Progress(str(int(i/j*100))+'% | ' + str((mean_time*j+begin).strftime('%D-%H:%M')))
+        LogCount(namefile, results)
+    if mode == 0:
+        total = CountFromFile('age--1s')
+        for key in results.keys():
+            if total[key]!=0:
+                results[key] = results[key]/total[key]*100
+            else:
+                results[key]=0
     return results
 
 def CountFromFile(tags):
@@ -106,6 +114,9 @@ def LogCount(tags, results):
 
 if __name__ == '__main__':
     tags = input('Enter tag : ')
+    print('mode 0 : result in %')
+    print('mode 1 : result in nb')
+    mode = int(input('mode ? : '))
     forced = input('Force the creation of new db ? (y/n) : ')=='y'
-    res = Count(tags, forced = forced)
+    res = Count(tags, mode, forced = forced)
     Plt(res)
