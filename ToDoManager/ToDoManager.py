@@ -37,8 +37,7 @@ def FromYoutube(line, mode = 1):
     line = line.split('\t')
     if len(line) in [0, 1, 2, 4]:
         print('ERROR : check TODO file (not enough values)')
-    return '', '', True
-
+        return '', '', True
     if len(line) == 3:
         name, link, ext = line[:3]
         begin, end = '0000', '0000'
@@ -74,7 +73,6 @@ def CutVideo(line, mode = 1):
         end = ""
     opt = "-c:v libx265 -c:a aac -c:s copy -map 0:a -map 0:v -map 0:s? -force_key_frames 0 -crf 23"
     line = ' '.join(["ffmpeg", "-ss", begin, '-i', '"'+path+'"', end,  opt, '"'+res_name+'"'])
-
     if exists(res_name):
         error = True
         print('ERROR : file already exist')
@@ -194,19 +192,18 @@ def Loop(lines, mode = 1):
         if change or line.startswith('--') or not (video or mp3 or youtube or fusion) or i<begin:
             continue
         function = SwitchLaunch(youtube, video, mp3, fusion)
-        if function:
-            if mode or (function != FromYoutube and function != FuseVideo):
-                name, cmd, error = function(line, mode)
-                if not error:
-                    if mode and not exists(name):
-                        print('ERROR : no file created')
-                        print('command:', cmd)
-                    elif mode and getsize(name) < 1024:
-                        print('ERROR : very small file created')
-                        print('command:', cmd)
-                    else:
-                        advance = '('+str(i)+'|'+str(len(lines))+')'
-                        print('OK:', advance, line.split('\t')[0])
+        if mode or (function != FromYoutube and function != FuseVideo):
+            name, cmd, error = function(line, mode)
+            if not error:
+                if mode and not exists(name):
+                    print('ERROR : no file created')
+                    print('command:', cmd)
+                elif mode and getsize(name) < 1024:
+                    print('ERROR : very small file created')
+                    print('command:', cmd)
+                else:
+                    advance = '('+str(i)+'|'+str(len(lines))+')'
+                    print('OK:', advance, line.split('\t')[0])
 
 if __name__ == '__main__':
     with open(join(local, 'To Do.txt'), 'r') as file:
