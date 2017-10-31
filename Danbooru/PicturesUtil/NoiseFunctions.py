@@ -42,7 +42,7 @@ def MakeFilter(c):
     return hp_filter
 
 def DetectJPG(fname, mode = 0):
-    p = 6
+    p = 3
     noise = []
     im0 = Image.open(fname)
     array0 = Grayscale(np_from_img(im0))
@@ -58,6 +58,7 @@ def DetectJPG(fname, mode = 0):
         ar3 = np.absolute(array0-array2)
         noise.append((Intensity(ar3)/i, q))
     if mode == 1:
+        img_from_np(array2).show()
         print(noise[FirstLocalMinimum(noise)][1])
         return noise
     else:
@@ -72,15 +73,13 @@ def FirstLocalMinimum(t):
 
 def Test():
     from matplotlib import pyplot as plt
-    #n1 = join("E:\\Mes documents\\Documents\\Raccourcis\\Logiciels\\Anime\\PicturesUtil\\result\\ok", "25_zcleaned.jpg")
-    n1 =  'example/key 1.jpg'
+    n1 =  'example/RokudenashiOrig.jpg'
     y = DetectJPG(n1, mode=1)
     x = [y[a][1] for a in range(len(y))]
     y = [y[a][0] for a in range(len(y))]
     plt.plot(x, y)
 
-    #n2 = join("E:\\Mes documents\\Documents\\Raccourcis\\Logiciels\\Anime\\PicturesUtil\\result\\ok", "45.jpg")
-    n2 =  'example/key 2.jpg'
+    n2 =  'example/RokudenashiSample.jpg'
     y = DetectJPG(n2, mode=1)
     x = [y[a][1] for a in range(len(y))]
     y = [y[a][0] for a in range(len(y))]
@@ -91,4 +90,6 @@ def Test():
     plt.ylabel("Intesity")
     plt.legend(['Noisy picture', 'Noiseless picture'])
 
-#Test()
+
+if __name__ == '__main__':
+    Test()
