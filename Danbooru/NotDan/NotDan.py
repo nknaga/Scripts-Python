@@ -64,30 +64,29 @@ class Sample:
 def AddEntry(index):
     try:
         retry = 0
-        while retry < 5:
+        while retry < 6:
             try:
                 json = illust_detail(index, req_auth=True)
                 if 'reason' not in json:
-                    retry = 6
+                    retry = 7
                 else:
                     retry += 1
             except BaseException:
                 retry += 1
-        if retry == 5:
+        if retry == 6:
             json = illust_detail(index, req_auth=True)
         if 'illust' in json:
             json = json.illust
             if json.total_bookmarks > score and json.page_count < 10:
-                new_dic = {}
-                new_dic['t'] = [tag.name for tag in json.tags] + \
-                    [str(json.user.id)]
-                #new_dic['u'] = json.image_urls.medium
-                new_dic['n'] = json.page_count
-                #new_dic['d'] = json.create_date
-                new_dic['s'] = json.total_bookmarks
-                new_dic['r'] = json.height / json.width
                 global res
-                res[index] = new_dic
+                res[index] = {}
+                res[index]['t'] = [tag.name for tag in json.tags] + \
+                                [str(json.user.id)]
+                #res[index]['u'] = json.image_urls.medium
+                res[index]['n'] = json.page_count
+                #res[index]['d'] = json.create_date
+                res[index]['s'] = json.total_bookmarks
+                res[index]['r'] = json.height / json.width
         elif 'error' in json and 'ID' not in json.error.user_message:
             print(json.error)
     except Exception as e:
@@ -139,8 +138,8 @@ def JsonReading(files):
             temp = json.load(file)
             for i, v in temp.items():
                 if (v['s'] > scm and v['s'] < scM) \
-                        and (not any(tag in v['t'] for tag in blacklist))\
                         and (not tag_f or any(tag in v['t'] for tag in tag_f))\
+                        and (not any(tag in v['t'] for tag in blacklist))\
                         and (not tags or any(tag in v['t'] for tag in tags.split())):
                     data.append(int(i))
                     for tag in set(tags.split()).intersection(set(v['t'])):
@@ -174,16 +173,19 @@ def JsonSpliting(files):
 
 
 def Index():
-    file = open('NotDanbooru_Result.html', 'r')
+    file = open('1-NotDanbooru_Result.html', 'r')
     r = input('Range ? ')
+    lines = file.readline().split('<br/>')[:-1]
+    if 'pximg' not in lines:
+        index = [int(ele.split('=')[-1]) for ele in lines]
+    else:
+        index = [int(ele.split('/')[-1].split('_')[0]) for ele in lines]
+        
     if ':' in r:
         begin, end = r.split(':')
-        line = file.readline().split('<br/>')
-        index = [int(ele.split('=')[-1]) for ele in line[:-1]]
         return index[index.index(int(begin)):index.index(int(end))]
     else:
-        line = file.readline().split('<br/>')
-        return [int(ele.split('=')[-1]) for ele in line[:-1]]
+        return index
 
 
 def ShowPixiv():
@@ -196,14 +198,14 @@ def ShowPixiv():
         if n:
             SetProxy(n)
         urls = Routeur123(mode=3, data=Index())
-        file = open('directlink.html', 'w')
+        file = open('2-directlink.html', 'w')
         for url in urls:
             file.write(url)
     else:
         urls = [
             'https' +
             url for url in open(
-                'directlink.html',
+                '2-directlink.html',
                 'r').readline().split('https')]
     if not n:
         ShowImgs(Routeur123(mode=2, data=urls[1:]))
@@ -232,12 +234,12 @@ def ShowImgs(imgs):
     print('--- BEGIN SHOW IMGS ---')
     print('Begin at', begin.strftime('%H:%M'), len(imgs))
     i, l = 0, len(imgs)
-    file = open('final.html', 'w')
+    file = open('3-final.html', 'w')
     while imgs:
         img = imgs[0]
         imgs = imgs[1:]
         img.InputTags()
-        if img._adds == 'y':
+        if img._adds == '1':
             file.write('<A HREF="' + img._url + '"> ' + img._url + '<br/>')
         elif img._adds == 'exit':
             break
@@ -340,7 +342,7 @@ def Routeur123(mode=0, data=None):
             index += list(range(int(x), int(y)))
         res = {}
     elif mode == 1:
-        file = open('NotDanbooru_Result.html', 'w')
+        file = open('1-NotDanbooru_Result.html', 'w')
         data.sort()
         index = data
     elif mode == 3:
@@ -370,6 +372,7 @@ def Routeur123(mode=0, data=None):
                         pixiv_code = f.readline().split()[1]
                     api = AppPixivAPI()
                     illust_detail = api.illust_detail
+                    begin = datetime.now()
                 else:
                     lastLogin = datetime.now()
                 api.login(pixiv_mail, pixiv_code)
@@ -388,8 +391,9 @@ def Routeur123(mode=0, data=None):
         if mode in [0, 1]:
             if not mode and res:
                 name = 'pixiv/temp' + str((index[0]) // 1000000) + '.json'
+                temp = res
                 with open(name, 'w') as file:
-                    json.dump(res, file, sort_keys=True, indent=4)
+                    json.dump(temp, file, sort_keys=True, indent=4)
             file.close()
         elif mode == 3:
             rt = res
@@ -408,7 +412,7 @@ def Routeur456(mode):
     global find
     global links
     nb, k, i, find, ts = 24, 0, 0, 0, []
-    file = open('NotDanbooru_Result.html', 'w')
+    file = open('1-NotDanbooru_Result.html', 'w')
     if mode == 4:
         tags = input("Write some tags (split search with blanck): ")
         tag_add = input("Perhaps a tag for all searchs ? ")
@@ -416,17 +420,19 @@ def Routeur456(mode):
         links = YanTags2Urls(tags, limit, tag_add)
         print("The number of url is :", len(links))
     elif mode == 5:
-        links = open('final.html', 'r').readlines()[0].split('<br/>')
+        links = open('3-final.html', 'r').readlines()[0].split('<br/>')
         links = [link.split('"')[1] for link in links[:-1]]
     elif mode == 6:
-        links = open('directlink.html', 'r').readline().split('https')
+        links = open('2-directlink.html', 'r').readline().split('https')
         links = ['https' + link for link in links]
     try:
         begin = datetime.now()
         l = len(links)
         while i < int(l / nb) + 1:
             l = len(links)
+            time.sleep(2)
             renew_tor()
+            time.sleep(2)
             for j in range(nb):
                 if k < l - 1:
                     k += 1
@@ -434,8 +440,8 @@ def Routeur456(mode):
                                      args=(links[k], mode)))
                     ts[-1].start()
             [t.join() for t in ts]
-            ending = (datetime.now() - begin) / (k + 1) * l + begin
-            Progress(str(k + 1) + ' on ' + str(l) + ' | ' +
+            ending = (datetime.now() - begin) / k * l + begin
+            Progress(str(k) + ' on ' + str(l) + ' | ' +
                      ending.strftime('%H:%M') + ' | ' + str(find))
             i += 1
     except Exception as e:
@@ -451,8 +457,8 @@ if __name__ == '__main__':
     print('mode 2 : Split .json')
     print('mode 3 : Show images')
     print('mode 4 : Check Yandere')
-    print('mode 5 : Check from final')
-    print('mode 6 : Check from directlink')
+    print('mode 5 : Check from 3-final')
+    print('mode 6 : Check from 2-directlink')
     mode = int(input('Which mode ? '))
     if mode in [1, 2]:
         files = input('File numbers ? ')
