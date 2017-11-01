@@ -15,7 +15,6 @@ import random
 class Question:
     def __init__(self, line, question, answer):
         l = line.split('\t')
-        print(l)
         self.question = l[int(question)].replace(u'\xa0', u'')
         self.answer = l[int(answer)].replace(u'\xa0', u'')
         self.all = [l[i].replace(u'\xa0', u'') for i in range(len(l))]
@@ -48,11 +47,11 @@ class Question_Canvas(tk.Tk):
 
     def on_button_check(self, event = None):
         if self.entry.get() in  self.question.answer.split(', '):
-            print('Right : ', self.question.all)
+            print('Right : ', self.question.answer)
             sys.stdout.flush()
             self._result[0] += 1
         else:
-            print('False', self.question.all)
+            print('False', self.question.answer)
             self._result[1] += 1
         self._update = True
         sys.stdout.flush()
@@ -62,7 +61,7 @@ class Question_Canvas(tk.Tk):
         return
 
     def on_button_pass(self):
-        print(self.question.all)
+        print(self.question.answer)
         sys.stdout.flush()
         self._update = True
         return
@@ -74,24 +73,23 @@ def FileSelection():
     print("Vocabulaire par cours : 1")
     print("Verbes : 2")
     print("Kanjis : 3")
+    print("Conjugaison (tous les modes de verbes) : 4")
     choice = int(input("Selectionner le mode : "))
     if choice == 1:
         namefiles = [join('res', 'cours', x + '.txt') for x in input("Numéro (ex : 1 2 5) : ").split()]
         header = join('res', 'cours', 'header.txt')
         r = (0, -1)
-    elif choice in [2,3]:
-        if choice  == 2:
-            namefiles = [join('res', 'verbes.txt')]
-            header = join('res', 'verbes_header.txt')
-        elif choice == 3:
-            namefiles = [join('res', 'kanjis.txt')]
-            header = join('res', 'kanjis_header.txt')
+    elif choice in [2,3,4]:
+        mode = ['', '', 'verbes', 'kanjis', 'conjugaison']
+        namefiles = [join('res', mode[choice]+'.txt')]
+        header = join('res', mode[choice]+'_header.txt')
         r = [int(x) for x in input("Range (ex : 10:20) : ").split(':')]
     return namefiles, header, r
 
 if __name__ == '__main__':
     namefiles, header, r = FileSelection()
-    head = codecs.open(header, encoding='utf-16').readline().split('\t')
+    f1 = codecs.open(header, encoding='utf-16')
+    head = f1.readline().split('\t')
     print('Quel binôme question/réponse ? (ex : 1 3)')
     print('! signifie symboles non-alphabétiques')
     question, answer = [int(x) for x in (input(' | '.join([str(i) + ': ' + head[i] for i in range(len(head))]) + ' : ').split())]
@@ -99,8 +97,8 @@ if __name__ == '__main__':
         answer += 1
     worklist = []
     for namefile in namefiles:
-        file = codecs.open(namefile, encoding='utf-16')
-        for line in file:
+        f2 = codecs.open(namefile, encoding='utf-16')
+        for line in f2:
             if line:
                 worklist.append(Question(line[:-2], question, answer))
     worklist = worklist[r[0]:r[1]]
@@ -124,3 +122,5 @@ if __name__ == '__main__':
             print('Terminaison du programe')
             print('--------------------------------')
             break
+    f1.close()
+    f2.close()
