@@ -182,17 +182,28 @@ def GenerateHTML():
 def CountLine():
     """Count the number of line of each .txt"""
     s = 0
-    for file in list_T:
-        j = 0
-        current = open(file, 'r')
-        for line in current:
-            if len(line) > 10:
-                j += 1
-        s += j
-        print(j)
+    for file in list_HTML:
+        current = len(open(file, 'r').readlines())
+        s+= current
+        print(current)
     print(s)
     return
 
+def CheckTags():
+    tags = []
+    for file in list_HTML:
+        for line in open(file, 'r'):
+            for tag in line.split('">')[-1].split():
+                tags.append(tag)
+    tags = set(tags)
+    true_tags = []
+    with open("../../AddTags/tags.txt", 'r') as file:
+        for line in file:
+            true_tags.append(line[:-1])
+    true_tags = set(true_tags)
+    ok = ["-", "rating", "<br>"]
+    for tag in [tag for tag in tags if tag not in true_tags and not any([tag.startswith(i) for i in ok])]:
+        print(tag)
 
 if __name__ == '__main__':
     print("Case 1 : Generate HTML")
@@ -200,6 +211,7 @@ if __name__ == '__main__':
     print("Case 3 : Delete lines from trim.txt")
     print("Case 4 : Delete n, m, k, l, p first line")
     print("Case 5 : Count the line in each link file")
+    print("Case 6 : Print unknown tags")
     case = int(input('Choisir un mode : '))
     if case == 1:
         GenerateHTML()
@@ -214,3 +226,5 @@ if __name__ == '__main__':
         GenerateTXT()
     elif case == 5:
         CountLine()
+    elif case == 6:
+        CheckTags()
