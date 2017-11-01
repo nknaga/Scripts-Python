@@ -15,7 +15,7 @@ from io import BytesIO
 from PIL import Image
 from os import system
 import urllib
-from lib.Progress import Progress
+from lib.progress import Progress
 from lib.Proxy import SetProxy, TestProxy, renew_tor
 import io
 
@@ -176,7 +176,7 @@ def Index():
     file = open('1-NotDanbooru_Result.html', 'r')
     r = input('Range ? ')
     lines = file.readline().split('<br/>')[:-1]
-    if 'pximg' not in lines:
+    if 'pximg' not in lines[0]:
         index = [int(ele.split('=')[-1]) for ele in lines]
     else:
         index = [int(ele.split('/')[-1].split('_')[0]) for ele in lines]
@@ -464,7 +464,7 @@ if __name__ == '__main__':
         files = input('File numbers ? ')
         if ':' in files:
             r = files.split(':')
-            files = [str(x) for x in list(range(int(r[0]), int(r[1])))]
+            files = [str(x) for x in list(range(int(r[0]), int(r[1])+1))]
         else:
             files = files.split()
     if mode == 0:
