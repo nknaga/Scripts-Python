@@ -15,8 +15,6 @@ from os.path import join, exists
 import sys
 from datetime import datetime
 
-from IPython import get_ipython
-get_ipython().run_line_magic('matplotlib', 'qt')
 
 str1 = "http://sonohara.donmai.us/counts/posts.json?tags="
 f = open("../Danbooru_Codes.txt")
@@ -47,9 +45,10 @@ def CheckIfAlready(tag):
 
 def Plt(data):
     x = []
-    y = []
-    for year in range(2005, date.today().year+1):
-        for month in range(1, 13):
+    y = []        
+    for year in range(date.today().year,2004,-1 ):
+        r = [range(12, 0, -1), range(date.today().month-1, 0, -1)][year == date.today().year]
+        for month in r:
             key = str(month)+'-'+str(year)
             if key in data:
                 c = data[key]
@@ -78,7 +77,8 @@ def Count(tags, mode, forced=False):
         j = len(range(date.today().year,2004,-1 ))*12
         begin = datetime.now()
         for year in range(date.today().year,2004,-1 ):
-            for month in range(12, 0, -1):
+            r = [range(12, 0, -1), range(date.today().month-1, 0, -1)][year == date.today().year]
+            for month in r:
                 if month == 12:
                     nMonth = 1
                     nYear = year+1
