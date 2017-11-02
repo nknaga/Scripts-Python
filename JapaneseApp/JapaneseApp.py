@@ -20,33 +20,50 @@ class Question:
         self.all = [l[i].replace(u'\xa0', u'') for i in range(len(l))]
         return
 
+
 class Question_Canvas(tk.Tk):
-    def __init__(self):
-        self.fenetre=tk.Tk.__init__(self)
+    def __init__(self, choice):
+        self.fenetre = tk.Tk.__init__(self)
         self.bind('<Return>', self.on_button_check)
         self._update = False
-        self.canvas = tk.Canvas(self.fenetre, width=300, height=100)
-        self._text = self.canvas.create_text(150, 20, text='Hello World', font="Arial 25")
+        if choice == 4:
+            self._width = 600
+        else:
+            self._width = 300
+        self.canvas = tk.Canvas(self.fenetre, width=self._width, height=100)
+        self._text = self.canvas.create_text(
+            self._width/2, 20, text='Hello World', font="Arial 25")
         self.canvas.pack()
-        self.entry = tk.Entry(self.fenetre, textvariable="Enter the aswer", width=15)
+        self.entry = tk.Entry(
+            self.fenetre,
+            textvariable="Enter the aswer",
+            width=15)
         self.entry.pack()
-        self.button_check = tk.Button(self, text="Check", command=self.on_button_check, width=10)
+        self.button_check = tk.Button(
+            self, text="Check", command=self.on_button_check, width=10)
         self.button_check.pack()
-        self.button_pass = tk.Button(self, text="Pass", command=self.on_button_pass, width=10)
+        self.button_pass = tk.Button(
+            self, text="Pass", command=self.on_button_pass, width=10)
         self.button_pass.pack()
-        self.button_break = tk.Button(self, text="Break", command=self.on_button_break, width=10)
+        self.button_break = tk.Button(
+            self, text="Break", command=self.on_button_break, width=10)
         self.button_break.pack()
         self._result = [0, 0]
 
     def Init(self, question):
         self.question = question
         self.canvas.delete(self._text)
-        self._text = self.canvas.create_text(150, 20, text=self.question.question, font="Arial 25")
+        if self._width == 300:
+            font = 'Arial 25'
+        else:
+            font = 'Arial 20'
+        self._text = self.canvas.create_text(
+            self._width/2, 20, text=self.question.question, font=font)
         self.canvas.pack()
         self._update = False
 
-    def on_button_check(self, event = None):
-        if self.entry.get() in  self.question.answer.split(', '):
+    def on_button_check(self, event=None):
+        if self.entry.get() in self.question.answer.split(', '):
             print('Right : ', self.question.answer)
             sys.stdout.flush()
             self._result[0] += 1
@@ -69,30 +86,71 @@ class Question_Canvas(tk.Tk):
     def on_button_break(self):
         frame.destroy()
 
+
 def FileSelection():
     print("Vocabulaire par cours : 1")
     print("Verbes : 2")
     print("Kanjis : 3")
     print("Conjugaison (tous les modes de verbes) : 4")
-    choice = int(input("Selectionner le mode : "))
+    choice = 0
+    ok = False
+    while choice not in list(range(1, 5)):
+        try:
+            choice = int(input("Selectionner le mode : "))
+        except Exception as e:
+            print(e)
     if choice == 1:
-        namefiles = [join('res', 'cours', x + '.txt') for x in input("Numéro (ex : 1 2 5) : ").split()]
+        while not ok:
+            files = input("Numéro (ex : 1 2 5 ou 2:5) : ")
+            try:
+                if ':' not in files:
+                    print('not in', files)
+                    files = files.split()
+                else:
+                    a, b = files.split(':')
+                    files = list(range(int(a), int(b) + 1))
+                if any(x > 20 or x < 1 for x in files):
+                    print('One of the file is unkown, try again')
+            except Exception as e:
+                print(e)
+            else:
+                ok = True
+        namefiles = [join('res', 'cours', str(x) + '.txt') for x in files]
         header = join('res', 'cours', 'header.txt')
         r = (0, -1)
-    elif choice in [2,3,4]:
+    elif choice in [2, 3, 4]:
         mode = ['', '', 'verbes', 'kanjis', 'conjugaison']
-        namefiles = [join('res', mode[choice]+'.txt')]
-        header = join('res', mode[choice]+'_header.txt')
-        r = [int(x) for x in input("Range (ex : 10:20) : ").split(':')]
-    return namefiles, header, r
+        namefiles = [join('res', mode[choice] + '.txt')]
+        header = join('res', mode[choice] + '_header.txt')
+        while not ok:
+             r = input("Range (ex : 10:20) : ")
+             try:
+                 if ':' in r:
+                     r = [int(x) for x in r.split(':')]
+                     ok = True
+             except Exception as e:
+                 print(e)
+    return namefiles, header, r,choice
+
 
 if __name__ == '__main__':
-    namefiles, header, r = FileSelection()
-    f1 = codecs.open(header, encoding='utf-16')
+    namefiles, header, r, mode = FileSelection()
+    f1 = open(header)
     head = f1.readline().split('\t')
     print('Quel binôme question/réponse ? (ex : 1 3)')
     print('! signifie symboles non-alphabétiques')
-    question, answer = [int(x) for x in (input(' | '.join([str(i) + ': ' + head[i] for i in range(len(head))]) + ' : ').split())]
+    ok = False
+    while not ok:
+        choice = input(' | '.join([str(i) + ': ' + head[i]
+                                   for i in range(len(head))]) + ' : ')
+        if len(choice.split()) == 2:
+            a, b = choice.split()
+            try:
+                if int(a) < len(head) and int(b) < len(head):
+                    ok = True
+            except Exception as e:
+                print(e)
+    question, answer = [int(x) for x in (choice.split())]
     if head[answer].startswith('!'):
         answer += 1
     worklist = []
@@ -102,19 +160,19 @@ if __name__ == '__main__':
             if line:
                 worklist.append(Question(line[:-2], question, answer))
     worklist = worklist[r[0]:r[1]]
-    print('You have', len(worklist),'questions')
+    print('You have', len(worklist), 'questions')
     sys.stdout.flush()
-    frame = Question_Canvas()
+    frame = Question_Canvas(mode)
     while True:
         question = random.choice(worklist)
         try:
             frame.Init(question)
             while True:
-                    frame.update()
-                    if frame._update:
-                        frame.canvas.delete(frame._text)
-                        break
-        except:
+                frame.update()
+                if frame._update:
+                    frame.canvas.delete(frame._text)
+                    break
+        except BaseException:
             print()
             print('--------------------------------')
             print("Nombre de bonnes réponses :   ", frame._result[0])
