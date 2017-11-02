@@ -1,0 +1,11 @@
+1/ Exécuter JapaneseApp.py
+2/ Choisir la partie que vous voulez étudier
+3A/ Si vous choississez le mode 1, entrez les cours qui vous souhaitez étudier. Vous pouvez les entrer individuellement (1 2 5), ou en groupe (2:5 = 2 3 4 5).
+3B/ Sinon, entrez la range du vocabulaire que vous souhaitez étudier. Par exemple, entrer 10:20 permet d'étudier le vocabulaire des lignes 11 à 20 (inclus) des fichiers choisis.
+
+4/ Entrez deux chiffres. Le premier indique la question qui vous sera posée, le deuxième la réponse attendue.
+Par exemple, dans le mode 1, si vous entrez 0 2, le programme affichera le vocabulaire écrits en katakana ou hiragana et réquierera une traduction en français.
+
+5A/ Entrez votre réponse puis appyez sur "Check" ou sur la touche Enter.
+5B/ Passer une question en la comptabilise ni en bonne réponse ni en mauvaise réponse.
+5C/ Pour arrêter le programme, fermer la fenêtre ou appuyez sur "Break".

@@ -109,7 +109,7 @@ def FileSelection():
                 else:
                     a, b = files.split(':')
                     files = list(range(int(a), int(b) + 1))
-                if any(x > 20 or x < 1 for x in files):
+                if any(int(x) > 20 or int(x) < 1 for x in files):
                     print('One of the file is unkown, try again')
             except Exception as e:
                 print(e)
