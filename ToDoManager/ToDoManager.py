@@ -87,16 +87,19 @@ def FuseVideo(line, mode = 1):
     error = False
     line = line.split('\t')
     res_name = line[0]
-    files = open('concat.txt', "w")
+    global generated
     for file in line[1:]:
-        if not exists(join(local, 'output', file)):
+        full_path = join(local, 'output', file)
+        cond = [full_path in generated, exists(full_path)][mode]
+        if not cond:
             error = True
             print('ERROR : no source file', file)
             return '', '', True
-    for file in line[1:]:
-        os.rename(join(local, 'output', file), file)
-        files.write('file '+ file + '\n')
-    files.close()
+    if mode:
+        with open('concat.txt', "w") as files:
+            for file in line[1:]:
+                os.rename(join(local, 'output', file), file)
+                files.write('file '+ file + '\n')
     res_name = join(local, 'output', res_name +'.mkv')
     cmd = 'ffmpeg -f concat -safe 0 -i concat.txt -c copy -fflags +genpts "'+res_name + '"'
     if exists(res_name):
@@ -182,6 +185,8 @@ def SwitchLaunch(youtube, video, mp3, fusion):
 def Loop(lines, mode = 1):
     youtube, video, mp3, fusion = False, False, False, False
     begin = 0
+    global generated
+    generated = []
     if mode:
         choice = input("Begin at line ? ")
         if choice:
@@ -192,7 +197,7 @@ def Loop(lines, mode = 1):
         if change or line.startswith('--') or not (video or mp3 or youtube or fusion) or i<begin:
             continue
         function = SwitchLaunch(youtube, video, mp3, fusion)
-        if mode or (function != FromYoutube and function != FuseVideo):
+        if mode or (function != FromYoutube):
             name, cmd, error = function(line, mode)
             if not error:
                 if mode and not exists(name):
@@ -203,6 +208,7 @@ def Loop(lines, mode = 1):
                     print('command:', cmd)
                 else:
                     advance = '('+str(i)+'|'+str(len(lines))+')'
+                    generated.append(name)
                     print('OK:', advance, line.split('\t')[0])
 
 if __name__ == '__main__':
