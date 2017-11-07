@@ -69,12 +69,18 @@ def ReplaceAll(text, lst_error):
     text - A corrected string"""
     global number_replacements
     text = ' ' + text + ' '
-    for i, j in lst_error:
-        text2 = text.replace(i, j)
-        if text2 != text:
-            if i != '  ':
-                number_replacements += 1
-            text = text2
+    for k in range(2):
+        for i, j in lst_error:
+            text2 = text.replace(i, j)
+            if text2 != text:
+                if i != '  ':
+                    number_replacements += 1
+                text = text2
+    l = []
+    for tag in text.split():
+        if tag not in l:
+            l.append(tag)
+    text = ' '.join(l)+ ' '
     return text
 
 
@@ -97,6 +103,17 @@ def DelLine(list_n):
         remove(list_HTML[i])
         rename(list_HTML[i] + '~', list_HTML[i])
     return
+    
+def PrintUrl(list_n):
+    while len(list_n) < len(list_L):
+        list_n.append(0)
+    urls = []
+    for i in range(len(list_L)):
+        urls += open(list_L[i], 'r').readlines()[:int(list_n[i])]
+    for url in urls:
+        print('http://danbooru.donmai.us/uploads/new?url='+url[:-1])
+    return
+
 
 
 def TrimHTML():
@@ -212,6 +229,7 @@ if __name__ == '__main__':
     print("Case 4 : Delete n, m, k, l, p first line")
     print("Case 5 : Count the line in each link file")
     print("Case 6 : Print unknown tags")
+    print("Case 7 : Print urls to post")
     case = int(input('Choisir un mode : '))
     if case == 1:
         GenerateHTML()
@@ -221,10 +239,14 @@ if __name__ == '__main__':
         TrimHTML()
         GenerateTXT()
     elif case == 4:
-        list_n = input("How many line to delete? ")
+        list_n = input("How many lines to delete? ")
         DelLine(list_n.split())
         GenerateTXT()
     elif case == 5:
         CountLine()
     elif case == 6:
         CheckTags()
+    elif case == 7:
+        list_n = input("How many lines to show? ")
+        PrintUrl(list_n.split())
+        
