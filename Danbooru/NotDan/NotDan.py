@@ -118,8 +118,7 @@ def JsonReading(files):
         blacklist = []
         for line in f:
             blacklist.append(line[:-1])
-    print('----------------------------')
-    print('---- BEGIN JSON READING ----')
+    print('----------------------------\n---- BEGIN JSON READING ----')
     r = input("score range ? ")
     if ':' in r:
         scm, scM = r.split(':')
@@ -147,7 +146,7 @@ def JsonReading(files):
     print()
     for k, v in sorted([(v, k) for (k, v) in nb.items()]):
         print(k, ':', v)
-    print('---- JSON READING OK ----')
+    print('----------------------------')
     if input(str(len(data)) + ' images found. Check on Dan ? (y/n) ') == 'y':
         Routeur123(mode=1, data=data)
         if input('Continue to extract urls ? (y/n) : ') == 'y':
@@ -230,8 +229,7 @@ def Url2Data(url):
 def ShowImgs(imgs):
     input('Press a key to begin')
     begin = datetime.now()
-    print('-----------------------')
-    print('--- BEGIN SHOW IMGS ---')
+    print('-----------------------\n--- BEGIN SHOW IMGS ---')
     print('Begin at', begin.strftime('%H:%M'), len(imgs))
     i, l = 0, len(imgs)
     file = open('3-final.html', 'w')
@@ -249,7 +247,7 @@ def ShowImgs(imgs):
             ' | ' + img._url.split('/')[-1]
         Progress(s)
     print()
-    print('--- SHOW IMGS OK ---')
+    print('-----------------------')
 
 
 def IndividualIQDB(url, mode):
@@ -275,12 +273,8 @@ def IQDBreq(url_sample, to_append=False):
         page = urllib.request.urlopen(url)
         strpage = page.read().decode('utf-8')
     except Exception as e:
-        if "Flood detected" in str(e):
-            links.append(to_append)
-            return True
-        else:
-            print(e)
-            return False
+        links.append(to_append)
+        return True
     if 'Best match' in strpage and page.getcode() == 200:
         return True
     else:
@@ -333,6 +327,7 @@ def Routeur123(mode=0, data=None):
     index = data
     res = []
     if mode == 0:
+        print('--------------------------\n--- BEGIN JSON WRITING ---')
         global score
         score = int(input('Minimum score? '))
         ran = input('Range? ').split()
@@ -342,10 +337,14 @@ def Routeur123(mode=0, data=None):
             index += list(range(int(x), int(y)))
         res = {}
     elif mode == 1:
+        print('--------------------------\n--- BEGIN CHECK ON DAN ---')
         file = open('1-NotDanbooru_Result.html', 'w')
         data.sort()
         index = data
+    elif mode == 2:
+        print('--------------------------\n------ DOWNLOAD IMG ------')
     elif mode == 3:
+        print('--------------------------\n---- PIXIV ID TO URL -----')
         res = {}
     limit = len(index)
     limit_active = int(input('Number of threads ? ')) + \
@@ -384,10 +383,10 @@ def Routeur123(mode=0, data=None):
                 p = int(i / limit * 10000) / 100
         time.sleep(10)
     except Exception as e:
-        print(e, 'Stop at', i)
+        print(e, 'Stop at', i,'\n--------------------------')
     finally:
-        print()
-        print('FOUND:', len(res))
+        print('\nFOUND:', len(res),'\n--------------------------')
+        
         if mode in [0, 1]:
             if not mode and res:
                 name = 'pixiv/temp' + str((index[0]) // 1000000) + '.json'
