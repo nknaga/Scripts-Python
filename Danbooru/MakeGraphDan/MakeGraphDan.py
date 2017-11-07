@@ -54,13 +54,17 @@ def Plt(data):
                 c = data[key]
             else:
                 c= 0
-            plt.ion()
             y.append(c)
             x.append(date(year, month, 1))
+    while y[-1] == 0:
+        x = x[:-1]
+        y = y[:-1]
     fig, ax1 = plt.subplots()
+    plt.margins(0)
     ax1.plot(x, y, marker='+')
     ax1.set_xlabel('Month')
     ax1.set_ylabel('Nb')
+    plt.xticks(rotation=45)
 
 def Progress(s):
     sys.stdout.write('\r')
@@ -68,7 +72,7 @@ def Progress(s):
     sys.stdout.flush()
 
 def Count(tags, mode, forced=False):
-    namefile = tags.replace(':', '-').replace('/', '-').replace('>', '-')
+    namefile = tags.replace(':', '-').replace('/', '-').replace('>', '-').replace('?', '-')
     if not forced and CheckIfAlready(namefile):
         results = CountFromFile(namefile)
     else:
@@ -118,5 +122,8 @@ if __name__ == '__main__':
     print('mode 1 : result in nb')
     mode = int(input('mode ? : '))
     forced = input('Force the creation of new db ? (y/n) : ')=='y'
-    res = Count(tags, mode, forced = forced)
-    Plt(res)
+    for tag in tags.split():
+        print(tag)
+        res = Count(tag, mode, forced = forced)
+        Plt(res)
+        print()
