@@ -11,8 +11,6 @@ import json
 import matplotlib.pyplot as plt
 from datetime import date
 
-from IPython import get_ipython
-get_ipython().run_line_magic('matplotlib', 'qt')
 
 def UserListCompleted(username):
     url = 'https://myanimelist.net/animelist/' + username + '?status=2'
@@ -64,7 +62,7 @@ def ReduceOnConditions(dic, conditions):
             res[key] = value
     return res
 
-def CountYear(dic, years):
+def CountYear(dic, years, episodes):
     nbs = []
     for year in years:
         nb = 0
@@ -75,25 +73,24 @@ def CountYear(dic, years):
                 continue
             try:
                 if 'Aired:' in value and int(value['Aired:'][0].split('/')[-1])==year:
-                    nb+=1
+                    if episodes:
+                        nb+=int(value['Episodes:'])
+                    else:
+                        nb+=1
             except:
                 pass
                 #print('error:', value['Aired:'])
         nbs.append(nb)
     return nbs
 
-def GetData():
+def GetData(conditions, username, mode, episodes):
     years = range(1970, date.today().year-1)
     data0 = LoadDic()
-    nbs_total = CountYear(data0, years)
-    print('You can choose conditions from :\n', '\n'.join(list(data0['1'].keys())))
-
-    conditions = input("Conditions (split on '&') ? ")
+    nbs_total = CountYear(data0, years, episodes)
     if conditions:
         conditions = [c.split(':') for c in conditions.split('&')]
-        nbs_all = CountYear(ReduceOnConditions(data0, conditions), years)
+        nbs_all = CountYear(ReduceOnConditions(data0, conditions), years, episodes)
 
-        mode = input('Result in nb or in % ? ')
         if mode == '%':
             ylabel = '%'
             p_all = GetProportion(nbs_all,nbs_total)
@@ -103,10 +100,9 @@ def GetData():
             data = [nbs_all]
         legend = ['all']
 
-        username = input('Username ? ')
         if username:
             data_user = ReduceDic(data0, UserListCompleted('Rignak'))
-            nbs_user = CountYear(ReduceOnConditions(data_user, conditions), years)
+            nbs_user = CountYear(ReduceOnConditions(data_user, conditions), years, episodes)
 
             if mode == '%':
                 p_user = GetProportion(nbs_user,nbs_total)
@@ -119,7 +115,7 @@ def GetData():
     else:
         ylabel = 'nb'
         data, legend = [nbs_total], ['all']
-    Plt(years, data, legend, ylabel)
+    Plt(years, data, legend, ylabel, conditions)
 
 def GetProportion(l1, l2):
     p = []
@@ -130,13 +126,24 @@ def GetProportion(l1, l2):
             p.append(0)
     return p
 
-def Plt(x, data, legend, ylabel):
+def Plt(x, data, legend, ylabel, conditions):
     fig, ax1 = plt.subplots()
     for y in data:
         ax1.plot(x, y)
     ax1.set_xlabel('Years')
     ax1.set_ylabel(ylabel)
     plt.legend(legend, loc="best")
+    plt.title(conditions)
 
 if __name__ == '__main__':
-    GetData()
+    data0 = LoadDic()
+    print('You can choose conditions from :\n', '\n'.join(list(data0['1'].keys())))
+    print("Multiples searches split by '|'")
+    print("and conditions applied with &")
+    print("Example: Genres:Sci-fi&Type:TV|Genres:Mecha")
+    conditions = input("Conditions (split on '&') ? ")
+    mode = input('Result in nb or in % ? ')
+    username = input('Username ? ')
+    episodes = input('Count episode ? (y/n) ') == 'y'
+    for condition in conditions.split('|'):
+        GetData(condition, username, mode, episodes)
