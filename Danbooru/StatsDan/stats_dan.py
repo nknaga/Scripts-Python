@@ -12,7 +12,7 @@ from lib import Lib
 if __name__ == '__main__':
     api_key, username = Lib.DanbooruCodes()
     mini = 0
-    maxi = 50
+    maxi = int(input("How many data ? "))
     file = open('result.txt', 'w')
     for i in range(mini, maxi):
         res = str(date.today() - timedelta(days=i)) + " "
