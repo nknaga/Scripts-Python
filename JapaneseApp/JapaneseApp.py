@@ -92,6 +92,7 @@ def FileSelection():
     print("Verbes : 2")
     print("Kanjis : 3")
     print("Conjugaison (tous les modes de verbes) : 4")
+    print("Numéraux : 5")
     choice = 0
     ok = False
     while choice not in list(range(1, 5)):
@@ -119,7 +120,7 @@ def FileSelection():
         header = join('res', 'cours', 'header.txt')
         r = (0, -1)
     elif choice in [2, 3, 4]:
-        mode = ['', '', 'verbes', 'kanjis', 'conjugaison']
+        mode = ['', '', 'verbes', 'kanjis', 'conjugaison', 'numeraux']
         namefiles = [join('res', mode[choice] + '.txt')]
         header = join('res', mode[choice] + '_header.txt')
         while not ok:
@@ -137,7 +138,7 @@ if __name__ == '__main__':
     namefiles, header, r, mode = FileSelection()
     f1 = open(header)
     head = f1.readline().split('\t')
-    print('Quel binôme question/réponse ? (ex : 1 3)')
+    print('Quel binôme question/réponse ? (ex : 0 1)')
     print('! signifie symboles non-alphabétiques')
     ok = False
     while not ok:
