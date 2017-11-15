@@ -72,7 +72,7 @@ def Progress(s):
     sys.stdout.flush()
 
 def Count(tags, mode, forced=False):
-    namefile = tags.replace(':', '-').replace('/', '-').replace('>', '-').replace('?', '-')
+    namefile = tags.replace(':', '-').replace('/', '-').replace('>', '-').replace('?', '-').replace('<', '-')
     if not forced and CheckIfAlready(namefile):
         results = CountFromFile(namefile)
     else:
