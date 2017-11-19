@@ -118,6 +118,10 @@ def JsonReading(files):
         blacklist = []
         for line in f:
             blacklist.append(line[:-1])
+    with io.open("tags.txt", 'r', encoding='utf8') as f:
+        nb = {}
+        cor = {}
+        tags = f.readlines()
     print('----------------------------\n---- BEGIN JSON READING ----')
     r = input("score range ? ")
     if ':' in r:
@@ -126,23 +130,33 @@ def JsonReading(files):
         scm, scM = r, 99999999
     else:
         scm, scM = 0, 99999999
-    score = [int(scm), int(scM), input('tags? ')]
+    tags_user = input('tags? ')
+    score = [int(scm), int(scM), tags_user]
+    
+    for line in tags:
+        for tag in line.split():
+            if tag in tags_user:
+                nb[line.split()[-1]] = 0
+                cor[tag] = line.split()[-1]
+            
     tag_f = input('Enforce tags? : ').split()
+    tag_rem = input("Tags to blacklist ? ")
+    for tag in tag_rem.split():
+        blacklist.append(tag)
     data = []
     scm, scM, tags = score
-    nb = {key: 0 for key in tags.split()}
     for j, file in enumerate(files):
         Progress("read : " + str(j) + '/' + str(len(files)))
         with open('pixiv/' + file + '.json', 'r') as file:
             temp = json.load(file)
-            for i, v in temp.items():
-                if (v['s'] > scm and v['s'] < scM) \
-                        and (not tag_f or any(tag in v['t'] for tag in tag_f))\
-                        and (not any(tag in v['t'] for tag in blacklist))\
-                        and (not tags or any(tag in v['t'] for tag in tags.split())):
-                    data.append(int(i))
-                    for tag in set(tags.split()).intersection(set(v['t'])):
-                        nb[tag] += 1
+        for i, v in temp.items():
+            if (v['s'] > scm and v['s'] < scM) \
+            and (not tag_f or any(tag in v['t'] for tag in tag_f))\
+            and (not any(tag in v['t'] for tag in blacklist))\
+            and (not tags or any(tag in v['t'] for tag in tags.split())):
+                data.append(int(i))
+                for tag in set(tags.split()).intersection(set(v['t'])):
+                    nb[cor[tag]] += 1
     print()
     for k, v in sorted([(v, k) for (k, v) in nb.items()]):
         print(k, ':', v)
@@ -213,6 +227,9 @@ def ShowPixiv():
 def PixivId2Url(i):
     try:
         res1 = illust_detail(i, req_auth=True)
+        while 'error' in res1 and 'Rate Limit' == res1['error']['message']:
+            time.sleep(60)
+            res1 = illust_detail(i, req_auth=True)
         if 'illust' in res1:
             res2 = [dic.image_urls.original for dic in res1.illust.meta_pages]
             if not res2:
@@ -269,6 +286,7 @@ def IQDBreq(url_sample, to_append=False):
     global file
     global links
     try:
+        url_sample = '/'.join(url_sample.split('/')[:-1]) + '/yande.re' + url_sample[-4:]
         url = 'http://danbooru.iqdb.org/?url=' + url_sample
         page = urllib.request.urlopen(url)
         strpage = page.read().decode('utf-8')
@@ -360,7 +378,7 @@ def Routeur123(mode=0, data=None):
             while threading.active_count() > limit_active:
                 time.sleep(0.1)
                 m += 1
-                if m == 500:
+                if m == 500 and mode == 0:
                     print('\nWill proced to change the proxy')
                     SetProxy(TestProxy())
             if mode in [0, 3] and (
@@ -385,8 +403,6 @@ def Routeur123(mode=0, data=None):
     except Exception as e:
         print(e, 'Stop at', i,'\n--------------------------')
     finally:
-        print('\nFOUND:', len(res),'\n--------------------------')
-        
         if mode in [0, 1]:
             if not mode and res:
                 name = 'pixiv/temp' + str((index[0]) // 1000000) + '.json'
@@ -401,9 +417,12 @@ def Routeur123(mode=0, data=None):
                 for url in value:
                     res.append(url)
             res.sort()
+            print('\nFOUND:', len(res),'\n--------------------------')
             return res
         elif mode == 2:
+            print('\nFOUND:', len(res),'\n--------------------------')
             return res
+        print('\nFOUND:', len(res),'\n--------------------------')
 
 
 def Routeur456(mode):
