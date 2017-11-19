@@ -148,7 +148,10 @@ def GenerateTXT():
     """Creation of two .txt (url and tags) for each .html"""
     print("Generation of .txt")
     for file in list_T:
-        remove(file[:-4] + '_old.txt')
+        try:
+            remove(file[:-4] + '_old.txt')
+        except:
+            pass
         rename(file, file[:-4] + '_old.txt')
     for i in range(len(list_T)):
         file = open(list_HTML[i], 'r')
@@ -157,7 +160,9 @@ def GenerateTXT():
         for line in file:
             try:
                 lineL = line.split("\"")[-2]+ "\n"
-                lineT = line.split(">")[1][:-3]
+                print('lineL:', lineL)
+                lineT = line.split("<")[1].split('>')[1][:-1]
+                print('here:', line.split("<")[1])
                 fileL.write(CorrectorSample(lineL))
                 fileT.write(ReplaceAll(lineT, lst_error))
                 fileT.write('\n\n')
