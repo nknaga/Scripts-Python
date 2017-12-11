@@ -47,7 +47,7 @@ def FromYoutube(line, mode = 1):
     yt.set_filename(name)
     yt.filter('mp4')[-1].download(join(local,"input"))
     if ext == 'mp3':
-        return ToMP3('\t'.join([name + '.mp4', begin, end]), mode=mode)
+        return ToMP3('\t'.join([name + '.mp3', begin, end, name+ '.mp4']), mode=mode)
     else:
         return CutVideo('\t'.join([name, begin, end, '0', name + '.mp4']), mode=mode)
 
@@ -119,28 +119,26 @@ def ToMP3(line, mode = 1):
     for x in l1:
         if x:
             l2.append(x)
-    if len(l2) not in [1, 3]:
+    if len(l2) not in [2, 4]:
         print('ERROR : check TODO file', l2)
         return '', '', True
-    elif len(l2) == 1:
+    elif len(l2) == 2:
         name = l2[0]
         begin, end = '0000', '0000'
     else:
-        name, begin, end = l2[:3]
-    name = join(local, 'input', name)
-    res = name.replace('flac', 'mp3').replace('input', 'output').replace('mp4', 'mp3')
+        name, begin, end, old = l2[:4]
+    old = join(local, 'input', old)
+    name = join(local, 'output', old)
     begin, end = [ConvertTime(d) for d in [begin, end]]
     if end != '00:00:00':
         end =  " -to " + end
     else:
         end = ""
-    while os.path.exists(res):
-        res+='1'
-    line = " ".join(['ffmpeg -i', '"'+name+'"', "-ss", begin, end, '"'+res+'"'])
-    if exists(res):
+    line = " ".join(['ffmpeg -i', '"'+old+'"', "-ss", begin, end, '"'+name+'"'])
+    if exists(name):
         error = True
         print('ERROR : file already exist')
-    elif not exists(name):
+    elif not exists(old):
         error = True
         print('ERROR : no source file')
     elif mode:

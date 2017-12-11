@@ -7,41 +7,47 @@ Created on Sat Oct 14 21:18:59 2017
 import requests
 import json
 from datetime import datetime
-from lib import Lib
-
+from py_functions import Lib
+from os.path import join
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
 api_url = 'http://sonohara.donmai.us/posts.json'
 
-def Req(page, once):
+def Req(page, once, mode):
+    if mode == 1:
+        tag = 'user:'+username
+    elif mode == 0:
+        tag = 'fav:'+username
     payload = {'limit': str(once),
-               'tags': 'fav:'+username,
+               'tags': tag,
                'api_key': api_key,
                'login': username,
                'page':str(page)}
     return requests.get(api_url, data=payload, headers=headers, stream=True).content
 
-def FillJson():
+def FillJson(mode):
     full = []
-    once = 1
-    total = 5132
+    once = 200
+    total = [5163, 20383][mode]
     error = 0
     begin = datetime.now()
     for i in range(int(total/once)):
         try:
-            new_data = json.loads(Req(i, once).decode('utf8').replace("'", '"'))
-        except:
+            page = Req(i, once, mode).decode('utf8').replace("'", "")
+            new_data = json.loads(page)
+        except Exception as e:
+            print(e, page)
             error+=1
         full += new_data
         ending = (datetime.now() - begin) / (i + 1) * int(total/once) + begin
         Lib.Progress(str(i+1) + ' on ' + str(int(total/once)) + ' | ' +
                  ending.strftime('%H:%M')+' | '+str(error))
-    with open(username+'.json', 'w') as file:
+    with open(join('res', str(mode)+username+'.json'), 'w') as file:
         json.dump(full, file, sort_keys=True, indent=4)
     return
 
-def ReadJson():
-    with open(username+'.json', 'r') as file:
+def ReadJson(mode):
+    with open(join('res', str(mode)+username+'.json'), 'r') as file:
         data = json.load(file)
     return data
 
@@ -58,20 +64,23 @@ def Order(mode, data):
                     res[s]+=1
                 else:
                     res[s]=1
-    return sorted([(v, k) for (k, v) in res.items()])
+    return sorted([(v, k) for (k, v) in res.items()])[-20:]
 
 def Count(mode, data):
-    print(['tag_string_artist', 'tag_string_character', 'tag_string_copyright'][mode])
+    print('\n',['tag_string_artist', 'tag_string_character', 'tag_string_copyright'][mode])
     for k, v in Order(mode,data):
-        if k > 50:
-            print(k, v)
+        print(k, v)
 
 if __name__ == '__main__':
     global api_key
     global username
     api_key, username = Lib.DanbooruCodes()
-    #FillJson()
-    data = ReadJson()
+    print('mode 0 : fav, mode 1 : posted')
+    mode = int(input('mode: (0 or 1) '))
+    fill = input('Make a new json ? (y/n) ') == 'y'
+    if fill:
+        FillJson(mode)
+    data = ReadJson(mode)
     Count(0, data)
     Count(1, data)
     Count(2, data)

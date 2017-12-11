@@ -37,17 +37,18 @@ class Sample:
     - the tags corresponding to the image (a str)"""
 
     def __init__(self, url):
-        ok = False
+        ok = 0
         self._url = url
         self._adds = ''
-        while not ok:
+        while ok <7 :
             try:
                 req = urllib.request.Request(url)
                 req.add_header('Referer', 'https://www.pixiv.net/')
                 self._data = BytesIO(urllib.request.urlopen(req).read())
-                ok = True
+                ok = 7
             except Exception as e:
-                print("Sample init - error on", self._url, e)
+                print("\nSample init - error on", self._url, e)
+                ok+=1
 
     def InputTags(self):
         """Display a sample, and ask an input to add tags"""
@@ -67,14 +68,15 @@ def AddEntry(index):
         while retry < 6:
             try:
                 json = illust_detail(index, req_auth=True)
+                while 'error' in json and 'Rate Limit' == json['error']['message']:
+                    time.sleep(60)
+                    json = illust_detail(index, req_auth=True)
                 if 'reason' not in json:
                     retry = 7
                 else:
                     retry += 1
             except BaseException:
                 retry += 1
-        if retry == 6:
-            json = illust_detail(index, req_auth=True)
         if 'illust' in json:
             json = json.illust
             if json.total_bookmarks > score and json.page_count < 10:
@@ -118,10 +120,6 @@ def JsonReading(files):
         blacklist = []
         for line in f:
             blacklist.append(line[:-1])
-    with io.open("tags.txt", 'r', encoding='utf8') as f:
-        nb = {}
-        cor = {}
-        tags = f.readlines()
     print('----------------------------\n---- BEGIN JSON READING ----')
     r = input("score range ? ")
     if ':' in r:
@@ -133,6 +131,10 @@ def JsonReading(files):
     tags_user = input('tags? ')
     score = [int(scm), int(scM), tags_user]
     
+    with io.open("tags.txt", 'r', encoding='utf8') as f:
+        nb = {}
+        cor = {}
+        tags = f.readlines()
     for line in tags:
         for tag in line.split():
             if tag in tags_user:
@@ -286,7 +288,8 @@ def IQDBreq(url_sample, to_append=False):
     global file
     global links
     try:
-        url_sample = '/'.join(url_sample.split('/')[:-1]) + '/yande.re' + url_sample[-4:]
+        if 'yande.re' in url_sample:
+            url_sample = '/'.join(url_sample.split('/')[:-1]) + '/yande.re' + url_sample[-4:]
         url = 'http://danbooru.iqdb.org/?url=' + url_sample
         page = urllib.request.urlopen(url)
         strpage = page.read().decode('utf-8')
@@ -339,7 +342,12 @@ def YanUrl2Sample(url_yan):
             print(e)
     return url
 
-
+def GetPixApi(id_mail, mails, password):
+    id_mail = (id_mail+1)%len(mails)
+    api = AppPixivAPI()
+    api.login(mails[id_mail], password)
+    return api, id_mail, api.illust_detail
+    
 def Routeur123(mode=0, data=None):
     global file, res, illust_detail
     index = data
@@ -368,31 +376,42 @@ def Routeur123(mode=0, data=None):
     limit_active = int(input('Number of threads ? ')) + \
         threading.active_count()
     function = [AddEntry, CheckOnDan, Url2Data, PixivId2Url][mode]
-    try:
-        begin = datetime.now()
-        p = 0.0
-        print('Begin at', begin.strftime('%H:%M'))
+    begin = datetime.now()
+    if mode in [0, 3]:
+        with open("../Pixiv_Codes.txt", 'r') as f:
+            mails = f.readline().split()[1:]
+            password = f.readline().split()[1]
         lastLogin = begin
+        id_mail = -1
+        n = -1
+    print('Begin at', begin.strftime('%H:%M'))
+    p = 0.0
+    try:
         for i, x in enumerate(index):
             m = 0
             while threading.active_count() > limit_active:
                 time.sleep(0.1)
                 m += 1
-                if m == 500 and mode == 0:
-                    print('\nWill proced to change the proxy')
-                    SetProxy(TestProxy())
-            if mode in [0, 3] and (
-                    (datetime.now() - lastLogin).seconds > 3590 or i == 0):
-                if i == 0:
-                    with open("../Pixiv_Codes.txt", 'r') as f:
-                        pixiv_mail = f.readline().split()[1]
-                        pixiv_code = f.readline().split()[1]
-                    api = AppPixivAPI()
-                    illust_detail = api.illust_detail
-                    begin = datetime.now()
-                else:
+                if m == 50 and mode in [0, 3]:
+                    # Can stop because of proxy, or because of rate limit
+                    test = illust_detail(i, req_auth=True)
+                    if 'error' in test and test['error']['message'] == 'Rate Limit':
+                        api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
+                        n = 0
+                        #print('\nSwitch account to', mails[id_mail])
+                        time.sleep(20)
+                    else:
+                        pass
+                        #print('\nWill proced to change the proxy')
+                        #SetProxy(TestProxy())
+            if mode in [0,3]:
+                n+= 1
+                if not n%800:
+                    api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
+                elif (datetime.now() - lastLogin).seconds > 3590:
                     lastLogin = datetime.now()
-                api.login(pixiv_mail, pixiv_code)
+                    api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
+                    n = 0
             Thread(target=function, args=(x, )).start()
             if p != int(i / limit * 10000) / 100:
                 mean_time = (datetime.now() - begin) / (i + 1)
@@ -401,7 +420,7 @@ def Routeur123(mode=0, data=None):
                 p = int(i / limit * 10000) / 100
         time.sleep(10)
     except Exception as e:
-        print(e, 'Stop at', i,'\n--------------------------')
+        print('\n',mails[id_mail], e, 'Stop at', i,'\n--------------------------')
     finally:
         if mode in [0, 1]:
             if not mode and res:

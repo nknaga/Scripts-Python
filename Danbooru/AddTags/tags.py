@@ -64,7 +64,7 @@ if __name__ == '__main__':
             Thread(target=IndividualRequest, args=(url,i)).start()
             ending = (datetime.now() - begin) / j * sum(ls) + begin
             Progress(str(j+ls[0]*i) + ' on ' + str(sum(ls)) + ' | ' + ending.strftime('%H:%M') + ' | ' + str(len(tags)))
-    sleep(20)
+    sleep(200)
     tags = set(tags)
     with open('tags.txt', 'w') as f:
         for tag in tags:

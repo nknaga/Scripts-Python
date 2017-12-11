@@ -10,7 +10,7 @@ import requests
 import time
 import json
 from datetime import datetime
-from lib import Lib
+from py_functions import Lib
 from threading import Thread
 import threading
 

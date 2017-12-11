@@ -5,62 +5,9 @@ Created on Fri Jun 26 11:27:34 2017
 @author: Rignak
 """
 
-from urllib.request import urlopen
-import bs4
-import json
 import matplotlib.pyplot as plt
 from datetime import date
-
-
-def UserListCompleted(username):
-    url = 'https://myanimelist.net/animelist/' + username + '?status=2'
-    soup = bs4.BeautifulSoup(urlopen(url).read(), 'lxml')
-    fa = soup.find_all('a')
-    ids = []
-    for a in fa:
-        if 'href' in a.attrs.keys() and a.attrs['href'].startswith('/anime/'):
-            ids.append(int(a.attrs['href'].split('/anime/')[1].split('/')[0]))
-    return ids
-
-def LoadDic():
-    with open('myanimelist.json', 'r') as file:
-        data = json.load(file)
-    return data
-
-def ReduceDic(full_dic, ids):
-    user_dic = {}
-    for key in ids:
-        if str(key) in full_dic:
-            user_dic[str(key)] = full_dic[str(key)]
-    return user_dic
-
-def CheckCondition(entry, c):
-    key, value = c
-    key += ':'
-    if key not in entry:
-        return False
-    if len(entry[key]) == 1:
-        if entry[key] == value:
-            return True
-        else:
-            return False
-    elif value in entry[key]:
-        return True
-    else:
-        return False
-
-def ReduceOnConditions(dic, conditions):
-    res = {}
-    for key, value in dic.items():
-        ok = True
-        for condition in conditions:
-            c = CheckCondition(value, condition)
-            if not c:
-                ok = False
-                break
-        if ok:
-            res[key] = value
-    return res
+from py_functions.myanimelist import UserList, LoadDic, ReduceDic, ReduceOnConditions
 
 def CountYear(dic, years, episodes):
     nbs = []
@@ -101,7 +48,7 @@ def GetData(conditions, username, mode, episodes):
         legend = ['all']
 
         if username:
-            data_user = ReduceDic(data0, UserListCompleted('Rignak'))
+            data_user = ReduceDic(data0, UserList(username, 2))
             nbs_user = CountYear(ReduceOnConditions(data_user, conditions), years, episodes)
 
             if mode == '%':

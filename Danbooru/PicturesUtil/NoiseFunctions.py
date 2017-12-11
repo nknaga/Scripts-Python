@@ -73,13 +73,13 @@ def FirstLocalMinimum(t):
 
 def Test():
     from matplotlib import pyplot as plt
-    n1 =  'example/RokudenashiOrig.jpg'
+    n1 =  'example/Miki 9A.jpg'
     y = DetectJPG(n1, mode=1)
     x = [y[a][1] for a in range(len(y))]
     y = [y[a][0] for a in range(len(y))]
     plt.plot(x, y)
 
-    n2 =  'example/RokudenashiSample.jpg'
+    n2 =  'example/Miki 9B.jpg'
     y = DetectJPG(n2, mode=1)
     x = [y[a][1] for a in range(len(y))]
     y = [y[a][0] for a in range(len(y))]

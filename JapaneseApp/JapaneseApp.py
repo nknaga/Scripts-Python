@@ -16,7 +16,10 @@ class Question:
     def __init__(self, line, question, answer):
         l = line.split('\t')
         self.question = l[int(question)].replace(u'\xa0', u'')
-        self.answer = l[int(answer)].replace(u'\xa0', u'')
+        try:
+            self.answer = l[int(answer)].replace(u'\xa0', u'')
+        except:
+            print('Error:', line)
         self.all = [l[i].replace(u'\xa0', u'') for i in range(len(l))]
         return
 
@@ -128,6 +131,7 @@ def FileSelection():
              try:
                  if ':' in r:
                      r = [int(x) for x in r.split(':')]
+                     r[0] -= 1
                      ok = True
              except Exception as e:
                  print(e)

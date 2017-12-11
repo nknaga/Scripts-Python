@@ -105,13 +105,14 @@ def DelLine(list_n):
     return
     
 def PrintUrl(list_n):
-    while len(list_n) < len(list_L):
+    while len(list_n) < len(list_HTML):
         list_n.append(0)
-    urls = []
-    for i in range(len(list_L)):
-        urls += open(list_L[i], 'r').readlines()[:int(list_n[i])]
-    for url in urls:
-        print('http://danbooru.donmai.us/uploads/new?url='+url[:-1])
+    lines = []
+    for i in range(len(list_HTML)):
+        lines += open(list_HTML[i], 'r').readlines()[:int(list_n[i])]
+    for line in lines:
+        url = line.split('"')[1]
+        print('http://danbooru.donmai.us/uploads/new?url='+url)
     return
 
 
@@ -160,9 +161,7 @@ def GenerateTXT():
         for line in file:
             try:
                 lineL = line.split("\"")[-2]+ "\n"
-                print('lineL:', lineL)
                 lineT = line.split("<")[1].split('>')[1][:-1]
-                print('here:', line.split("<")[1])
                 fileL.write(CorrectorSample(lineL))
                 fileT.write(ReplaceAll(lineT, lst_error))
                 fileT.write('\n\n')
@@ -189,12 +188,12 @@ def GenerateHTML():
             if IsBanned(lineT):
                 banned += 1
                 print(lineL, 'Banned\n')
-                continue
-            l = '<A HREF="' + CorrectorSample(lineL[:-1]) + '"> ' \
-            + ReplaceAll(lineT, lst_error) + '<br></br> \n'
-            l = l.replace('<br></br><br></br>','<br></br>')
-            l = l.replace('<br></br> <br></br>','<br></br>')
-            file.write(l)
+            else:
+                l = '<A HREF="' + CorrectorSample(lineL[:-1]) + '"> ' \
+                + ReplaceAll(lineT, lst_error) + '<br></br> \n'
+                l = l.replace('<br></br><br></br>','<br></br>')
+                l = l.replace('<br></br> <br></br>','<br></br>')
+                file.write(l)
 
     global number_replacements
     print('Number of deleted :', banned)
