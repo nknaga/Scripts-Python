@@ -14,19 +14,14 @@ def CountYear(dic, years, episodes):
     for year in years:
         nb = 0
         for key, value in dic.items():
-            if not 'Aired:' in value or not value['Aired:']:
-                continue
-            if 'Aired:' in value and value['Aired:'][0].split('/')[-1] == '?':
-                continue
             try:
-                if 'Aired:' in value and int(value['Aired:'][0].split('/')[-1])==year:
+                if 'begin' in value and int(value['begin'][0].split('/')[-1])==year:
                     if episodes:
-                        nb+=int(value['Episodes:'])
+                        nb+=int(value['episodes'])
                     else:
                         nb+=1
             except:
                 pass
-                #print('error:', value['Aired:'])
         nbs.append(nb)
     return nbs
 
@@ -87,7 +82,7 @@ if __name__ == '__main__':
     print('You can choose conditions from :\n', '\n'.join(list(data0['1'].keys())))
     print("Multiples searches split by '|'")
     print("and conditions applied with &")
-    print("Example: Genres:Sci-fi&Type:TV|Genres:Mecha")
+    print("Example: genres:Sci-fi&type:TV|genres:Mecha")
     conditions = input("Conditions (split on '&') ? ")
     mode = input('Result in nb or in % ? ')
     username = input('Username ? ')

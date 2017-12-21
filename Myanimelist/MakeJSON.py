@@ -12,9 +12,14 @@ from threading import Thread
 import requests
 import time
 import threading
+from sys import stdout
 
 base = 'https://'+'/'.join(['myanimelist.net','anime'])
 headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
+
+def Progress(s):
+    stdout.write('\r'+s)
+    stdout.flush()
 
 def GetTuple(soup, key):
     values = []
@@ -82,11 +87,9 @@ def Date(value):
         if len(date) > 3:
             date += ['/'.join([FormatD(d2), Month2Int(m2), y2])]
     except Exception as e:
-        print('Error on date:', value, e)
+        pass
+        #print('Error on date:', value, e)
     return date
-
-def GetTitle(soup):
-    return str(soup.find('title').string).split(' - MyAnimeList.net')[0].split('\n')[1]
 
 def IndividualNb(nb, keys):
     global anime
@@ -102,13 +105,14 @@ def IndividualNb(nb, keys):
             anime.pop(nb)
             return
         soup = bs4.BeautifulSoup(req.content, 'lxml')
-    except:
-        print(Exception)
+    except Exception as e:
+        #print('\nexception:',e)
         return
     for key in keys:
         anime[nb][key] = GetTuple(soup, key)
     anime[nb]['Aired:'] = Date(anime[nb]['Aired:'])
-    anime[nb]['name'] = GetTitle(soup)
+    anime[nb] = FormatEntry(anime[nb])
+    anime[nb]['name'] = str(soup.find('title').string).split(' - MyAnimeList.net')[0].split('\n')[1]
     find += 1
 
 def CreateDic():
@@ -121,8 +125,8 @@ def CreateDic():
             'Aired:', 'Broadcast:', 'Producers:', 'Licensors:', 'Source:',
             'Studios:', 'Duration:']
     begin = datetime.now()
-    last, now = begin, begin
-    limit_active = 20 + threading.active_count()
+    now = begin
+    limit_active = 10 + threading.active_count()
     try:
         p = None
         for nb in l:
@@ -130,14 +134,10 @@ def CreateDic():
                 time.sleep(0.5)
             Thread(target=IndividualNb, args=(nb, keys)).start()
             now = datetime.now()
-            if str(int(nb/limit*1000)/10) != p:
-                k = nb+1
-                p = str(int(nb/limit*1000)/10)
-                ending = ((now - begin)/k*limit + begin).strftime('%D-%H:%M')
-                print(p+'%', '|', ending, '|', find)
-
-            if (now-last).total_seconds()>10:
-                last = now
+            p = str(int(nb/limit*1000)/10)
+            ending = ((now - begin)/(nb+1)*limit + begin).strftime('%D-%H:%M')
+            line = p+'% | ' + str(ending) + ' | ' + str(find)
+            Progress(line)
     except:
         pass
     finally:
@@ -146,5 +146,52 @@ def CreateDic():
         with open('myanimelist.json', 'w') as file:
             json.dump(anime, file, sort_keys=True, indent=4)
 
+def FormatEntry(dic):
+    new_dic = {}
+    new_dic['genres'] = dic['Genres:']
+    new_dic['studios'] = [[], list(dic['Studios:'])][dic['Studios:']  == 'add some']
+    new_dic['type'] = dic['Type:']
+    new_dic['source'] = [None, dic['Source:']][dic['Source:']!="Unkonwn"]
+    #--------------------------------------------------------------------------
+    if dic['Episodes:'] in [False, 'Unknown'] or type(dic['Episodes:'] ) == list:
+        new_dic['episodes'] = 1
+    else:
+        new_dic['episodes'] = int(dic['Episodes:'])
+    #--------------------------------------------------------------------------
+    if len(dic['Aired:']) == 2:
+        new_dic['begin'], new_dic['end'] = dic['Aired:']
+    elif len(dic['Aired:']) == 1:
+        new_dic['begin'] = dic['Aired:']
+        new_dic['end'] = new_dic['begin']
+    else:
+        new_dic['begin'], new_dic['end'] = (None, None)
+    #--------------------------------------------------------------------------
+    if new_dic['begin'][0:2] in ['12', '01', '02']:
+        new_dic['season'] == 'winter ' + new_dic['begin'].split('/')[-1]
+    elif new_dic['begin'][0:2] in ['03', '04', '05']:
+        new_dic['season'] == 'spring ' + new_dic['begin'].split('/')[-1]
+    elif new_dic['begin'][0:2] in ['06', '07', '08']:
+        new_dic['season'] == 'summer ' + new_dic['begin'].split('/')[-1]
+    elif new_dic['begin'][0:2] in ['09', '10', '11']:
+        new_dic['season'] == 'fall  ' + new_dic['begin'].split('/')[-1]
+    #--------------------------------------------------------------------------
+    epi_length = dic['Duration:']
+    h, m, s = 0, 0, 0
+    if "hr." in epi_length:
+        if 'min' in epi_length:
+            try:
+                h, a1, m, a2 = epi_length.split()[0:4]
+            except Exception as e:
+                print(e, epi_length)
+        else:
+            h = epi_length.split()[0]
+    elif 'min' in epi_length:
+        m = epi_length.split()[0]
+    elif 'sec' in epi_length:
+        s = epi_length.split()[0]
+    new_dic['length'] = (60*int(h)+int(m)+int(s)/60)*new_dic['episodes']
+    #--------------------------------------------------------------------------
+
+    return new_dic
 if __name__ == '__main__':
     CreateDic()

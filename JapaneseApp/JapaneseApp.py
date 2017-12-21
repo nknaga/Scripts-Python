@@ -71,7 +71,7 @@ class Question_Canvas(tk.Tk):
             sys.stdout.flush()
             self._result[0] += 1
         else:
-            print('False : ', self.question.answer)
+            print('False : ', self.question.question, '->', self.question.answer)
             self._result[1] += 1
         self._update = True
         sys.stdout.flush()
@@ -156,8 +156,6 @@ if __name__ == '__main__':
             except Exception as e:
                 print(e)
     question, answer = [int(x) for x in (choice.split())]
-    if head[answer].startswith('!'):
-        answer += 1
     worklist = []
     for namefile in namefiles:
         f2 = codecs.open(namefile, encoding='utf-16')
