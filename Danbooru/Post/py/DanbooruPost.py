@@ -30,7 +30,7 @@ for line in error_f:
 dic_banned = {}
 banned_f = open(join(root, "banned_artist.txt"), "r")
 for line in banned_f:
-    dic_banned[line[:-1]] = "True"
+    dic_banned[line[:-1]] = True
 global number_replacements
 number_replacements = 0
 
@@ -56,7 +56,7 @@ def IsBanned(tags):
     l = tags.split()
     for tag in l:
         if tag in dic_banned:
-            return True
+            return tag
     return False
 
 def ReplaceAll(text, lst_error):
@@ -103,7 +103,7 @@ def DelLine(list_n):
         remove(list_HTML[i])
         rename(list_HTML[i] + '~', list_HTML[i])
     return
-    
+
 def PrintUrl(list_n):
     while len(list_n) < len(list_HTML):
         list_n.append(0)
@@ -185,9 +185,10 @@ def GenerateHTML():
             lineT = fileT.readline()
             lineT = lineT.replace("\n", '')
             fileT.readline()
-            if IsBanned(lineT):
+            isbanned = IsBanned(lineT)
+            if isbanned:
                 banned += 1
-                print(lineL, 'Banned\n')
+                print(lineL, 'Banned because of :', isbanned, '\n')
             else:
                 l = '<A HREF="' + CorrectorSample(lineL[:-1]) + '"> ' \
                 + ReplaceAll(lineT, lst_error) + '<br></br> \n'
@@ -223,7 +224,7 @@ def CheckTags():
             true_tags.append(line[:-1])
     true_tags = set(true_tags)
     ok = ["-", "rating", "<br>"]
-    for tag in [tag for tag in tags if tag not in true_tags and not any([tag.startswith(i) for i in ok])]:
+    for tag in [tag for tag in tags if tag not in true_tags and not any([tag.startswith(i) for i in ok]) and not tag.split(':')[0] in ['copy', 'art', 'char']]:
         print(tag)
 
 if __name__ == '__main__':
@@ -253,4 +254,3 @@ if __name__ == '__main__':
     elif case == 7:
         list_n = input("How many lines to show? ")
         PrintUrl(list_n.split())
-        
