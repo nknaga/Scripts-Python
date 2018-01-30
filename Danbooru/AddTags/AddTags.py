@@ -11,7 +11,9 @@ from PIL import Image
 from os import system
 from datetime import datetime
 from time import sleep
-
+from threading import Thread
+import threading
+import time
 f = open("../Danbooru_Codes.txt")
 api_key = f.readline().split()[1]
 username = f.readline().split()[1]
@@ -21,11 +23,24 @@ known_tags = {'g' : 'flat_chest', 's' : 'small_breasts', 'm' : 'medium_breasts',
               'look' : 'looking_at_viewer', 'hair' : 'hair_between_eyes',
               'eye' : 'eyebrows_visible_through_hair ', 'see' : 'see-through',
               'p' : 'pass', 'f' : 'gigantic_breasts' }
+"""known_tags = {',' : 'flat_chest', '1' : 'small_breasts', '2' : 'medium_breasts',
+              '4' : 'large_breasts', '3' : 'huge_breasts', '-' : '-sideboob -cleavage -breasts',
+              'look' : 'looking_at_viewer', 'hair' : 'hair_between_eyes',
+              'eye' : 'eyebrows_visible_through_hair ', 'see' : 'see-through',
+              'p' : 'pass', 'f' : 'gigantic_breasts' }"""
 f = open('tags.txt', 'r')
 dic_tags = {}
 for line in f:
     dic_tags[line[:-1]] = 0
 
+hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
+
+from sys import stdout
+
+def Progress(s):
+    stdout.write('\r')
+    stdout.write(s+'            ')
+    stdout.flush()
 
 class Sample:
     """Depict a sample with:
@@ -36,15 +51,19 @@ class Sample:
 
     def __init__(self, dic):
         self._Id = str(dic['id'])
-        url_sample = 'http://hijiribe.donmai.us'+dic['large_file_url']
-        ok = False
-        while not ok:
+
+        url_sample = 'https://danbooru.donmai.us'+dic['large_file_url']+"?login="+username+"&api_key="+api_key
+        ok = 0
+        while ok <5:
             try:
-                self._data = BytesIO(urllib.request.urlopen(url_sample).read())
-                ok = True
-            except:
-                print("Error on", self._Id)
-                break
+                req = urllib.request.Request(url_sample, headers=hdr)
+                page = urllib.request.urlopen(req)
+                self._data = BytesIO(page.read())
+                ok = 5
+            except Exception as e:
+                ok+=1
+                print("Error on", self._Id, e, url_sample)
+                print('url:', url_sample)
         self._tags = dic['tag_string']
         self._adds = ''
 
@@ -67,21 +86,18 @@ class Sample:
             return 200
         addition = self.GetTag() + ' '+ VerifyTags(self._adds)
         url = 'http://danbooru.donmai.us/posts/' + self._Id + '.json'
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
         payload = {'post[tag_string]': addition,
                    'api_key':api_key,
                    'login':username}
-        res = requests.put(url,data=payload, headers=headers, stream=True)
+        res = requests.put(url,data=payload, headers=hdr, stream=True)
         return res.status_code
 
     def GetTag(self):
         url = 'http://danbooru.donmai.us/posts/' + self._Id + '.json'
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
         payload = {'api_key':api_key,
                    'login': username}
 
-        req = requests.get(url,
-                            data=payload, headers=headers, stream=True)
+        req = requests.get(url, data=payload, headers=hdr, stream=True)
         data = req.json()
         return data["tag_string"]
 
@@ -112,28 +128,37 @@ def ListUrl(tags):
     data = req.json()
     return data
 
+def ThreadSample(dic):
+    global imgs
+    imgs.append(Sample(dic))
+
 def ListImgs(data):
     """Create a list of imgs, sample object"""
+    global imgs
     imgs = []
+    limit_active = 4 + threading.active_count()
     begin = datetime.now()
     for i,dic in enumerate(data):
-        imgs.append(Sample(dic))
-        t_mean = (datetime.now() - begin)/(i+1)
-        if i%10 == 9:
-            print(i+1,'on', len(data), '| id:', imgs[-1]._Id, '|',
-                 (t_mean*(len(data) - i-1) + datetime.now()).strftime('%H:%M'))
+        if not (dic['large_file_url'].endswith('.jpg') or  dic['large_file_url'].endswith('.png')):
+            continue
+        while threading.active_count() > limit_active:
+            time.sleep(0.1)
+        Thread(target=ThreadSample, args=(dic, )).start()
+        eta = ((datetime.now()-begin)/(i+1)*len(data)+begin).strftime('%H:%M')
+        Progress(str(i+1)+'/'+str(len(data))+' | '+eta+' | '+str(threading.active_count()))
+
+
+    time.sleep(60)
     return imgs
 
 def main():
-    inf = 0
-    sup = 2672834
-    tags = "breasts -animated -comic -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
-    limit = 1000
+    inf = 2990000
+    sup = 4000000
+    tags = "breasts age:<8d -comic -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
+    limit = 1500
     data = []
     res = []
-
     for i in range((limit-1)//100+1):
-
         print('Searching for picts:', i+1, 'on', (limit-1)//100+1, '|', inf)
         data += ListUrl(tags+str(inf))
         if inf == data[-1]['id']:
@@ -142,9 +167,8 @@ def main():
         if inf>sup:
             break
 
-    begin = datetime.now()
     imgs = ListImgs(data)
-    print(datetime.now() - begin)
+
     input('Push enter to begin')
     # Asking data from user
     begin = datetime.now()
