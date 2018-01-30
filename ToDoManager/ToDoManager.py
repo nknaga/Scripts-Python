@@ -128,7 +128,7 @@ def ToMP3(line, mode = 1):
     else:
         name, begin, end, old = l2[:4]
     old = join(local, 'input', old)
-    name = join(local, 'output', old)
+    name = join(local, 'output', name)
     begin, end = [ConvertTime(d) for d in [begin, end]]
     if end != '00:00:00':
         end =  " -to " + end
@@ -183,6 +183,7 @@ def SwitchLaunch(youtube, video, mp3, fusion):
 def Loop(lines, mode = 1):
     youtube, video, mp3, fusion = False, False, False, False
     begin = 0
+    end = 10000
     global generated
     generated = []
     if mode:
@@ -192,7 +193,7 @@ def Loop(lines, mode = 1):
     for i, line in enumerate(lines):
         line = '\t'.join([e for e in line.split('\t') if e])
         youtube, video, mp3, fusion, change = SwitchIni(youtube, video, mp3, fusion, line)
-        if change or line.startswith('--') or not (video or mp3 or youtube or fusion) or i<begin:
+        if change or line.startswith('--') or not (video or mp3 or youtube or fusion) or i<begin or i > end:
             continue
         function = SwitchLaunch(youtube, video, mp3, fusion)
         if mode or (function != FromYoutube):
