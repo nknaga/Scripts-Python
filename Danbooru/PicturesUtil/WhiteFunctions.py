@@ -4,16 +4,20 @@ Created on Fri Jan 27 16:54:38 2017
 
 @author: Rignak
 """
-
 from PIL import Image
 import numpy as np
 from datetime import datetime as dt
 from os import listdir
 from os.path import join, dirname, realpath
-import WaifuFunctions
-import sys
 import re
-import DownloadDanbooru
+import os
+from sys import stdout
+
+
+def Progress(s):
+    stdout.write('\r')
+    stdout.write(s+'           ')
+    stdout.flush()
 
 
 class bloc():
@@ -81,7 +85,6 @@ class IMG():
     def Reduce(self, i = 255*0.98):
         """Trim the white row and column of the image"""
         s = 0
-        x=0
         xmin, xmax, ymin, ymax = [0,self._height,0,self._width]
         for x in range(self._height-1):
             if s == 1:
@@ -113,7 +116,7 @@ class IMG():
                     s = 1
                     break
         s = 0
-        for y in range(self._width-1):
+        for y in range(self._width-1,-1, -1):
             if s == 1:
                 ymax=y
                 break
@@ -194,73 +197,62 @@ class IMG():
         if s>self._width*0.1:
             self._border[3]= True
 
-def Full():
-    tags = 'age:<9d+~white_background+~transparent_background+-watermark+fav:rignak'
-    n = 10000
-    urls = DownloadDanbooru.ListPicturesWithTag(tags, n)
-    sys.stdout.flush()
-    Launch(urls, mode = 'full')
 
 def onFolder(folder = dirname(realpath(__file__))):
     list_file = listdir(folder)
-    Launch(list_file, mode = 'folder', folder = folder)
+    Launch(list_file, folder = folder)
 
-def Launch(files, mode='full', folder = dirname(realpath(__file__))):
-    files.sort(key =lambda z:int(re.split(r'[._()]+',z)[1]))
+def onFile(f, i, folder = dirname(realpath(__file__))):
+    location = join(folder, f)
+    image = IMG(location)
+    image.Remove_Transparency()
+    image.ImToArray()
+    image.Reduce()
+    image.ArrayToIm()
+#    if image._width > 1200 or image._height > 1200:
+#        image.Thumbnail((1200,1200))
+#        image.ImToArray()
+    image.GetBlocs()
+    image.TrimBloc()
+    image.Reduce()
+    image.GetBorder()
+    image.ArrayToIm()
+    if image._ratio < 0.3:
+        image.Thumbnail((int(174*wikiRate), int(839*wikiRate)))
+        image.ImToArray()
+        goal = 1
+    elif image._ratio <= 1:
+        image.Thumbnail((int(549*gooRate), int(706*gooRate)))
+        image.ImToArray()
+        goal = 2
+    else:
+        goal = 0
+    if image._border[0] and not image._border[1]:
+        image.Sym_Y()
+        image.ArrayToIm()
+    os.remove(image._name)
+    if goal:
+        goal = ['wikipedia','google'][goal-1]
+        path = image._name.split('\\')
+        image._name = '\\'.join(path[:-1]) + '\\' + goal +'\\'+str(i)+'.jpg'
+        image.Save()
+
+
+def Launch(files, folder = dirname(realpath(__file__))):
+    #files.sort(key =lambda z:int(re.split(r'[._()]+',z)[1]))
     n = len(files)
     begin = dt.now()
     for i, f in enumerate(files):
-        if mode == 'full':
-            location = join(dirname(realpath(__file__)), 'result', str(i) +'.jpg')
-            DownloadDanbooru.DownloadPictures(f, str(i))
-        elif mode == 'folder':
-            location = join(folder, f)
-        image = IMG(location)
-        image.Remove_Transparency()
-        image.ImToArray()
-        image.Reduce()
-        image.ArrayToIm()
-        image.Save()
-        if image._height*image._width<2900*2900 and WaifuFunctions.Unnoise(image._name):
-            image._name = image._name[:-4] + "_waifu.png"
-            location = join(dirname(realpath(__file__)), 'result', image._name)
-            image = IMG(location)
-        if image._width > 1500 or image._height > 1500:
-            image.Thumbnail((1500,1500))
-            image.ImToArray()
-        image.GetBlocs()
-        image.TrimBloc()
-        image._name = image._name = image._name[:-4] + "_trimmed" + image._name[-4:]
-        image.Reduce()
-        image.GetBorder()
-        image.ArrayToIm()
-        if image._ratio < 0.3:
-            image.Thumbnail((174, 676))
-            image.ImToArray()
-            image._name = image._name[:-4] + "_wikipedia" + image._name[-4:]
-        elif image._ratio <= 1:
-            image.Thumbnail((549, 706))
-            image.ImToArray()
-            image._name = image._name[:-4] + "_google" + image._name[-4:]
-        if image._border[0] == True:
-            image._name = image._name[:-4] + "_left" + image._name[-4:]
-        if image._border[1] == True:
-            image._name = image._name[:-4] + "_right" + image._name[-4:]
-        if image._border[2] == True:
-            image._name = image._name[:-4] + "_up" + image._name[-4:]
-        if image._border[3] == True:
-            image._name = image._name[:-4] + "_down" + image._name[-4:]
-        if "left" in image._name and "right" not in image._name:
-            image.Sym_Y()
-            image.ArrayToIm()
-            image._name = image._name.replace("left", "right")
-        image._name = image._name[:-4] + "_end" + image._name[-4:]
-        image.Save()
-        print(i+1, 'on', n, '|', (dt.now()-begin)/(i+1)*n + begin)
+        if '.' != f[-4]:
+            continue
+        onFile(f, i, folder)
+
+        Progress(str(i+1)+' on '+str(n)+' | '+((dt.now()-begin)/(i+1)*n + begin).strftime('%H:%M'))
     print("MEAN TIME:", (dt.now()-begin)/n)
 
 
 if __name__ == '__main__':
-#Full(folder = join(dirname(realpath(__file__)), 'result\\test'))
-    a = join(dirname(realpath(__file__)), 'result\\to do')
+    wikiRate = 1
+    gooRate = 1.1
+    a = join(dirname(realpath(__file__)), 'result\\to dobis')
     onFolder(folder=a)
