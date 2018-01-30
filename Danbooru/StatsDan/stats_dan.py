@@ -18,6 +18,7 @@ if __name__ == '__main__':
         res = str(date.today() - timedelta(days=i)) + " "
         tag_date = "%20age:" + str(i) + "d"
         upload_number = Lib.NbTags("approver:any" + tag_date, username, api_key)
+
         if i < 4:
             upload_number += Lib.NbTags("status:pending"+tag_date, username, api_key)
         if upload_number == 0:
