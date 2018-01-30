@@ -5,7 +5,7 @@ Created on Wed Dec 20 17:34:58 2017
 @author: Rignak
 """
 
-from py_functions.myanimelist import UserList, LoadDic, ReduceDic, ReduceOnConditions
+from py_functions.myanimelistf import UserList, LoadDic, ReduceDic, ReduceOnConditions
 
 
 def GetData(conditions, username):
@@ -27,10 +27,13 @@ data = []
 for id_ in order:
     dic = res[str(id_)]
     try:
-        data.append((dic['begin'][0].split('/')[-1], dic['episodes'], dic['name']))
+        data.append((dic['score'], dic['year'], dic['episodes'], dic['title']))
     except Exception as e:
         print('\nError on:',id_, e, ':', dic, '\n',)
+
+data.sort(key=lambda x: x[0])
+data.reverse()
 for i, t in enumerate(data):
     prefix = ['', '0'][len(str(i+1)) < 2]
-    a, e, n = t
-    print(prefix+str(i+1),a,e,n)
+    s, y, e, n = t
+    print(prefix+str(i+1),s, y,e,n)
