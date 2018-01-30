@@ -163,6 +163,7 @@ if __name__ == '__main__':
             if line:
                 worklist.append(Question(line[:-2], question, answer))
     worklist = worklist[r[0]:r[1]]
+    worklist = [question for question in worklist if question.answer != '']
     print('You have', len(worklist), 'questions')
     sys.stdout.flush()
     frame = Question_Canvas(mode)
