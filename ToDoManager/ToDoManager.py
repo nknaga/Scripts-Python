@@ -44,6 +44,7 @@ def FromYoutube(line, mode = 1):
     else:
         name, link, ext, begin, end = line[:5]
     yt = pytube.YouTube(link)
+    MakeOutputPath(join(local,"input", name))
     yt.set_filename(name)
     yt.filter('mp4')[-1].download(join(local,"input"))
     if ext == 'mp3':
@@ -64,6 +65,7 @@ def CutVideo(line, mode = 1):
         return '', '', True
     res_name, begin, end, epi, path = l2[:5]
     res_name = join(local, 'output', res_name +'.mkv')
+    MakeOutputPath(res_name)
     path = join(local, 'input', path)
     begin, end = [ConvertTime(d) for d in [begin, end]]
     if end != '00:00:00':
@@ -101,6 +103,7 @@ def FuseVideo(line, mode = 1):
                 os.rename(join(local, 'output', file), file)
                 files.write('file '+ file + '\n')
     res_name = join(local, 'output', res_name +'.mkv')
+    MakeOutputPath(res_name)
     cmd = 'ffmpeg -f concat -safe 0 -i concat.txt -c copy -fflags +genpts "'+res_name + '"'
     if exists(res_name):
         error = True
@@ -129,6 +132,7 @@ def ToMP3(line, mode = 1):
         name, begin, end, old = l2[:4]
     old = join(local, 'input', old)
     name = join(local, 'output', name)
+    MakeOutputPath(name)
     begin, end = [ConvertTime(d) for d in [begin, end]]
     if end != '00:00:00':
         end =  " -to " + end
@@ -140,6 +144,8 @@ def ToMP3(line, mode = 1):
         print('ERROR : file already exist')
     elif not exists(old):
         error = True
+        print(old)
+        print(line)
         print('ERROR : no source file')
     elif mode:
         os.system(line)
@@ -183,7 +189,7 @@ def SwitchLaunch(youtube, video, mp3, fusion):
 def Loop(lines, mode = 1):
     youtube, video, mp3, fusion = False, False, False, False
     begin = 0
-    end = 10000
+    end = 15
     global generated
     generated = []
     if mode:
@@ -209,6 +215,14 @@ def Loop(lines, mode = 1):
                     advance = '('+str(i)+'|'+str(len(lines))+')'
                     generated.append(name)
                     print('OK:', advance, line.split('\t')[0])
+
+def MakeOutputPath(name):
+    localLength = len(local.split('\\'))
+    split = name.split('\\')[localLength:]
+    todo = ['\\'.join(split[:i]) for i in range(1,len(split))]
+    for ele in todo:
+        if not os.path.exists(join(local, ele)) and '.' not in ele:
+            os.makedirs(join(local, ele))
 
 if __name__ == '__main__':
     with open(join(local, 'To Do.txt'), 'r') as file:
