@@ -50,7 +50,7 @@ class IMG():
         self._width = len(self._array[0])
         self._ratio = self._width/self._height
         self._blocs = []
-        self._border = [False, False, False, False]
+        self._border = [0,0,0,0]
 
     def GetBlocs(self, i = 255*0.98):
         """Detect the blocs constituting the image"""
@@ -172,30 +172,18 @@ class IMG():
 
     def GetBorder(self, i =255):
         """Change the border to know if a side a mostly white or not"""
-        s = 0
         for e in [e for e in self._array[:,0]]:
             if (e != [i]*3).all():
-                s += 1
-        if s>self._height*0.1:
-            self._border[0]= True
-        s = 0
+                self._border[0] += 1
         for e in [e for e in self._array[:,-1]]:
             if (e != [i]*3).all():
-                s += 1
-        if s>self._height*0.1:
-            self._border[1]= True
-        s = 0
+                self._border[1] += 1
         for e in [e for e in self._array[0,:]]:
             if (e != [i]*3).all():
-                s += 1
-        if s>self._width*0.1:
-            self._border[2]= True
-        s = 0
+                self._border[2] += 1
         for e in [e for e in self._array[-1,:]]:
             if (e != [i]*3).all():
-                s += 1
-        if s>self._width*0.1:
-            self._border[3]= True
+                self._border[3] += 1
 
 
 def onFolder(folder = dirname(realpath(__file__))):
@@ -226,8 +214,8 @@ def onFile(f, i, folder = dirname(realpath(__file__))):
         image.ImToArray()
         goal = 2
     else:
-        goal = 0
-    if image._border[0] and not image._border[1]:
+        goal = 2
+    if image._border[0] > image._border[1]:
         image.Sym_Y()
         image.ArrayToIm()
     os.remove(image._name)
@@ -254,5 +242,5 @@ def Launch(files, folder = dirname(realpath(__file__))):
 if __name__ == '__main__':
     wikiRate = 1
     gooRate = 1.1
-    a = join(dirname(realpath(__file__)), 'result\\to dobis')
+    a = join(dirname(realpath(__file__)), 'result\\todo')
     onFolder(folder=a)
