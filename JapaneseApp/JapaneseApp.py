@@ -161,8 +161,12 @@ if __name__ == '__main__':
         f2 = codecs.open(namefile, encoding='utf-16')
         for line in f2:
             if line:
-                worklist.append(Question(line[:-2], question, answer))
-    worklist = worklist[r[0]:r[1]]
+                worklist.append(Question(line.replace('\\n', ''), question, answer))
+    print(worklist, r)
+    if r[1] == -1:
+        worklist = worklist[r[0]:]
+    else:
+        worklist = worklist[r[0]:r[1]]
     worklist = [question for question in worklist if question.answer != '']
     print('You have', len(worklist), 'questions')
     sys.stdout.flush()
