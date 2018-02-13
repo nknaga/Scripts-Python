@@ -98,14 +98,19 @@ def AddDateInfo(td):
     else:
         begin = d[0]
     if begin:
-        if begin.split('/')[1] in ['12', '01', '02']:
-            s = 'winter ' + begin.split('/')[-1]
-        elif begin.split('/')[1] in ['03', '04', '05']:
-            s = 'spring ' + begin.split('/')[-1]
-        elif begin.split('/')[1] in ['06', '07', '08']:
-            s = 'summer ' + begin.split('/')[-1]
-        elif begin.split('/')[1] in ['09', '10', '11']:
-            s = 'fall ' + begin.split('/')[-1]
+        year =  begin.split('/')[-1]
+        month = begin.split('/')[1]
+        if month in ['12', '01', '02']:
+            if month in ['01', '02']:
+                s = 'winter ' + str(int(year)-1)
+            else:
+                'winter ' + year
+        elif month in ['03', '04', '05']:
+            s = 'spring ' + year
+        elif month in ['06', '07', '08']:
+            s = 'summer ' + year
+        elif month in ['09', '10', '11']:
+            s = 'fall ' + year
     a = [int(date.toordinal()) for date in td if date]
     y = begin.split('/')[-1]
     return y, s, a

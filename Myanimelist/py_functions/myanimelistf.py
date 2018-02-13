@@ -65,9 +65,9 @@ def ReduceDic(full_dic, userList):
 
 def CheckDate(entry, value):
     if value[0] == '<':
-        return value[1:] > entry
+        return int(value[1:]) > int(entry)
     else:
-        return value[1:] < entry
+        return int(value[1:]) < int(entry)
 
 
 def CheckCondition(entry, c):
@@ -76,12 +76,9 @@ def CheckCondition(entry, c):
         return False
     if value[0] in ['<', '>']:
         return CheckDate(entry[key], value)
-    if len(entry[key]) == 1:
-        if entry[key] == value:
-            return True
-        else:
-            return False
-    elif value in entry[key]:
+    if type(entry[key]) in [str, int] and str(entry[key]) == str(value):
+        return True
+    elif type(entry[key]) == list and value in entry[key]:
         return True
     else:
         return False
