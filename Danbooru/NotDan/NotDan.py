@@ -130,7 +130,7 @@ def JsonReading(files):
         scm, scM = 0, 99999999
     tags_user = input('tags? ')
     score = [int(scm), int(scM), tags_user]
-    
+
     with io.open("tags.txt", 'r', encoding='utf8') as f:
         nb = {}
         cor = {}
@@ -140,7 +140,7 @@ def JsonReading(files):
             if tag in tags_user:
                 nb[line.split()[-1]] = 0
                 cor[tag] = line.split()[-1]
-            
+
     tag_f = input('Enforce tags? : ').split()
     tag_rem = input("Tags to blacklist ? ")
     for tag in tag_rem.split():
@@ -195,7 +195,7 @@ def Index():
         index = [int(ele.split('=')[-1]) for ele in lines]
     else:
         index = [int(ele.split('/')[-1].split('_')[0]) for ele in lines]
-        
+
     if ':' in r:
         begin, end = r.split(':')
         return index[index.index(int(begin)):index.index(int(end))]
@@ -256,7 +256,7 @@ def ShowImgs(imgs):
         img = imgs[0]
         imgs = imgs[1:]
         img.InputTags()
-        if img._adds == '1':
+        if img._adds == 'y':
             file.write('<A HREF="' + img._url + '"> ' + img._url + '<br/>')
         elif img._adds == 'exit':
             break
@@ -347,7 +347,7 @@ def GetPixApi(id_mail, mails, password):
     api = AppPixivAPI()
     api.login(mails[id_mail], password)
     return api, id_mail, api.illust_detail
-    
+
 def Routeur123(mode=0, data=None):
     global file, res, illust_detail
     index = data
@@ -487,6 +487,18 @@ def Routeur456(mode):
     print('MEAN TIME:', (datetime.now() - begin) / len(links))
     file.close()
 
+def SplitDirectLink():
+    nb = int(input('Number of url in each file ? '))
+    links = open('2-directlink.html', 'r').readline().split('https')
+    links = ['https' + link for link in links]
+    nbFile = len(links)//nb+1
+    for i in range(nbFile):
+        with open('2-directlink'+str(i)+'.html', 'w') as file:
+            for j in range(nb):
+                if i*nb+j+1 > len(links):
+                    break
+                file.write(links[i*nb+j])
+    print(nbFile, 'files created')
 
 if __name__ == '__main__':
     print('mode 0 : Go to pixiv and write a .json')
@@ -496,6 +508,7 @@ if __name__ == '__main__':
     print('mode 4 : Check Yandere')
     print('mode 5 : Check from 3-final')
     print('mode 6 : Check from 2-directlink')
+    print('mode 7 : split 2-directlink')
     mode = int(input('Which mode ? '))
     if mode in [1, 2]:
         files = input('File numbers ? ')
@@ -517,3 +530,5 @@ if __name__ == '__main__':
         ShowPixiv()
     elif mode in [4, 5, 6]:
         Routeur456(mode)
+    elif mode == 7:
+        SplitDirectLink()
