@@ -10,6 +10,7 @@ from os.path import join
 import sys
 import codecs
 import random
+import matplotlib.pyplot as plt
 
 
 class Question:
@@ -51,10 +52,11 @@ class Question_Canvas(tk.Tk):
         self.button_break = tk.Button(
             self, text="Break", command=self.on_button_break, width=10)
         self.button_break.pack()
-        self._result = [0, 0]
+        self._result = {'timeline':[]}
 
-    def Init(self, question):
+    def Init(self, question, second=False):
         self.question = question
+        self.second = second
         self.canvas.delete(self._text)
         if self._width == 300:
             font = 'Arial 25'
@@ -66,14 +68,21 @@ class Question_Canvas(tk.Tk):
         self._update = False
 
     def on_button_check(self, event=None):
+        if self.question.question not in self._result:
+            self._result[self.question.question] = [0,0]
         if self.entry.get() in self.question.answer.split(', '):
             print('Right : ', self.question.answer)
             sys.stdout.flush()
-            self._result[0] += 1
+            if not self.second:
+                self._result[self.question.question][0] += 1
+                self._result['timeline'].append(True)
+            self._update = True
         else:
             print('False : ', self.question.question, '->', self.question.answer)
-            self._result[1] += 1
-        self._update = True
+            if not self.second:
+                self._result[self.question.question][1] += 1
+                self._result['timeline'].append(False)
+            self._update = self.question
         sys.stdout.flush()
         self.entry.delete(0, "end")
         self.entry.insert(0, "")
@@ -87,8 +96,31 @@ class Question_Canvas(tk.Tk):
         return
 
     def on_button_break(self):
+        print()
+        print('--------------------------------')
+        PlotLearning(self._result['timeline'])
+        PrintCommonError(self._result)
         frame.destroy()
 
+def PrintCommonError(dic):
+    temp = {k:v[1]/(v[1]+v[0]) for (k, v) in dic.items() if k != 'timeline'}
+    for k, v in sorted([(v, k) for (k, v) in temp.items()]):
+        if k != 0.0:
+            print((dic[v][0], dic[v][1]), ':', v)
+
+def PlotLearning(timeline):
+    delta = [-0.001]
+    mean = [0]
+    for event in timeline:
+        if event:
+            delta.append(1)
+        else:
+            delta.append(0)
+        mean.append(sum(delta[int(len(delta)/2):])/len(delta[int(len(delta)/2):]))
+    delta.append(1.001)
+    plt.figure()
+    plt.plot(mean, c='red')
+    plt.plot(delta)
 
 def FileSelection():
     print("Vocabulaire par cours : 1")
@@ -161,8 +193,9 @@ if __name__ == '__main__':
         f2 = codecs.open(namefile, encoding='utf-16')
         for line in f2:
             if line:
-                worklist.append(Question(line.replace('\\n', ''), question, answer))
-    print(worklist, r)
+                line = line.replace('\n', '')
+                line = line.replace('\r', '')
+                worklist.append(Question(line, question, answer))
     if r[1] == -1:
         worklist = worklist[r[0]:]
     else:
@@ -172,19 +205,19 @@ if __name__ == '__main__':
     sys.stdout.flush()
     frame = Question_Canvas(mode)
     while True:
-        question = random.choice(worklist)
-        try:
+        if type(frame._update) == Question:
+            question = frame._update
+            frame.Init(question, second=True)
+        else:
+            question = random.choice(worklist)
             frame.Init(question)
+        try:
             while True:
                 frame.update()
                 if frame._update:
                     frame.canvas.delete(frame._text)
                     break
         except BaseException:
-            print()
-            print('--------------------------------')
-            print("Nombre de bonnes réponses :   ", frame._result[0])
-            print("Nombre de mauvaise réponses : ", frame._result[1])
             print('Terminaison du programe')
             print('--------------------------------')
             break
