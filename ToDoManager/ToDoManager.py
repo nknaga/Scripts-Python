@@ -104,7 +104,7 @@ def FuseVideo(line, mode = 1):
                 files.write('file '+ file + '\n')
     res_name = join(local, 'output', res_name +'.mkv')
     MakeOutputPath(res_name)
-    cmd = 'ffmpeg -f concat -safe 0 -i concat.txt -c copy -fflags +genpts "'+res_name + '"'
+    cmd = 'ffmpeg -f concat -safe 0 -i concat.txt -c copy  -map 0:a? -map 0:v -map 0:s? -fflags +genpts "'+res_name + '"'
     if exists(res_name):
         error = True
         print('ERROR : file already exist')
@@ -189,7 +189,7 @@ def SwitchLaunch(youtube, video, mp3, fusion):
 def Loop(lines, mode = 1):
     youtube, video, mp3, fusion = False, False, False, False
     begin = 0
-    end = 15
+    end = 1000
     global generated
     generated = []
     if mode:
