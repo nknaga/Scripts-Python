@@ -43,13 +43,13 @@ def IndividualRequest(url,i):
         if tag and not tag.startswith('<') and tag!='fix' and tag != 'show':
             tags.append(tag)
 
-    
+
 if __name__ == '__main__':
     urls_beg = ["http://sonohara.donmai.us/tags?commit=Search&page=",
                "http://sonohara.donmai.us/tag_aliases?commit=Search&limit=1000&page="]
     urls_end = ["&search%5Bhide_empty%5D=yes&search%5Border%5D=count&limit=1000",
                "&search%5Border%5D=tag_count&search%5Bstatus%5D=Approved"]
-    ls = [100, 12]
+    ls = [150, 12]
     api_key, username = DanbooruCodes()
     global tags
     tags = []

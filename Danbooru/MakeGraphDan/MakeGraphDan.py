@@ -45,9 +45,9 @@ def CheckIfAlready(tag):
 
 def Plt(data):
     x = []
-    y = []        
+    y = []
     for year in range(date.today().year,2004,-1 ):
-        r = [range(12, 0, -1), range(date.today().month-1, 0, -1)][year == date.today().year]
+        r = [range(12, 0, -1), range(date.today().month, 0, -1)][year == date.today().year]
         for month in r:
             key = str(month)+'-'+str(year)
             if key in data:

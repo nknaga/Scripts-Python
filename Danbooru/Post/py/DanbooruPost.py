@@ -223,8 +223,9 @@ def CheckTags():
         for line in file:
             true_tags.append(line[:-1])
     true_tags = set(true_tags)
-    ok = ["-", "rating", "<br>"]
-    for tag in [tag for tag in tags if tag not in true_tags and not any([tag.startswith(i) for i in ok]) and not tag.split(':')[0] in ['copy', 'art', 'char']]:
+    ok = ["-", "<br>"]
+    prefix =['copy', 'art', 'char', 'pool', 'rating', 'parent', 'source']
+    for tag in [tag for tag in tags if tag not in true_tags and not any([tag.startswith(i) for i in ok]) and not tag.split(':')[0] in prefix]:
         print(tag)
 
 if __name__ == '__main__':

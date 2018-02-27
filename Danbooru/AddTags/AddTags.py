@@ -154,7 +154,7 @@ def ListImgs(data):
 def main():
     inf = 2990000
     sup = 4000000
-    tags = "breasts age:<8d -comic -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
+    tags = "breasts age:<15d -comic -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
     limit = 1500
     data = []
     res = []
