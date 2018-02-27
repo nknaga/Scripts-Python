@@ -32,7 +32,7 @@ prefix = 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id='
 
 class Sample:
     """Depict a sample with:
-    - the Id of the image on danbooru (an str(int))
+    - the Id of the image on pixiv (an str(int))
     - the data of the image (BytesIO(urllib.request.urlopen))
     - the tags corresponding to the image (a str)"""
 
@@ -185,6 +185,20 @@ def JsonSpliting(files):
         with open(name, 'w') as file:
             json.dump(value, file, sort_keys=True, indent=4)
         Progress('Done on ' + str(key))
+
+
+def SplitDirectLink():
+    nb = int(input('Number of url in each file ? '))
+    links = open('2-directlink.html', 'r').readline().split('https')
+    links = ['https' + link for link in links]
+    nbFile = len(links)//nb+1
+    for i in range(nbFile):
+        with open('2-directlink'+str(i)+'.html', 'w') as file:
+            for j in range(nb):
+                if i*nb+j+1 > len(links):
+                    break
+                file.write(links[i*nb+j])
+    print(nbFile, 'files created')
 
 
 def Index():
@@ -342,6 +356,34 @@ def YanUrl2Sample(url_yan):
             print(e)
     return url
 
+
+def ShowYandere():
+    links = open('1-NotDanbooru_Result.html', 'r').readline().split('<')
+
+    links = [link.replace('"', '').replace('>', '') for sublinks in links \
+    if len(sublinks.split())>1 for link in sublinks.split() if link.startswith('https')]
+
+    finalLinks = []
+    for link in links:
+        if link not in finalLinks:
+            finalLinks.append(link)
+
+    samples = []
+    begin = datetime.now()
+    for i, link in enumerate(finalLinks):
+        url = YanUrl2Sample(link)
+        sample = Sample(url)
+
+        req = urllib.request.Request(url)
+        sample._data = BytesIO(urllib.request.urlopen(req).read())
+        sample._url = link
+        samples.append(sample)
+
+        ending = (datetime.now() - begin) / (i+1) * len(finalLinks) + begin
+        Progress(str(i+1) + ' on ' + str(len(finalLinks)) + ' | ' + ending.strftime('%H:%M'))
+    ShowImgs(samples)
+
+
 def GetPixApi(id_mail, mails, password):
     id_mail = (id_mail+1)%len(mails)
     api = AppPixivAPI()
@@ -487,18 +529,6 @@ def Routeur456(mode):
     print('MEAN TIME:', (datetime.now() - begin) / len(links))
     file.close()
 
-def SplitDirectLink():
-    nb = int(input('Number of url in each file ? '))
-    links = open('2-directlink.html', 'r').readline().split('https')
-    links = ['https' + link for link in links]
-    nbFile = len(links)//nb+1
-    for i in range(nbFile):
-        with open('2-directlink'+str(i)+'.html', 'w') as file:
-            for j in range(nb):
-                if i*nb+j+1 > len(links):
-                    break
-                file.write(links[i*nb+j])
-    print(nbFile, 'files created')
 
 if __name__ == '__main__':
     print('mode 0 : Go to pixiv and write a .json')
@@ -509,6 +539,7 @@ if __name__ == '__main__':
     print('mode 5 : Check from 3-final')
     print('mode 6 : Check from 2-directlink')
     print('mode 7 : split 2-directlink')
+    print('mode 8 : Show images from yandere')
     mode = int(input('Which mode ? '))
     if mode in [1, 2]:
         files = input('File numbers ? ')
@@ -532,3 +563,5 @@ if __name__ == '__main__':
         Routeur456(mode)
     elif mode == 7:
         SplitDirectLink()
+    elif mode == 8:
+        ShowYandere()
