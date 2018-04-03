@@ -222,7 +222,7 @@ def onFile(f, i, folder = dirname(realpath(__file__))):
     if goal:
         goal = ['wikipedia','google'][goal-1]
         path = image._name.split('\\')
-        image._name = '\\'.join(path[:-1]) + '\\' + goal +'\\'+str(i)+'.jpg'
+        image._name = '\\'.join(path[:-1]) + '\\' + goal +'\\'+str(355+i)+'.jpg'
         image.Save()
 
 
