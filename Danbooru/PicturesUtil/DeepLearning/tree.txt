@@ -1,0 +1,14 @@
+./
+	./imgs
+		./imgs/illustrations
+			./imgs/black_hair
+				./imgs/black_hair/akemi_homura
+					./imgs/black_hair/akemi_homura/000000.jpg
+					[...]
+				[...]
+			[...]
+	./models
+		./models/illustrations
+			./models/illustrations/illustrations.h5
+			[...]
+	./DeepLearning.py
