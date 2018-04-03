@@ -11,13 +11,13 @@ from py_functions import Lib
 from os.path import join
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
-api_url = 'http://sonohara.donmai.us/posts.json'
+api_url = 'http://hijiribe.donmai.us/posts.json'
 
 def Req(page, once, mode):
     if mode == 1:
         tag = 'user:'+username
     elif mode == 0:
-        tag = 'fav:'+username
+        tag = 'pokemon fav:'+username
     payload = {'limit': str(once),
                'tags': tag,
                'api_key': api_key,
@@ -36,7 +36,8 @@ def FillJson(mode):
             page = Req(i, once, mode).decode('utf8').replace("'", "")
             new_data = json.loads(page)
         except Exception as e:
-            print(e, page)
+            print(e)
+            print(page)
             error+=1
         full += new_data
         ending = (datetime.now() - begin) / (i + 1) * int(total/once) + begin
