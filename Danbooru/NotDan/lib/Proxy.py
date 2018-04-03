@@ -14,6 +14,7 @@ import os
 
 controller = None
 connexion = False
+socks.set_default_proxy()
 
 def renew_tor():
     """Create a connexion to Tor or renew it if it already exist"""
@@ -71,7 +72,7 @@ def SetProxy(n, test=False):
 def TestProxy():
     from datetime import datetime
     res = {}
-    n = 23
+    n = 20
     for i in range(1, n+1):
         begin = datetime.now()
         config = SetProxy(i, test=True)
