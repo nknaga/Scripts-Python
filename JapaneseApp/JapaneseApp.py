@@ -26,14 +26,14 @@ class Question:
 
 
 class Question_Canvas(tk.Tk):
-    def __init__(self, choice):
+    def __init__(self, choice, worklist):
         self.fenetre = tk.Tk.__init__(self)
         self.bind('<Return>', self.on_button_check)
         self._update = False
         if choice == 4:
             self._width = 600
         else:
-            self._width = 300
+            self._width = 400
         self.canvas = tk.Canvas(self.fenetre, width=self._width, height=100)
         self._text = self.canvas.create_text(
             self._width/2, 20, text='Hello World', font="Arial 25")
@@ -41,7 +41,7 @@ class Question_Canvas(tk.Tk):
         self.entry = tk.Entry(
             self.fenetre,
             textvariable="Enter the aswer",
-            width=15)
+            width=30)
         self.entry.pack()
         self.button_check = tk.Button(
             self, text="Check", command=self.on_button_check, width=10)
@@ -52,7 +52,10 @@ class Question_Canvas(tk.Tk):
         self.button_break = tk.Button(
             self, text="Break", command=self.on_button_break, width=10)
         self.button_break.pack()
-        self._result = {'timeline':[]}
+        self._result = {'timeline':[], 'count':{}}
+        for question in worklist:
+            self._result[question.question] = [0, 0]
+            self._result['count'][question] = 0
 
     def Init(self, question, second=False):
         self.question = question
@@ -61,27 +64,28 @@ class Question_Canvas(tk.Tk):
         if self._width == 300:
             font = 'Arial 25'
         else:
-            font = 'Arial 20'
+            font = 'Arial 25'
         self._text = self.canvas.create_text(
             self._width/2, 20, text=self.question.question, font=font)
         self.canvas.pack()
         self._update = False
 
     def on_button_check(self, event=None):
-        if self.question.question not in self._result:
-            self._result[self.question.question] = [0,0]
         if self.entry.get() in self.question.answer.split(', '):
-            print('Right : ', self.question.answer)
             sys.stdout.flush()
             if not self.second:
                 self._result[self.question.question][0] += 1
                 self._result['timeline'].append(True)
+                self._result['count'][self.question] += 1
+                print('Right : ', self.question.answer)
             self._update = True
         else:
-            print('False : ', self.question.question, '->', self.question.answer)
             if not self.second:
                 self._result[self.question.question][1] += 1
                 self._result['timeline'].append(False)
+                self._result['count'][self.question] = 0
+                print('False : ', self.question.question, '->', self.question.answer)
+                
             self._update = self.question
         sys.stdout.flush()
         self.entry.delete(0, "end")
@@ -103,7 +107,7 @@ class Question_Canvas(tk.Tk):
         frame.destroy()
 
 def PrintCommonError(dic):
-    temp = {k:v[1]/(v[1]+v[0]) for (k, v) in dic.items() if k != 'timeline'}
+    temp = {k:v[1]/(v[1]+v[0]) for (k, v) in dic.items() if k not in ['timeline', 'count'] and v[1]+v[0]!=0}
     for k, v in sorted([(v, k) for (k, v) in temp.items()]):
         if k != 0.0:
             print((dic[v][0], dic[v][1]), ':', v)
@@ -203,12 +207,17 @@ if __name__ == '__main__':
     worklist = [question for question in worklist if question.answer != '']
     print('You have', len(worklist), 'questions')
     sys.stdout.flush()
-    frame = Question_Canvas(mode)
+    frame = Question_Canvas(mode, worklist)
     while True:
         if type(frame._update) == Question:
             question = frame._update
             frame.Init(question, second=True)
         else:
+            if type(question) != int and frame._result['count'][question] > 4: # Param
+                worklist.pop(worklist.index(question))
+                if not worklist:
+                    frame.on_button_break()
+                    break
             question = random.choice(worklist)
             frame.Init(question)
         try:
