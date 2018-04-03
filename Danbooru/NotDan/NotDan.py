@@ -115,6 +115,30 @@ def CheckOnDan(pixivId):
         return False
 
 
+def GetHierarch():
+    with io.open("hierarch.txt", 'r', encoding='utf8') as f:
+        lines = f.readlines()
+    
+    cor = {'artist':'artist'}
+    copy = 'artist'
+    hierarch = {}
+    for line in lines:
+        tagsHierarch = '\t'.join(line.split('\t')[:-1])
+        tagsHierarch = [word for word in tagsHierarch.split() if word]
+        if tagsHierarch:
+            if line.startswith('\t') or line.startswith(' \t'):
+                copy = tagsHierarch[0]
+            for tag in tagsHierarch:
+                hierarch[tag] = copy
+                
+        tagsCor = ' '.join(line.split('\t'))
+        tagsCor = [word for word in tagsCor.split() if word]
+        for tag in tagsCor:
+            cor[tag] = line.split()[-1]
+                
+    return hierarch, cor
+    
+    
 def JsonReading(files):
     with io.open("blacklist.txt", 'r', encoding='utf8') as f:
         blacklist = []
@@ -131,21 +155,13 @@ def JsonReading(files):
     tags_user = input('tags? ')
     score = [int(scm), int(scM), tags_user]
 
-    with io.open("tags.txt", 'r', encoding='utf8') as f:
-        nb = {}
-        cor = {}
-        tags = f.readlines()
-    for line in tags:
-        for tag in line.split():
-            if tag in tags_user:
-                nb[line.split()[-1]] = 0
-                cor[tag] = line.split()[-1]
-
+    hierarch, cor = GetHierarch()
+    hierarchIm = {k:[] for k in cor.values()}
+    
     tag_f = input('Enforce tags? : ').split()
     tag_rem = input("Tags to blacklist ? ")
     for tag in tag_rem.split():
         blacklist.append(tag)
-    data = []
     scm, scM, tags = score
     for j, file in enumerate(files):
         Progress("read : " + str(j) + '/' + str(len(files)))
@@ -156,12 +172,25 @@ def JsonReading(files):
             and (not tag_f or any(tag in v['t'] for tag in tag_f))\
             and (not any(tag in v['t'] for tag in blacklist))\
             and (not tags or any(tag in v['t'] for tag in tags.split())):
-                data.append(int(i))
                 for tag in set(tags.split()).intersection(set(v['t'])):
-                    nb[cor[tag]] += 1
+                    try:
+                        case = 1
+                        a = hierarch[tag]
+                        case = 2
+                        a = cor[a]
+                        case = 3
+                        hierarchIm[a].append(int(i))
+                    except Exception as e:
+                        print(tag, case)
+    
+    data = []  
     print()
-    for k, v in sorted([(v, k) for (k, v) in nb.items()]):
-        print(k, ':', v)
+    for k,l in sorted(hierarchIm.items()):
+        if l:
+            print(k, ':', len(l))
+            for i in l:
+                if i not in data:
+                    data.append(i)
     print('----------------------------')
     if input(str(len(data)) + ' images found. Check on Dan ? (y/n) ') == 'y':
         Routeur123(mode=1, data=data)
@@ -509,9 +538,7 @@ def Routeur456(mode):
         l = len(links)
         while i < int(l / nb) + 1:
             l = len(links)
-            time.sleep(2)
             renew_tor()
-            time.sleep(2)
             for j in range(nb):
                 if k < l - 1:
                     k += 1
