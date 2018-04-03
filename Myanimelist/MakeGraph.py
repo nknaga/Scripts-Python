@@ -7,7 +7,7 @@ Created on Fri Jun 26 11:27:34 2017
 
 import matplotlib.pyplot as plt
 from datetime import date
-from py_functions.myanimelist import UserList, LoadDic, ReduceDic, ReduceOnConditions
+from py_functions.myanimelistf import UserList, LoadDic, ReduceDic, ReduceOnConditions
 
 def CountYear(dic, years, episodes):
     nbs = []
@@ -15,13 +15,13 @@ def CountYear(dic, years, episodes):
         nb = 0
         for key, value in dic.items():
             try:
-                if 'begin' in value and int(value['begin'][0].split('/')[-1])==year:
+                if 'year' in value and int(value['year'])==year:
                     if episodes:
                         nb+=int(value['episodes'])
                     else:
                         nb+=1
-            except:
-                pass
+            except Exception as e:
+                print(e)
         nbs.append(nb)
     return nbs
 
@@ -32,7 +32,6 @@ def GetData(conditions, username, mode, episodes):
     if conditions:
         conditions = [c.split(':') for c in conditions.split('&')]
         nbs_all = CountYear(ReduceOnConditions(data0, conditions), years, episodes)
-
         if mode == '%':
             ylabel = '%'
             p_all = GetProportion(nbs_all,nbs_total)
