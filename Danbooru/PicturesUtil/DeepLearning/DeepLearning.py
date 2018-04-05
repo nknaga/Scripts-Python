@@ -1,5 +1,5 @@
 import sys
-from sortedcontainers import SortedDict
+#from sortedcontainers import SortedDict
 import numpy as np
 import matplotlib.pyplot as plt
 from os.path import join, exists
@@ -20,13 +20,18 @@ from bct import modularity_und as SortConfusionMatrix
 
 ### Hyperparameters ###
 name = 'illustrations'
-mode = 'train'
-trainNumPic = 200 # Number of picture per label on which train
+mode = 'test'  # train, test or testH
+modelType = 1  # 1 flat, 2 folder, 3 binary
+modelIndex = 0
+
+trainNumPic = 8000 # Number of picture per label on which train
+                   # if > 1000, will be the total number of images
 testNumPic = 400 # Number of picture per label on which test
-batchSize = 16
+
+batchSize = 32
 picSize = (128, 128, 3)
 validationSplit = 0.1  # Percentage of picture used for validation during train
-epochs = 50
+epochs = 120
 learningRate = 1*10**-3
 momentum = 0.5
 decay = 10**-6
@@ -40,8 +45,9 @@ if not exists('models'):
 if not exists(join('models', name)):
     makedirs(join('models', name))
     
+
 class PlotLearning(Callback):
-    """This class define a callback generating a fitness plot in a file"""
+    """Callback generating a fitness plot in a file after each epoch"""
     def on_train_begin(self, logs={}):
         self.i = 0
         self.x = []
@@ -74,6 +80,15 @@ class PlotLearning(Callback):
 
 class Model():
     def __init__(self, labels, name, files, folder):
+        """Initialization of the model
+        
+        Input:
+        labels -- a list of str
+        name -- a string
+        files -- a list of list of str
+            files[i] -- the list of namefile for labels[i]
+        folder -- a string
+        """
         self.labels = labels
         self.files = files
         self.name = name
@@ -87,6 +102,7 @@ class Model():
 #        print('files:', self.files)
 
     def ExportSummary(self):
+        """Write the model in a .txt"""
         old = sys.stdout
         model = self.ImportModel(False)
         with open('currentModel.txt', 'w') as file:
@@ -96,6 +112,17 @@ class Model():
         del model
 
     def PrepareData(self):
+        """Prepare the input and output of the model
+        
+        Output: 
+        output -- 2d array of int (1 or 2)
+            output[i] -- an array with 1 if label[i] correspond to the file, 0 else
+        input -- an array containing the images"""
+        if trainNumPic > 1000:
+            self.files = [files[:trainNumPic//len(self.files)] for files in self.files]
+        else:
+            self.files = [files[:trainNumPic] for files in self.files]
+            
         self.files = [files[:trainNumPic] for files in self.files]
         self.flatFiles = FlattenList(self.files)
         output = [[int(file in files) for file in self.flatFiles] for files in self.files]
@@ -116,6 +143,12 @@ class Model():
 
         
     def Train(self, resume=0):
+        """Launch the training of the model
+        
+        Input:
+        resume -- an int
+            change the value to continue a previously stopped training
+        """
         begin = datetime.now()
         if resume:
             weight = join("models", self.folder, self.name+".h5")
@@ -129,6 +162,7 @@ class Model():
 
 
     def TestModel(self):
+        """Launch the model for tests and compute plots and stats"""
         k = 1
         res = {}
         confuse = [[0 for x in self.labels] for y in self.labels]
@@ -172,6 +206,7 @@ class Model():
         return res, confuse, undecided/limit
 
     def Test(self):
+        """Launch the model for tests and print plots and stats"""
         self.LoadModel()
         res, confuse, undecided = self.TestModel()
         for label, success in res.items():
@@ -183,6 +218,11 @@ class Model():
 
     
     def PlotConfuse(self, confuse):
+        """Plot the confusion matrix and cluster the labels
+        
+        Input:
+        confuse -- a 2d-matrix of float
+            confuse[i][j] -- %age of label[j] being decided as label[i]"""
         # Sort the confusion matrix to make clusters
             # 1/ Get the index
         ci = SortConfusionMatrix(confuse)[0]
@@ -217,10 +257,19 @@ class Model():
         plt.show()
 
     def LoadModel(self):
+        """Load the model with weigth"""
         weight = join("models", self.folder, self.name+".h5")
         self.model = self.ImportModel(weight)
-#-----------------------------------------------------------------
+        
     def Recognize(self, file):
+        """Launch the model on one image
+        
+        Input:
+        file -- a string, the namefile of the image
+        
+        Output:
+            res -- a list of tuple
+                res[i] -- a tuple (str, float) where str is a label"""
         x = PrepareImage(file)
         preds = self.model.predict(x)
         preds = preds[0]
@@ -232,6 +281,16 @@ class Model():
         return res
 
     def ImportModel(self, weight, input_shape = picSize):
+        """Create a model
+        
+        Input:
+        weight -- False or a string
+            False: the model is loaded without weight
+            string: the filename of the model, which will be uesd to load the weigth
+        input_shape -- (int, int, int), the dimension of one image
+        
+        Output:
+        modelD - a keras model"""
         modelD = Sequential()
         # Block 1
         modelD.add(Conv2D(64, (3, 3), input_shape = input_shape, activation='relu', padding='same', name='block1_conv1'))
@@ -290,7 +349,17 @@ class Model():
 
 
     def TestHierarch(self, models, mode):
+        """Test the architecture of models
+        
+        Input:
+        self -- the model with mode 1
+        models -- a list of models with mode 2 or 3
+        mode -- a int
+        
+        output
+        ress -- a float, the percentage of success of the architecture"""
         confuse = [[0 for x in self.labels] for y in self.labels]
+        print(self.labels,'\n')
         with tf.Session() as sess:
             init = tf.global_variables_initializer()
             sess.run(init)
@@ -299,32 +368,40 @@ class Model():
             if mode == 2:
                 hierarch = HierarchIni(models)
                 begin = datetime.now()
-                for i, file in enumerate(models[0].flatFiles):
+                shuffle(models[0].flatFiles)
+                total = {label:0 for label in self.labels}
+                for i, file in enumerate(models[0].flatFiles[:testNumPic*len(self.labels)]):
                     labelmax = MaxLabelTree(models[0], hierarch, file)
-                    print(file, 'detected as', labelmax)
+                    total[labelmax] += 1
                     for labelBis, files in zip(self.labels, self.files):
                         if file in files:
-                            confuse[self.labels.index(labelBis)][self.labels.index(labelmax)] += 1/len(files)
-                    eta = ((datetime.now()-begin)/(i+1)*len(models[0].flatFiles)+begin).strftime('%H:%M')
-                    Progress(str(i+1)+'/'+str(len(models[0].flatFiles))+' | '+eta)
+                            confuse[self.labels.index(labelmax)][self.labels.index(labelBis)] += 1
+                    eta = ((datetime.now()-begin)/(i+1)*(testNumPic*len(self.files))+begin).strftime('%H:%M')
+                    Progress(str(i+1)+'/'+str(testNumPic*len(self.files))+' | '+eta)
+                for i, label1 in enumerate(self.labels):
+                    for j, label2 in enumerate(self.labels):
+                        confuse[i][j]/=total[label1]
 
-            if mode == 3:
-                fileLabelModel = SortedDict()
-                for model in models:
-                    for file in model.files[0]:
-                        fileLabelModel[file]=[model, model.labels[0]]
-                begin = datetime.now()
-                for i, file in enumerate(fileLabelModel):
-                    model, label = fileLabelModel[file]
-                    labelmax = MaxLabelMultiBin(models, file)
-                    print(file, 'detected as', labelmax)
-                    confuse[self.labels.index(label)][self.labels.index(labelmax)] += 1/len(model.files[0])
-                    eta = ((datetime.now()-begin)/(i+1)*len(fileLabelModel)+begin).strftime('%H:%M')
-                    Progress(str(i+1)+'/'+str(len(fileLabelModel))+' | '+eta)
+#            if mode == 3:
+#                fileLabelModel = SortedDict()
+#                for model in models:
+#                    for file in model.files[0]:
+#                        fileLabelModel[file]=[model, model.labels[0]]
+#                begin = datetime.now()
+#                for i, file in enumerate(fileLabelModel):
+#                    model, label = fileLabelModel[file]
+#                    labelmax = MaxLabelMultiBin(models, file)
+#                    print(file, 'detected as', labelmax)
+#                    confuse[self.labels.index(label)][self.labels.index(labelmax)] += 1/len(model.files[0])
+#                    eta = ((datetime.now()-begin)/(i+1)*len(fileLabelModel)+begin).strftime('%H:%M')
+#                    Progress(str(i+1)+'/'+str(len(fileLabelModel))+' | '+eta)
 
             print('--------------\nmode:', mode)
             print('confuse:', confuse)
-            res = sum([confuse[i][i]/len(confuse) for i in range(len(confuse))])
+            res = 0
+            for i in range(len(confuse)):
+                print(self.labels[i], ':', confuse[i][i])
+                res+= confuse[i][i]/len(confuse)
             print(mode, 'succes:', res)
             self.PlotConfuse(confuse)
         return res
@@ -332,10 +409,11 @@ class Model():
 
 def HierarchIni(models):
     hierarch = {}
+    currentFlats = [(set(glob(join(root, '**', '*.jpg'),  recursive=True)),root) for root, subdirs, files in walk(join('.', 'imgs', models[0].folder))]
     for model in models:
-        for root, subdirs, files in walk(join('.', 'imgs', models[0].folder)):
-            currentflat = glob(join(root, '**', '*.jpg'),  recursive=True)
-            if currentflat == model.flatFiles:
+        modelflat = set(model.flatFiles)
+        for currentflat, root in currentFlats:
+            if currentflat == modelflat:
                 hierarch[root.split('\\')[-1]] = model
     return hierarch
 
@@ -436,24 +514,19 @@ def ModelsGenerator(folder, mode):
     # mode=3 is a binary multiclass classifier
     models = []
     if mode in [1,3]:
-        path = join('.', 'imgs', folder)
-        folders = [join(path, dir_) for dir_ in listdir(path)]
-        while folders:
-            path = join(path, '*')
-            folders = [join(folders[0], dir_) for dir_ in listdir(folders[0]) if not dir_.endswith('.jpg')]
-        labels = [path.split('\\')[-1]  for path in glob(path) if not path.endswith('.jpg')]
+        labels = list(set([path.split('\\')[-2]  for path in glob(join('.', 'imgs', folder, '**', '*.jpg'),  recursive=True)]))
         filesL = [glob(join('.', 'imgs', folder, '**', label, '*.jpg'),  recursive=True) for label in labels]
 
         if mode == 1:
             [random.shuffle(files) for files in filesL]
             models = [Model(labels, folder, filesL, folder)]
-        elif mode == 3:
-            flatFiles = FlattenList(filesL)
-            for label, files in zip(labels, filesL):
-                binFiles = [files, [file for file in flatFiles if not file in files]]
-                random.shuffle(binFiles[1])
-                binLabels = [label, 'not_'+label]
-                models.append(Model(binLabels, label, binFiles, folder))
+#        elif mode == 3:
+#            flatFiles = FlattenList(filesL)
+#            for label, files in zip(labels, filesL):
+#                binFiles = [files, [file for file in flatFiles if not file in files]]
+#                random.shuffle(binFiles[1])
+#                binLabels = [label, 'not_'+label]
+#                models.append(Model(binLabels, label, binFiles, folder))
     elif mode==2:
         pathsL = []
         add = [[join('.', 'imgs', folder, fold) for fold in listdir(join('.', 'imgs', folder))]]
@@ -469,75 +542,78 @@ def ModelsGenerator(folder, mode):
             models.append(Model(labels, modelName, filesL, folder))
     return models
 
-def TrainAll(name):
-    for i in [1,2,3]:
-        models = ModelsGenerator(name, i)
-        for model in models:
-            with tf.Session() as sess:
-                model.PrepareData()
-                model.Train()
-            sess
+#def TrainAll(name):
+#    for i in [1,2,3]:
+#        models = ModelsGenerator(name, i)
+#        for model in models:
+#            with tf.Session() as sess:
+#                model.PrepareData()
+#                model.Train()
+#            sess
+#
+#def TestAll(name):
+#    for i in range(3, 0, -1):
+#        with tf.Session() as sess:
+#            basicModel = ModelsGenerator(name,1)[0]
+#            if i == 1:
+#                basicModel.Test()
+#            else:
+#                models = ModelsGenerator(name, i)
+#                basicModel.TestHierarch(models,i)
+#        sess
 
-def TestAll(name):
-    for i in range(3, 0, -1):
-        with tf.Session() as sess:
-            basicModel = ModelsGenerator(name,1)[0]
-            if i == 1:
-                basicModel.Test()
-            else:
-                models = ModelsGenerator(name, i)
-                basicModel.TestHierarch(models,i)
-        sess
+#def TestTriParty(name):
+#    models = [ModelsGenerator(name, i) for i in range(1,4)]
+#    files = models[0][0].flatFiles
+#    begin = datetime.now()
+#    confuse = [[0 for x in models[0][0].labels] for y in models[0][0].labels]
+#
+#    preds = {}
+#    for file in files:
+#        preds[file] = []
+#    length = len(files)
+#    for k, modelL in enumerate(models):
+#        with tf.Session() as sess:
+#            for model in modelL:
+#                model.LoadModel()
+#            for i, file in enumerate(files):
+#                if k == 0:
+#                    preds[file].append(getMaxTuple(models[0][0].Recognize(file))[0])
+#                elif k== 1:
+#                    preds[file].append(MaxLabelTree(models[1][0],HierarchIni(models[1]), file))
+#                elif k==2:
+#                    preds[file].append(MaxLabelMultiBin(models[2], file))
+#
+#                eta = ((datetime.now()-begin)/(i+1)*length+begin).strftime('%H:%M')
+#                Progress(str(i+1)+'/'+str(length)+' | '+eta)
+#
+#        sess
+#    decide = 1
+#    for file in files:
+#        if preds[file][0] == preds[file][1] and preds[file][1]==preds[file][2]:
+#            label = preds[file][0]
+#            for labelBis, filesBis in zip(models[0][0].labels, models[0][0].files):
+#                if file in filesBis:
+#                    confuse[models[0][0].labels.index(labelBis)][models[0][0].labels.index(label)] += 1/len(filesBis)
+#        else:
+#            decide -= 1/length
+#    print('confuse:', confuse)
+#    res = sum([confuse[i][i]/len(confuse) for i in range(len(confuse))])
+#    print('succes:', res/decide)
+#    models[0][0].PlotConfuse(confuse)
+#    print('proportion of decided:', decide)
 
-def TestTriParty(name):
-    models = [ModelsGenerator(name, i) for i in range(1,4)]
-    files = models[0][0].flatFiles
-    begin = datetime.now()
-    confuse = [[0 for x in models[0][0].labels] for y in models[0][0].labels]
-
-    preds = {}
-    for file in files:
-        preds[file] = []
-    length = len(files)
-    for k, modelL in enumerate(models):
-        with tf.Session() as sess:
-            for model in modelL:
-                model.LoadModel()
-            for i, file in enumerate(files):
-                if k == 0:
-                    preds[file].append(getMaxTuple(models[0][0].Recognize(file))[0])
-                elif k== 1:
-                    preds[file].append(MaxLabelTree(models[1][0],HierarchIni(models[1]), file))
-                elif k==2:
-                    preds[file].append(MaxLabelMultiBin(models[2], file))
-
-                eta = ((datetime.now()-begin)/(i+1)*length+begin).strftime('%H:%M')
-                Progress(str(i+1)+'/'+str(length)+' | '+eta)
-
-        sess
-    decide = 1
-    for file in files:
-        if preds[file][0] == preds[file][1] and preds[file][1]==preds[file][2]:
-            label = preds[file][0]
-            for labelBis, filesBis in zip(models[0][0].labels, models[0][0].files):
-                if file in filesBis:
-                    confuse[models[0][0].labels.index(labelBis)][models[0][0].labels.index(label)] += 1/len(filesBis)
-        else:
-            decide -= 1/length
-    print('confuse:', confuse)
-    res = sum([confuse[i][i]/len(confuse) for i in range(len(confuse))])
-    print('succes:', res/decide)
-    models[0][0].PlotConfuse(confuse)
-    print('proportion of decided:', decide)
 
 #TrainAll(name)
-models = ModelsGenerator(name,2)
+models = ModelsGenerator(name,modelType)
 if mode == 'test':
-    models[0].Test()
+    models[modelIndex].Test()
 elif mode == 'train':
-    i = 0
-    models[i].ExportSummary()
-    models[i].PrepareData()
-    models[i].Train(resume=0)
+    models[modelIndex].ExportSummary()
+    models[modelIndex].PrepareData()
+    models[modelIndex].Train(resume=0)
     #TestTriParty(name)
+elif mode == 'testH':
+    ModelsGenerator(name,1)[0].TestHierarch(models, modelType)
+    
 print('FINISH')
