@@ -13,7 +13,7 @@ from keras import backend as K
 from keras import optimizers, regularizers
 from keras.models import Sequential, load_model
 from keras.layers import Flatten, Dense, Conv2D, Dropout, MaxPooling2D
-from keras.callbacks import ModelCheckpoint, Callback
+from keras.callbacks import ModelCheckpoint, EarlyStopping, Callback
 from random import shuffle
 import tensorflow as tf
 from bct import modularity_und as SortConfusionMatrix
@@ -26,7 +26,7 @@ modelIndex = 0
 
 trainNumPic = 8000 # Number of picture per label on which train
                    # if > 1000, will be the total number of images
-testNumPic = 400 # Number of picture per label on which test
+testNumPic = 200 # Number of picture per label on which test
 
 batchSize = 32
 picSize = (128, 128, 3)
@@ -155,9 +155,11 @@ class Model():
             model = load_model(weight)
         else:
             model = self.ImportModel(False)
-        call = ModelCheckpoint(join("models", self.folder, self.name+".h5"))
+        calls = [ModelCheckpoint(join("models", self.folder, self.name+".h5"), save_best_only=True),
+                 EarlyStopping(monitor='val_loss', patience=5),
+                 PlotLearning()]
         model.fit(epochs=epochs, verbose=1, validation_split = validationSplit,x=self.input, y=self.output,
-                  batch_size = batchSize, callbacks=[call, PlotLearning()], initial_epoch = resume)
+                  batch_size = batchSize, callbacks=calls, initial_epoch = resume)
         print('time needed:', datetime.now()-begin)
 
 
@@ -184,6 +186,7 @@ class Model():
                     else:  # We decide something
                         decided += 1
                         confuse[self.labels.index(labelMax)][self.labels.index(label)] += 1
+                        print(file, 'detected as:', labelMax, 'reality:', label)
                         if label == labelMax:  # Our prediction is correct
                             res[label] += 1
                     ending = (datetime.now() - begin) / k  * limit + begin
@@ -225,24 +228,25 @@ class Model():
             confuse[i][j] -- %age of label[j] being decided as label[i]"""
         # Sort the confusion matrix to make clusters
             # 1/ Get the index
-        ci = SortConfusionMatrix(confuse)[0]
-        c = [(ci[i], i) for i in range(len(ci))]
-        c.sort()
-        p = [c[i][1] for i in range(len(c))]
-        
-            # 2/ Actually sort
-        confuse = np.array(confuse)[p][:,p]
-        labels = np.array(self.labels)[p]
+        labels = np.array(self.labels)
+#        ci = SortConfusionMatrix(confuse)[0]
+#        c = [(ci[i], i) for i in range(len(ci))]
+#        c.sort()
+#        p = [c[i][1] for i in range(len(c))]
+#        
+#            # 2/ Actually sort
+#        confuse = np.array(confuse)[p][:,p]
+#        labels = np.array(self.labels)[p]
 
         # Plot the matrix
         fig, ax = plt.subplots(1,1)
         img = ax.imshow(confuse,cmap='RdYlGn')
         fig.colorbar(img, ax=ax)
         # Plot the frontier between clusters
-        for i in range(1, len(c)):
-            if c[i][0] != c[i-1][0]:
-                ax.axhline(i-0.5)
-                ax.axvline(i-0.5)
+#        for i in range(1, len(c)):
+#            if c[i][0] != c[i-1][0]:
+#                ax.axhline(i-0.5)
+#                ax.axvline(i-0.5)
         
         # Write the labels  and titles
         ax.set_xticklabels(labels, rotation=40, ha="right")
@@ -514,7 +518,7 @@ def ModelsGenerator(folder, mode):
     # mode=3 is a binary multiclass classifier
     models = []
     if mode in [1,3]:
-        labels = list(set([path.split('\\')[-2]  for path in glob(join('.', 'imgs', folder, '**', '*.jpg'),  recursive=True)]))
+        labels = sorted(list(set([path.split('\\')[-2]  for path in glob(join('.', 'imgs', folder, '**', '*.jpg'),  recursive=True)])))
         filesL = [glob(join('.', 'imgs', folder, '**', label, '*.jpg'),  recursive=True) for label in labels]
 
         if mode == 1:
