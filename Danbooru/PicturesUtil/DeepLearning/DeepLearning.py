@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from os.path import join, exists
 from datetime import datetime
 from os import listdir, walk, makedirs
+from shutil import copyfile
 from glob import glob
 import colorsys
 import random
@@ -13,31 +14,44 @@ from keras import backend as K
 from keras import optimizers, regularizers
 from keras.models import Sequential, load_model
 from keras.layers import Flatten, Dense, Conv2D, Dropout, MaxPooling2D
-from keras.callbacks import ModelCheckpoint, EarlyStopping, Callback
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, Callback
 from random import shuffle
 import tensorflow as tf
 from bct import modularity_und as SortConfusionMatrix
 
 ### Hyperparameters ###
+
+#Mode paramaters
 name = 'illustrations'
-mode = 'test'  # train, test or testH
+mode = 'train'  # train, test, testH or move
 modelType = 1  # 1 flat, 2 folder, 3 binary
 modelIndex = 0
+cluster = True
 
+# Dataset parameters
 trainNumPic = 8000 # Number of picture per label on which train
                    # if > 1000, will be the total number of images
-testNumPic = 200 # Number of picture per label on which test
-
-batchSize = 32
+testNumPic = 1500 # Number of picture per label on which test
 picSize = (128, 128, 3)
-validationSplit = 0.1  # Percentage of picture used for validation during train
+
+# Training parameters
 epochs = 120
+batchSize = 32
+
+validationSplit = 0.1  # Percentage of picture used for validation during train
 learningRate = 1*10**-3
 momentum = 0.5
 decay = 10**-6
 regularizersRate = 4*10**-5
 dropOut = 0.5
+
 threshold = 1
+
+# Callbacks parameters
+earlyStopPatience = 10
+ReduceLRFactor = 0.5
+ReduceLRPatience = 4
+ReduceLRCooldown = 2 
 grayscale = picSize[-1]==1
 #######################
 if not exists('models'):
@@ -156,13 +170,56 @@ class Model():
         else:
             model = self.ImportModel(False)
         calls = [ModelCheckpoint(join("models", self.folder, self.name+".h5"), save_best_only=True),
-                 EarlyStopping(monitor='val_loss', patience=5),
+                 EarlyStopping(monitor='val_loss', patience=earlyStopPatience),
+                 ReduceLROnPlateau(monitor='val_loss', factor=ReduceLRFactor, 
+                                   patience=ReduceLRPatience, cooldown=ReduceLRCooldown),
                  PlotLearning()]
         model.fit(epochs=epochs, verbose=1, validation_split = validationSplit,x=self.input, y=self.output,
                   batch_size = batchSize, callbacks=calls, initial_epoch = resume)
         print('time needed:', datetime.now()-begin)
 
-
+    def Move(self):
+        """Predict the label of files and move them in the corresponding folder"""
+        for label in self.labels:
+            if not exists(join('result', label)):
+                makedirs(join('result',label))
+        self.LoadModel()
+        
+        files = listdir('todo')
+        limit = len(files)
+        begin = datetime.now()
+        for k, file in enumerate(files):
+            r = self.Recognize(join('todo', file))
+            labelMax,p = getMaxTuple(r)
+            copyfile(join('todo', file), join('result', labelMax, file))
+            ending = (datetime.now() - begin) / (k+1)  * limit + begin
+            Progress(str((k+1)) +'\\' +str(limit) + " | " +  ending.strftime('%H:%M'))
+            
+    def MoveMode2(self, models):
+        """Predict the label of files and move them in the corresponding folder
+        Works for model 2
+        
+        Input:
+        self -- the model with mode 1
+        models -- a list of models with mode 2
+        """
+        
+        hierarch = HierarchIni(models)
+        for model in models:
+            model.LoadModel()
+        for label in self.labels:
+            if not exists(join('result', label)):
+                makedirs(join('result',label))
+        
+        files = listdir('todo')
+        limit = len(files)
+        begin = datetime.now()
+        for k, file in enumerate(files):
+            labelMax = MaxLabelTree(models[0], hierarch, file)
+            copyfile(join('todo', file), join('result', labelMax, file))
+            ending = (datetime.now() - begin) / (k+1)  * limit + begin
+            Progress(str((k+1)) +'\\' +str(limit) + " | " +  ending.strftime('%H:%M'))
+        
     def TestModel(self):
         """Launch the model for tests and compute plots and stats"""
         k = 1
@@ -186,7 +243,6 @@ class Model():
                     else:  # We decide something
                         decided += 1
                         confuse[self.labels.index(labelMax)][self.labels.index(label)] += 1
-                        print(file, 'detected as:', labelMax, 'reality:', label)
                         if label == labelMax:  # Our prediction is correct
                             res[label] += 1
                     ending = (datetime.now() - begin) / k  * limit + begin
@@ -226,27 +282,30 @@ class Model():
         Input:
         confuse -- a 2d-matrix of float
             confuse[i][j] -- %age of label[j] being decided as label[i]"""
-        # Sort the confusion matrix to make clusters
-            # 1/ Get the index
         labels = np.array(self.labels)
-#        ci = SortConfusionMatrix(confuse)[0]
-#        c = [(ci[i], i) for i in range(len(ci))]
-#        c.sort()
-#        p = [c[i][1] for i in range(len(c))]
-#        
-#            # 2/ Actually sort
-#        confuse = np.array(confuse)[p][:,p]
-#        labels = np.array(self.labels)[p]
 
         # Plot the matrix
         fig, ax = plt.subplots(1,1)
         img = ax.imshow(confuse,cmap='RdYlGn')
         fig.colorbar(img, ax=ax)
-        # Plot the frontier between clusters
-#        for i in range(1, len(c)):
-#            if c[i][0] != c[i-1][0]:
-#                ax.axhline(i-0.5)
-#                ax.axvline(i-0.5)
+        
+        if cluster:
+        # Sort the confusion matrix to make clusters
+            # 1/ Get the index
+            ci = SortConfusionMatrix(confuse)[0]
+            c = [(ci[i], i) for i in range(len(ci))]
+            #c.sort()
+            p = [c[i][1] for i in range(len(c))]
+            
+            # 2/ Actually sort
+            confuse = np.array(confuse)[p][:,p]
+            labels = np.array(self.labels)[p]     
+        
+            # 3/ Plot the frontier between clusters
+            for i in range(1, len(c)):
+                if c[i][0] != c[i-1][0]:
+                    ax.axhline(i-0.5)
+                    ax.axvline(i-0.5)
         
         # Write the labels  and titles
         ax.set_xticklabels(labels, rotation=40, ha="right")
@@ -619,5 +678,10 @@ elif mode == 'train':
     #TestTriParty(name)
 elif mode == 'testH':
     ModelsGenerator(name,1)[0].TestHierarch(models, modelType)
+elif mode == 'move':
+    if modelType == 1:        
+        models[0].Move()
+    else:
+        ModelsGenerator(name,1)[0].MoveMode2(models)
     
 print('FINISH')
