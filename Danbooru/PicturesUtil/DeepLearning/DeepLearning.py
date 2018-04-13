@@ -2,9 +2,14 @@ import sys
 #from sortedcontainers import SortedDict
 import numpy as np
 import matplotlib.pyplot as plt
+
+import os
+os.environ['TF_CPP_MIN_VLOG_LEVEL'] = '3'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 from os.path import join, exists
-from datetime import datetime
 from os import listdir, walk, makedirs
+from datetime import datetime
 from shutil import copyfile
 from glob import glob
 import colorsys
@@ -13,14 +18,15 @@ from keras.preprocessing import image as image_utils
 from keras import backend as K
 from keras import optimizers, regularizers
 from keras.models import Sequential, load_model
-from keras.layers import Flatten, Dense, Conv2D, Dropout, MaxPooling2D
+from keras.layers import Flatten, Dense, Conv2D, Dropout, MaxPooling2D, GaussianNoise
 from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, Callback
 from random import shuffle
 import tensorflow as tf
 from bct import modularity_und as SortConfusionMatrix
+#from bct import community_louvain as SortConfusionMatrix
+
 
 ### Hyperparameters ###
-
 #Mode paramaters
 name = 'illustrations'
 mode = 'train'  # train, test, testH or move
@@ -29,30 +35,35 @@ modelIndex = 0
 cluster = True
 
 # Dataset parameters
-trainNumPic = 8000 # Number of picture per label on which train
+trainNumPic = 900 # Number of picture per label on which train
                    # if > 1000, will be the total number of images
-testNumPic = 1500 # Number of picture per label on which test
+validationSplit = 0.2  # Percentage of picture used for validation during train
+testNumPic = 100 # Number of picture per label on which test
 picSize = (128, 128, 3)
+grayscale = picSize[-1]==1
+
+# Network parameters
+denseSize = (3072, 3072, 1024)
 
 # Training parameters
 epochs = 120
-batchSize = 32
+batchSize = 48
 
-validationSplit = 0.1  # Percentage of picture used for validation during train
 learningRate = 1*10**-3
 momentum = 0.5
-decay = 10**-6
+decay = 10**-5  # Weight decay
 regularizersRate = 4*10**-5
+
 dropOut = 0.5
+noise = 0.01  # Noise applied after the convolutional layers
+threshold = 1  # Not used ATM
 
-threshold = 1
-
+communityGamma = 0.9
 # Callbacks parameters
-earlyStopPatience = 10
+earlyStopPatience = 8
 ReduceLRFactor = 0.5
 ReduceLRPatience = 4
-ReduceLRCooldown = 2 
-grayscale = picSize[-1]==1
+ReduceLRCooldown = 1 
 #######################
 if not exists('models'):
     makedirs(join('models'))
@@ -143,7 +154,7 @@ class Model():
         input_ = []
         begin = datetime.now()
         for i, file in enumerate(self.flatFiles):
-            eta = ((datetime.now()-begin)/(i+1)*len(self.files)+begin).strftime('%H:%M')
+            eta = ((datetime.now()-begin)/(i+1)*len(self.flatFiles)+begin).strftime('%H:%M')
             Progress(str(i)+'/'+str(len(self.flatFiles))+' - '+eta)
 
             x = PrepareImage(file)
@@ -286,15 +297,17 @@ class Model():
 
         # Plot the matrix
         fig, ax = plt.subplots(1,1)
-        img = ax.imshow(confuse,cmap='RdYlGn')
-        fig.colorbar(img, ax=ax)
         
         if cluster:
         # Sort the confusion matrix to make clusters
             # 1/ Get the index
-            ci = SortConfusionMatrix(confuse)[0]
+            ci = SortConfusionMatrix(confuse, gamma=communityGamma)[0]
+            
+            print('community value')
+            for gamma in range(1, 21):
+                print(gamma/10, SortConfusionMatrix(confuse, gamma=gamma/10)[1])
             c = [(ci[i], i) for i in range(len(ci))]
-            #c.sort()
+            c.sort()
             p = [c[i][1] for i in range(len(c))]
             
             # 2/ Actually sort
@@ -306,6 +319,9 @@ class Model():
                 if c[i][0] != c[i-1][0]:
                     ax.axhline(i-0.5)
                     ax.axvline(i-0.5)
+                    
+        img = ax.imshow(confuse,cmap='RdYlGn')
+        fig.colorbar(img, ax=ax)
         
         # Write the labels  and titles
         ax.set_xticklabels(labels, rotation=40, ha="right")
@@ -385,15 +401,16 @@ class Model():
         modelD.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3'))
 ##        modelD.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv4'))
         modelD.add(MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool'))
+        modelD.add(GaussianNoise(noise))
     #
 
         # Classification block
         modelD.add(Flatten(name='flatten'))
-        modelD.add(Dense(3072, kernel_regularizer=regularizers.l2(regularizersRate), activation='relu', name='fc1'))
+        modelD.add(Dense(denseSize[0], kernel_regularizer=regularizers.l2(regularizersRate), activation='relu', name='fc1'))
         modelD.add(Dropout(dropOut, name='do1'))
-        modelD.add(Dense(3072, kernel_regularizer=regularizers.l2(regularizersRate), activation='relu', name='fc2'))
+        modelD.add(Dense(denseSize[1], kernel_regularizer=regularizers.l2(regularizersRate), activation='relu', name='fc2'))
         modelD.add(Dropout(dropOut, name='do2'))
-        modelD.add(Dense(1024, kernel_regularizer=regularizers.l2(regularizersRate), activation='relu', name='fc5'))
+        modelD.add(Dense(denseSize[2], kernel_regularizer=regularizers.l2(regularizersRate), activation='relu', name='fc5'))
         modelD.add(Dropout(dropOut, name='do3'))
         modelD.add(Dense(len(self.labels), activation='softmax', name='predictions'))
 
