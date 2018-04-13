@@ -8,7 +8,7 @@ import urllib
 import bs4 as BeautifulSoup
 import requests
 import shutil
-from os.path import join
+from os.path import join, exists
 import time
 import os
 from datetime import datetime
@@ -18,11 +18,16 @@ import threading
 
 hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
     
-with open("../Danbooru_Codes.txt") as f:
-    api_key = f.readline().split()[1]
-    username = f.readline().split()[1]
-        
-payload = {'api_key':api_key, 'login':username}
+if exists("../Danbooru_Codes.txt"):
+    with open("../Danbooru_Codes.txt") as f:
+        api_key = f.readline().split()[1]
+        username = f.readline().split()[1]
+    payload = {'api_key':api_key, 'login':username}
+else:
+    print('no danbooru account: will be limited to two tags')
+    payload = {}
+if not exists('result'):
+    os.makedirs('result')
                    
 def Progress(s):
     stdout.write('\r')
@@ -47,14 +52,16 @@ def ListPicturesWithTag(tags, limit):
         Progress(str(i)+'/'+str(int(limit/n))+' | '+tags+' | '+eta)
         url = "http://hijiribe.donmai.us/posts?page=" + str(i + 1)
         url = url + "&tags=limit%3A200+" + tags.replace(' ','+')
-        url += "&login="+username+"&api_key="+api_key
+        if exists("../Danbooru_Codes.txt"):
+            url += "&login="+username+"&api_key="+api_key
         req = urllib.request.Request(url, headers=hdr)
         page = urllib.request.urlopen(req)
         bytespage = page.read()
         soup = BeautifulSoup.BeautifulSoup(bytespage, "lxml")
         for j, sample in enumerate(soup.find_all('article')):
+            entry = sample.get("data-large-file-url")
             #entry = "https://"+base[j%len(base)]+".donmai.us/data/"+sample.get("data-file-url").split('/')[-1]
-            entry = "https://"+base[j%len(base)]+".donmai.us/data/preview/"+sample.get("data-preview-file-url").split('/')[-1]
+            #entry = "https://"+base[j%len(base)]+".donmai.us/data/preview/"+sample.get("data-preview-file-url").split('/')[-1]
             list_pictures_with.append(entry)
     return list_pictures_with
 
@@ -68,7 +75,8 @@ def Launch():
             name = tag.split()[-1]
             for key in replace:
                 name = name.replace(key, '-')
-            os.makedirs(join('result', name))
+            if not exists(join('result', name)):
+                os.makedirs(join('result', name))
         except Exception as e:
             print(e)
     limits = [int(i) for i in input("Number of pictures with the tags (split with blank): ").split()]
