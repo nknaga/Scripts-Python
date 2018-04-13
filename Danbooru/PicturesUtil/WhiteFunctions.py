@@ -8,7 +8,7 @@ from PIL import Image
 import numpy as np
 from datetime import datetime as dt
 from os import listdir
-from os.path import join, dirname, realpath
+from os.path import join
 import re
 import os
 from sys import stdout
@@ -186,11 +186,11 @@ class IMG():
                 self._border[3] += 1
 
 
-def onFolder(folder = dirname(realpath(__file__))):
+def onFolder(folder = ''):
     list_file = listdir(folder)
     Launch(list_file, folder = folder)
 
-def onFile(f, i, folder = dirname(realpath(__file__))):
+def onFile(f, i, folder = ''):
     location = join(folder, f)
     image = IMG(location)
     image.Remove_Transparency()
@@ -222,11 +222,11 @@ def onFile(f, i, folder = dirname(realpath(__file__))):
     if goal:
         goal = ['wikipedia','google'][goal-1]
         path = image._name.split('\\')
-        image._name = '\\'.join(path[:-1]) + '\\' + goal +'\\'+str(355+i)+'.jpg'
+        image._name = join('\\'.join(path[:-1]), goal,str(374-2+i)+'.jpg')
         image.Save()
 
 
-def Launch(files, folder = dirname(realpath(__file__))):
+def Launch(files, folder = ''):
     #files.sort(key =lambda z:int(re.split(r'[._()]+',z)[1]))
     n = len(files)
     begin = dt.now()
@@ -242,5 +242,5 @@ def Launch(files, folder = dirname(realpath(__file__))):
 if __name__ == '__main__':
     wikiRate = 1
     gooRate = 1.1
-    a = join(dirname(realpath(__file__)), 'result\\todo')
+    a = 'result'
     onFolder(folder=a)
