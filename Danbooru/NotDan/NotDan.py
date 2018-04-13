@@ -10,7 +10,7 @@ import threading
 import time
 import requests
 import json
-from pixivpy3 import AppPixivAPI
+#from pixivpy3 import AppPixivAPI
 from io import BytesIO
 from PIL import Image
 from os import system
@@ -62,39 +62,133 @@ class Sample:
         return self._adds
 
 
-def AddEntry(index):
-    try:
-        retry = 0
-        while retry < 6:
-            try:
-                json = illust_detail(index, req_auth=True)
-                while 'error' in json and 'Rate Limit' == json['error']['message']:
-                    time.sleep(60)
-                    json = illust_detail(index, req_auth=True)
-                if 'reason' not in json:
-                    retry = 7
-                else:
-                    retry += 1
-            except BaseException:
+#def AddEntry(index):
+#    try:
+#        retry = 0
+#        while retry < 6:
+#            try:
+#                json = illust_detail(index, req_auth=True)
+#                while 'error' in json and 'Rate Limit' == json['error']['message']:
+#                    time.sleep(60)
+#                    json = illust_detail(index, req_auth=True)
+#                if 'reason' not in json:
+#                    retry = 7
+#                else:
+#                    retry += 1
+#            except BaseException:
+#                retry += 1
+#        if 'illust' in json:
+#            json = json.illust
+#            if json.total_bookmarks > score and json.page_count < 10:
+#                global res
+#                res[index] = {}
+#                res[index]['t'] = [tag.name for tag in json.tags] + \
+#                                [str(json.user.id)]
+#                #res[index]['u'] = json.image_urls.medium
+#                res[index]['n'] = json.page_count
+#                #res[index]['d'] = json.create_date
+#                res[index]['s'] = json.total_bookmarks
+#                res[index]['r'] = json.height / json.width
+#        elif 'error' in json and 'ID' not in json.error.user_message:
+#            print(json.error)
+#    except Exception as e:
+#        print(e, '\n')
+
+def GetInfo(index, pages = False):
+    global res
+    retry = 0
+    while retry < 4:
+        try:
+            url = "https://www.pixiv.net/member_illust.php?mode=medium&illust_id="+str(index)
+            page = urllib.request.urlopen(url)
+            code = page.getcode()
+            if code in [403, 404]:
+                return []
+            elif code != 200:
                 retry += 1
-        if 'illust' in json:
-            json = json.illust
-            if json.total_bookmarks > score and json.page_count < 10:
-                global res
+            soup = BeautifulSoup.BeautifulSoup(page, "lxml")
+            
+            if pages:
+                pages = [img.get('src') for img in soup.find_all('img') if \
+                        'master' in img.get('src') and not 'square' in img.get('src')]
+                pages_bis = GetPagesMode0(index)
+                if len(pages_bis) > 1:
+                    pages = pages_bis
+                if len(set(pages)) <7:
+                    return list(set(pages))
+                
+            tags = soup.find("meta", {'name':"keywords"}).get('content').split(',')
+            user = soup.find('div', {'class':'usericon'})
+            user = user.find('a').get('href').split('=')[-1]
+            tags.append(user[:-2])
+            total_bookmarks = soup.find_all('li', {'class':'info'})[1]
+            total_bookmarks = int(total_bookmarks.find_all('span')[-1].text)
+            
+            if total_bookmarks > score:
                 res[index] = {}
-                res[index]['t'] = [tag.name for tag in json.tags] + \
-                                [str(json.user.id)]
-                #res[index]['u'] = json.image_urls.medium
-                res[index]['n'] = json.page_count
-                #res[index]['d'] = json.create_date
-                res[index]['s'] = json.total_bookmarks
-                res[index]['r'] = json.height / json.width
-        elif 'error' in json and 'ID' not in json.error.user_message:
-            print(json.error)
-    except Exception as e:
-        print(e, '\n')
+                res[index]['t'] = tags
+                res[index]['s'] = total_bookmarks
+                res[index]['r'] = 1 # Default
+                res[index]['n'] = 1
+            return
+        except Exception as e:
+            retry+=1
+    return []
+    
+def FinalJPGorPNG():
+    urls = open('3-final.html', 'r').readlines()[0].split('<br/>')
+    urls = [link.split('"')[1] for link in urls[:-1]]
+    pages = []
+    for url in urls:
+        if url is None:
+            continue
+        elif '600x600' in url:
+            url = url.replace('c/600x600/img-master', 'img-original').replace('_master1200', '')
+        elif 'img-master' in url:
+            url = url.replace('img-master', 'img-original').replace('_master1200.jpg', '.jpg')
+        if url not in pages:
+            pages.append(url)
+            
+    begin = datetime.now()
+    l = len(pages)
+    for i, url in enumerate(pages):
+        try:
+            req = urllib.request.Request(url)
+            req.add_header('Referer', 'https://www.pixiv.net/')
+            urllib.request.urlopen(req)
+        except Exception as e:
+            pages[i] = url.replace('.jpg', '.png')
+        
+        ending = ((datetime.now() - begin) / (i+1) * l + begin).strftime('%H:%M')
+        Progress(str(i+1)+'/'+str(l)+' | ' + ending)
+    with open('3-final.html', 'w') as file:
+        for url in pages:
+            file.write('<A HREF="' + url + '"> ' + url + '<br/>')
 
-
+def GetPagesMode0(index):
+    retry = 0
+    while retry < 4:
+        try:
+            url = "https://www.pixiv.net/member_illust.php?mode=manga&illust_id="+str(index)
+            page = urllib.request.urlopen(url)
+            code = page.getcode()
+            if code in [403, 404]:
+                return []
+            elif code != 200:
+                retry += 1
+            elif code == 200:
+                retry = 7
+            soup = BeautifulSoup.BeautifulSoup(page, "lxml")
+            pages = [img.get('data-src') for img in soup.find_all('img')]
+            return pages
+        except Exception as e:
+            retry += 1
+    return []
+    
+def GetPagesMode1(index):
+    global res
+    res[index] = GetInfo(index, pages = True)
+    
 def CheckOnDan(pixivId):
     payload = {'limit': '1',
                'tags': 'pixiv:' + str(pixivId),
@@ -157,6 +251,7 @@ def JsonReading(files):
 
     hierarch, cor = GetHierarch()
     hierarchIm = {k:[] for k in cor.values()}
+    hierarchIm['none'] = []
     
     tag_f = input('Enforce tags? : ').split()
     tag_rem = input("Tags to blacklist ? ")
@@ -172,16 +267,15 @@ def JsonReading(files):
             and (not tag_f or any(tag in v['t'] for tag in tag_f))\
             and (not any(tag in v['t'] for tag in blacklist))\
             and (not tags or any(tag in v['t'] for tag in tags.split())):
+                if not tags:
+                    hierarchIm['none'].append(int(i))
+                    
                 for tag in set(tags.split()).intersection(set(v['t'])):
                     try:
-                        case = 1
-                        a = hierarch[tag]
-                        case = 2
-                        a = cor[a]
-                        case = 3
+                        a = cor[hierarch[tag]]
                         hierarchIm[a].append(int(i))
                     except Exception as e:
-                        print(tag, case)
+                        print(tag)
     
     data = []  
     print()
@@ -268,20 +362,20 @@ def ShowPixiv():
     if not n:
         ShowImgs(Routeur123(mode=2, data=urls[1:]))
 
-
-def PixivId2Url(i):
-    try:
-        res1 = illust_detail(i, req_auth=True)
-        while 'error' in res1 and 'Rate Limit' == res1['error']['message']:
-            time.sleep(60)
-            res1 = illust_detail(i, req_auth=True)
-        if 'illust' in res1:
-            res2 = [dic.image_urls.original for dic in res1.illust.meta_pages]
-            if not res2:
-                res2 = [res1.illust.meta_single_page.original_image_url]
-            res[i] = res2
-    except Exception as e:
-        print('IndividualUrl - error on :', i, e)
+#
+#def PixivId2Url(i):
+#    try:
+#        res1 = illust_detail(i, req_auth=True)
+#        while 'error' in res1 and 'Rate Limit' == res1['error']['message']:
+#            time.sleep(60)
+#            res1 = illust_detail(i, req_auth=True)
+#        if 'illust' in res1:
+#            res2 = [dic.image_urls.original for dic in res1.illust.meta_pages]
+#            if not res2:
+#                res2 = [res1.illust.meta_single_page.original_image_url]
+#            res[i] = res2
+#    except Exception as e:
+#        print('IndividualUrl - error on :', i, e)
 
 
 def Url2Data(url):
@@ -310,6 +404,7 @@ def ShowImgs(imgs):
         Progress(s)
     print()
     print('-----------------------')
+    #FinalJPGorPNG()
 
 
 def IndividualIQDB(url, mode):
@@ -413,11 +508,11 @@ def ShowYandere():
     ShowImgs(samples)
 
 
-def GetPixApi(id_mail, mails, password):
-    id_mail = (id_mail+1)%len(mails)
-    api = AppPixivAPI()
-    api.login(mails[id_mail], password)
-    return api, id_mail, api.illust_detail
+#def GetPixApi(id_mail, mails, password):
+#    id_mail = (id_mail+1)%len(mails)
+#    api = AppPixivAPI()
+#    api.login(mails[id_mail], password)
+#    return api, id_mail, api.illust_detail
 
 def Routeur123(mode=0, data=None):
     global file, res, illust_detail
@@ -436,62 +531,63 @@ def Routeur123(mode=0, data=None):
     elif mode == 1:
         print('--------------------------\n--- BEGIN CHECK ON DAN ---')
         file = open('1-NotDanbooru_Result.html', 'w')
-        data.sort()
-        index = data
     elif mode == 2:
         print('--------------------------\n------ DOWNLOAD IMG ------')
     elif mode == 3:
         print('--------------------------\n---- PIXIV ID TO URL -----')
+        global score
+        score = 0
         res = {}
     limit = len(index)
     limit_active = int(input('Number of threads ? ')) + \
         threading.active_count()
-    function = [AddEntry, CheckOnDan, Url2Data, PixivId2Url][mode]
+    function = [GetInfo, CheckOnDan, Url2Data, GetPagesMode1][mode]
     begin = datetime.now()
-    if mode in [0, 3]:
-        with open("../Pixiv_Codes.txt", 'r') as f:
-            mails = f.readline().split()[1:]
-            password = f.readline().split()[1]
-        lastLogin = begin
-        id_mail = -1
-        n = -1
+#    if mode in [0, 3]:
+#        with open("../Pixiv_Codes.txt", 'r') as f:
+#            mails = f.readline().split()[1:]
+#            password = f.readline().split()[1]
+#        lastLogin = begin
+#        id_mail = -1
+#        n = -1
     print('Begin at', begin.strftime('%H:%M'))
     p = 0.0
     try:
         for i, x in enumerate(index):
-            m = 0
+#            m = 0
             while threading.active_count() > limit_active:
                 time.sleep(0.1)
-                m += 1
-                if m == 50 and mode in [0, 3]:
-                    # Can stop because of proxy, or because of rate limit
-                    test = illust_detail(i, req_auth=True)
-                    if 'error' in test and test['error']['message'] == 'Rate Limit':
-                        api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
-                        n = 0
-                        #print('\nSwitch account to', mails[id_mail])
-                        time.sleep(20)
-                    else:
-                        pass
-                        #print('\nWill proced to change the proxy')
-                        #SetProxy(TestProxy())
-            if mode in [0,3]:
-                n+= 1
-                if not n%800:
-                    api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
-                elif (datetime.now() - lastLogin).seconds > 3590:
-                    lastLogin = datetime.now()
-                    api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
-                    n = 0
+#                m += 1
+#                if m == 50 and mode in [0, 3]:
+#                    # Can stop because of proxy, or because of rate limit
+#                    test = illust_detail(i, req_auth=True)
+#                    if 'error' in test and test['error']['message'] == 'Rate Limit':
+#                        api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
+#                        n = 0
+#                        #print('\nSwitch account to', mails[id_mail])
+#                        time.sleep(20)
+#                    else:
+#                        pass
+#                        #print('\nWill proced to change the proxy')
+#                        #SetProxy(TestProxy())
+#            if mode in [0,3]:
+#                n+= 1
+#                if not n%800:
+#                    api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
+#                elif (datetime.now() - lastLogin).seconds > 3590:
+#                    lastLogin = datetime.now()
+#                    api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
+#                    n = 0
             Thread(target=function, args=(x, )).start()
-            if p != int(i / limit * 10000) / 100:
+            if p != int(i / limit * 1000) / 10:
                 mean_time = (datetime.now() - begin) / (i + 1)
                 ending = (mean_time * limit + begin).strftime('%D-%H:%M')
                 Progress(str(p) + '% | ' + ending + ' | ' + str(mean_time))
-                p = int(i / limit * 10000) / 100
+                p = int(i / limit * 1000) / 10
         time.sleep(10)
     except Exception as e:
-        print('\n',mails[id_mail], e, 'Stop at', i,'\n--------------------------')
+        print('\n',e)
+#        print('\n',mails[id_mail], e, 'Stop at', i,'\n--------------------------')
     finally:
         if mode in [0, 1]:
             if not mode and res:
@@ -501,14 +597,15 @@ def Routeur123(mode=0, data=None):
                     json.dump(temp, file, sort_keys=True, indent=4)
             file.close()
         elif mode == 3:
-            rt = res
-            res = []
-            for value in rt.values():
+            res2 = []
+            for key, value in res.items():
+                if value is None:
+                    continue
                 for url in value:
-                    res.append(url)
-            res.sort()
-            print('\nFOUND:', len(res),'\n--------------------------')
-            return res
+                    if not url is None and url not in res2:
+                        res2.append(url)
+            print('\nFOUND:', len(res2),'\n--------------------------')
+            return res2
         elif mode == 2:
             print('\nFOUND:', len(res),'\n--------------------------')
             return res
@@ -567,6 +664,7 @@ if __name__ == '__main__':
     print('mode 6 : Check from 2-directlink')
     print('mode 7 : split 2-directlink')
     print('mode 8 : Show images from yandere')
+    print('mode 9 : png or jpg on 3-final')
     mode = int(input('Which mode ? '))
     if mode in [1, 2]:
         files = input('File numbers ? ')
@@ -592,3 +690,5 @@ if __name__ == '__main__':
         SplitDirectLink()
     elif mode == 8:
         ShowYandere()
+    elif mode == 9:
+        FinalJPGorPNG()
