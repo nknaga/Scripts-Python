@@ -46,7 +46,6 @@ def ListPicturesWithTag(tags, limit):
     list_pictures_with = []
     n = 200
     begin = datetime.now()
-    base = ['sonohara', 'danbooru']
     for i in range(int(limit/n)+1):
         eta = ((datetime.now()-begin)/(i+1)*int(limit/n)+begin).strftime('%H:%M')
         Progress(str(i)+'/'+str(int(limit/n))+' | '+tags+' | '+eta)
@@ -60,8 +59,7 @@ def ListPicturesWithTag(tags, limit):
         soup = BeautifulSoup.BeautifulSoup(bytespage, "lxml")
         for j, sample in enumerate(soup.find_all('article')):
             entry = sample.get("data-large-file-url")
-            #entry = "https://"+base[j%len(base)]+".donmai.us/data/"+sample.get("data-file-url").split('/')[-1]
-            #entry = "https://"+base[j%len(base)]+".donmai.us/data/preview/"+sample.get("data-preview-file-url").split('/')[-1]
+            entry = sample.get("data-preview-file-url")
             list_pictures_with.append(entry)
     return list_pictures_with
 
