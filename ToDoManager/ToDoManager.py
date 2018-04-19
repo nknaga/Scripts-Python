@@ -9,7 +9,7 @@ from os.path import join, exists, getsize
 import pytube
 
 
-local = "E:\Telechargements\Anime\\to_do"
+local = "D:\Telechargements\Anime\\to_do"
 try:
     os.makedirs(join(local, 'input'))
 except:
