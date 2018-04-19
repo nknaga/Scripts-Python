@@ -10,10 +10,10 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from os.path import join, exists
 from os import listdir, walk, makedirs
 from datetime import datetime
-from shutil import copyfile
+from shutil import copyfile, move
 from glob import glob
 import colorsys
-import random
+#import random
 from keras.preprocessing import image as image_utils
 from keras import backend as K
 from keras import optimizers, regularizers
@@ -27,47 +27,60 @@ import pickle
 #from bct import community_louvain as SortConfusionMatrix
 
 
-### Hyperparameters ###
-#Mode paramaters
-name = 'illustrations'
-mode = 'plotConfuse'  # train, test, testH, trainH, move, export, plotConfuse
-modelType = 1  # 1 flat, 2 folder, 3 binary
-modelIndex = 0
-cluster = True
+###################### Hyperparameters ######################
 
-# Dataset parameters
-trainNumPic = (4444, True) # Number of picture on which train
+
+#                    Mode paramaters
+
+name = 'illustrations'  # name of the folder hosting the dataset 
+modes = ['test']  # train, test, testH, trainH, move, export, plotConfuse, makeClusters
+modelType = 1  # 1 flat, 2 folder based
+modelIndex = 0  # !=0 if folder based
+currentEpoch = 0  # Not 0 we want to resume a training
+
+#                     Cluster parameters
+
+clustering = 'import' # automatic, import or False
+miniClusterSize = 0  # If not 0, communityGamma is an iterable, float else
+communityGamma = [x/10 for x in range(20, 0, -1)]
+communityGamma = 0.8
+
+#                    Dataset parameters
+
+trainNumPic = (2500, True) # Number of picture on which train
                        # False for each class, True for total number
+testNumPic = 20 # Number of picture per label on which test
 
 validationSplit = 0.1  # Percentage of picture used for validation during train
-testNumPic = 20 # Number of picture per label on which test
 picSize = (128, 128, 3)
 grayscale = picSize[-1]==1
 
-# Network parameters
+#                    Network parameters
+
 denseSize = (3072, 3072, 1024)  # Size of the last three hidden layers
 
-# Training parameters
-epochs = 120
-batchSize = 48
+#                    Training parameters
+
+epochs = 200  # maximal number of epochs
+batchSize = 32  # number of picture put in the network with each batch
 
 learningRate = 1*10**-3
 momentum = 0.5
-decay = 10**-5  # Weight decay
-regularizersRate = 4*10**-5
+lrDecay = 10**-5  # learning rate decay (not weight decay)
+weightDecay = 4*10**-5  # weight decay
 
 dropOut = 0.5
 noise = 0.01  # Noise applied after the convolutional layers
 threshold = 1  # Not used ATM
 
-miniClusterSize = 4  # If not 0, communityGamma is an iterable, float else
-communityGamma = [x/10 for x in range(20, 0, -1)]
-# Callbacks parameters
-earlyStopPatience = 8
-ReduceLRFactor = 0.5
-ReduceLRPatience = 4
-ReduceLRCooldown = 1 
-#######################
+#                    Callbacks parameters
+
+earlyStopPatience = 8  # Stop if the loss doesn't decrease since n epochs
+ReduceLRPatience = 4  # Decrease the learning rate if loss doesn't decreance since n epochs
+ReduceLRFactor = 0.5  # Decrease the learning rate by multiply it by n
+ReduceLRCooldown = 1
+
+##################################################################
 if not exists('models'):
     makedirs(join('models'))
 if not exists(join('models', name)):
@@ -107,7 +120,7 @@ class PlotLearning(Callback):
         plt.savefig('plot.png')
 
 class Model():
-    def __init__(self, labels, name, files, folder):
+    def __init__(self, labels, name, files, folder, mode):
         """Initialization of the model
         
         Input:
@@ -118,6 +131,7 @@ class Model():
         folder -- a string
         """
         self.labels = labels
+        self.mode = mode
         self.files = files
         self.name = name
         self.folder = folder
@@ -286,25 +300,26 @@ class Model():
         res, confuse, undecided = self.TestModel()
         for label, success in res.items():
             print(label, ':', success)
-        res = np.mean([confuse[i][i] for i in range(len(confuse))])
-        print('overall succes:', res)
+
         print('undecided:', undecided)
-        pickle.dump(confuse, open(join('confuse', self.name+".p"), "wb" ))
+        pickle.dump(confuse, open(join('confuse', str(self.mode)+self.name+".p"), "wb" ))
         self.PlotConfuse(confuse)
 
     
-    def PlotConfuse(self, confuse):
+    def PlotConfuse(self, confuse, show = True):
         """Plot the confusion matrix and cluster the labels
         
         Input:
         confuse -- a 2d-matrix of float
             confuse[i][j] -- %age of label[j] being decided as label[i]"""
+        res = np.mean([confuse[i][i] for i in range(len(confuse))])
+        print('overall succes:', res)
         labels = np.array(self.labels)
 
         # Plot the matrix
         fig, ax = plt.subplots(1,1)
         
-        if cluster:
+        if clustering=='automatic':
         # Sort the confusion matrix to make clusters
             # 1/ Get the index
         
@@ -326,26 +341,44 @@ class Model():
                     if len(self.labels)/len(axes) > miniClusterSize:
                         break
             else:
-                ci = SortConfusionMatrix(confuse, gamma=gamma)[0]
+                axes = []
+                ci = SortConfusionMatrix(confuse, gamma=communityGamma)[0]
                 
                 c = [(ci[i], i) for i in range(len(ci))]
                 c.sort()
                 p = [c[i][1] for i in range(len(c))]
-                
                 for i in range(1, len(c)):
                     if c[i][0] != c[i-1][0]:
                         axes.append(i)
+                print(p, axes)
+        elif clustering == 'import':
+            clusters = self.ImportClusters()
+            p = [self.labels.index(label) for label in FlattenList(clusters)]
+            axes = []
+            for cluster in clusters:
+                if not axes:
+                    axes.append(len(cluster))
+                else:
+                    axes.append(axes[-1]+len(cluster))
             
+        if clustering:
             # 2/ Actually sort
             confuse = np.array(confuse)[p][:,p]
-            labels = np.array(self.labels)[p]     
+            labels = np.array(self.labels)[p]
+            
+            clusters = [[]]
+            for i, label in enumerate(labels):
+                if i in axes:
+                    clusters.append([label])
+                else:
+                    clusters[-1].append(label)
         
             # 3/ Plot the frontier between clusters
             for i in axes:
                     ax.axhline(i-0.5)
                     ax.axvline(i-0.5)
-                    
-        img = ax.imshow(confuse,cmap='RdYlGn')
+            
+        img = ax.imshow(confuse,cmap='viridis', vmax = 1, vmin = 0)
         fig.colorbar(img, ax=ax)
         
         # Write the labels  and titles
@@ -358,7 +391,9 @@ class Model():
         plt.title(self.name)
         plt.tight_layout()
 
-        plt.show()
+        if show:
+            plt.show()
+        return clusters
 
     def LoadModel(self):
         """Load the model with weigth"""
@@ -431,16 +466,16 @@ class Model():
 
         # Classification block
         modelD.add(Flatten(name='flatten'))
-        modelD.add(Dense(denseSize[0], kernel_regularizer=regularizers.l2(regularizersRate), activation='relu', name='fc1'))
+        modelD.add(Dense(denseSize[0], kernel_regularizer=regularizers.l2(weightDecay), activation='relu', name='fc1'))
         modelD.add(Dropout(dropOut, name='do1'))
-        modelD.add(Dense(denseSize[1], kernel_regularizer=regularizers.l2(regularizersRate), activation='relu', name='fc2'))
+        modelD.add(Dense(denseSize[1], kernel_regularizer=regularizers.l2(weightDecay), activation='relu', name='fc2'))
         modelD.add(Dropout(dropOut, name='do2'))
-        modelD.add(Dense(denseSize[2], kernel_regularizer=regularizers.l2(regularizersRate), activation='relu', name='fc5'))
+        modelD.add(Dense(denseSize[2], kernel_regularizer=regularizers.l2(weightDecay), activation='relu', name='fc5'))
         modelD.add(Dropout(dropOut, name='do3'))
         modelD.add(Dense(len(self.labels), activation='softmax', name='predictions'))
 
         #opt = optimizers.Adam(lr=learningRate, decay=decay,)
-        sgd = optimizers.SGD(lr=learningRate,momentum=momentum,decay=decay, nesterov=True)
+        sgd = optimizers.SGD(lr=learningRate,momentum=momentum,decay=lrDecay, nesterov=True)
 
         modelD.compile(optimizer = sgd,
                       loss='categorical_crossentropy',
@@ -470,13 +505,28 @@ class Model():
             sess.run(init)
             for model in models:
                 model.LoadModel()
-            if mode == 2:
+            if mode in (2, 4):
                 hierarch = HierarchIni(models)
+                if mode == 4:
+                    self.LoadModel()
+                    
+                    invHier = {}
+                    for label1 in self.labels:
+                        for model1 in models:
+                            if label1 in model1.labels:
+                                for label, model2 in hierarch.items():
+                                    if model1 == model2:
+                                        invHier[label1] = label
+                    print(invHier)
+                                        
                 begin = datetime.now()
                 shuffle(models[0].flatFiles)
                 total = {label:0 for label in self.labels}
                 for i, file in enumerate(models[0].flatFiles[:testNumPic*len(self.labels)]):
-                    labelmax = MaxLabelTree(models[0], hierarch, file)
+                    if mode == 2:
+                        labelmax = MaxLabelTree(models[0], hierarch, file, mode)
+                    elif mode == 4:
+                        labelmax = MaxLabelTree(self, hierarch, file, mode, models=models, invHier = invHier)
                     total[labelmax] += 1
                     for labelBis, files in zip(self.labels, self.files):
                         if file in files:
@@ -485,7 +535,10 @@ class Model():
                     Progress(str(i+1)+'/'+str(testNumPic*len(self.files))+' | '+eta)
                 for i, label1 in enumerate(self.labels):
                     for j, label2 in enumerate(self.labels):
-                        confuse[i][j]/=total[label1]
+                        if total[label1] == 0:
+                            confuse[i][j] = 0
+                        else:
+                            confuse[i][j]/=total[label1]
 
 #            if mode == 3:
 #                fileLabelModel = SortedDict()
@@ -510,7 +563,31 @@ class Model():
             print(mode, 'succes:', res)
             self.PlotConfuse(confuse)
         return res
+        
+    def MakeClusters(self, clusters):
+        folders = ['\\'.join(files[0].split('\\')[:-1]) for files in self.files]
+        for i in range(len(clusters)):
+            folder = '\\'.join(folders[0].split('\\')[:-1]+[str(i)])
+            if not exists(folder):
+                makedirs(folder)
+        for folder in folders:
+            label = folder.split('\\')[-1]
+            for i, cluster in enumerate(clusters):
+                if label in cluster:
+                    newFolder = '\\'.join(folder.split('\\')[:-1]+[str(i)]+[label])
+            move(folder, newFolder)
 
+    def ImportClusters(self):
+        clusters = {}
+        for file in self.flatFiles:
+            mother, child = file.split('\\')[-3:-1]
+            if mother not in clusters:
+                clusters[mother] = [child]
+            elif child not in clusters[mother]:
+                clusters[mother].append(child)
+        clusters = [clusters[key] for key in clusters if key != self.folder] +\
+                   [[label] for label in clusters[self.folder]]
+        return clusters
 
 def HierarchIni(models):
     """Generate the architecture of the labels
@@ -531,7 +608,7 @@ def HierarchIni(models):
                 hierarch[root.split('\\')[-1]] = model
     return hierarch
 
-def MaxLabelTree(model1, hierarch, file):
+def MaxLabelTree(model1, hierarch, file, mode, models=None, invHier = None):
     """Decide of a final label with a hierarch architecture of mode 2
     
     Input:
@@ -545,10 +622,15 @@ def MaxLabelTree(model1, hierarch, file):
     labelmax -- a string"""
     r = model1.Recognize(file)
     labelmax = getMaxTuple(r)[0]
+    if mode == 4:
+        labelmax = invHier[labelmax]
+        if labelmax == name:
+            return getMaxTuple(r)[0]
     while labelmax in hierarch:
         r = hierarch[labelmax].Recognize(file)
         labelmax = getMaxTuple(r)[0]
     return labelmax
+    
 
 def MaxLabelMultiBin(models, file):
     """Decide of a final label with a binary architeture of mode 3
@@ -694,12 +776,20 @@ def ModelsGenerator(folder, mode):
     Output:
     models -- a list of models"""
     models = []
+    begin = datetime.now()
+    allFiles = glob(join('.', 'imgs', folder, '**', '*.jpg'),  recursive=True)
     if mode in [1,3]:
-        labels = sorted(list(set([path.split('\\')[-2]  for path in glob(join('.', 'imgs', folder, '**', '*.jpg'),  recursive=True)])))
-        filesL = [glob(join('.', 'imgs', folder, '**', label, '*.jpg'),  recursive=True) for label in labels]
+        labels = sorted(list(set([path.split('\\')[-2]  for path in allFiles])))
+        
+        filesL = [[] for label in labels]
+        label2index = {label:labels.index(label) for label in labels}
+        for file in allFiles:
+            for label in labels:
+                if label == file.split('\\')[-2]:
+                    filesL[label2index[label]].append(file)
 
         if mode == 1:
-            models = [Model(labels, folder, filesL, folder)]
+            models = [Model(labels, folder, filesL, folder, mode)]
 #        elif mode == 3:
 #            flatFiles = FlattenList(filesL)
 #            for label, files in zip(labels, filesL):
@@ -707,18 +797,26 @@ def ModelsGenerator(folder, mode):
 #                random.shuffle(binFiles[1])
 #                binLabels = [label, 'not_'+label]
 #                models.append(Model(binLabels, label, binFiles, folder))
-    elif mode==2:
+    elif mode in (2, 4):
         pathsL = []
         add = [[join('.', 'imgs', folder, fold) for fold in listdir(join('.', 'imgs', folder))]]
         while add:
             pathsL += add
             add = [[join(root, fold) for fold in listdir(root) if not fold.endswith('.jpg')] for root in pathsL[-1]]
         pathsL = [paths for paths in pathsL if paths]
+
         for i, paths in enumerate(pathsL):
             modelName = folder+str(i)
             labels = [path.split('\\')[-1] for path in paths]
-            filesL = [glob(join('.', 'imgs', folder, '**', label, '**', '*.jpg'),  recursive=True) for label in labels]
-            models.append(Model(labels, modelName, filesL, folder))
+            
+            filesL = [[] for label in labels]
+            label2index = {label:labels.index(label) for label in labels}
+            for file in allFiles:
+                for label in labels:
+                    if label in file:
+                        filesL[label2index[label]].append(file)
+            models.append(Model(labels, modelName, filesL, folder, mode))
+    print(datetime.now() - begin, 'to generate models')        
     return models
 
 def Launcher(name, modelType, mode):
@@ -735,13 +833,15 @@ def Launcher(name, modelType, mode):
         'trainH' -- train architectured models
         'testH' -- train architectured models
         'move' -- run a model on non-categorized imgs and move the according to the predictions
-        "export' -- create .txt and a .png describing the model"""
+        "export' -- create .txt and a .png describing the model
+        'plotConfuse' -- show the confusion matrix
+        'makeClusters' -- divide the folders into clusters"""
     models = ModelsGenerator(name,modelType)
     if mode == 'test':
         models[modelIndex].Test()
     elif mode == 'train':
         models[modelIndex].PrepareData()
-        models[modelIndex].Train(resume=0)
+        models[modelIndex].Train(resume=currentEpoch)
     elif mode == 'trainH':
         for model in models:
             with tf.Session() as sess:
@@ -759,10 +859,22 @@ def Launcher(name, modelType, mode):
         models[modelIndex].ExportSummary()
     elif mode == 'plotConfuse':
         confuse = pickle.load(open(join('confuse', models[modelIndex].name+".p"), "rb" ))
-        models[modelIndex].PlotConfuse(confuse)
+        if modelType == 4:
+            model = ModelsGenerator(name, 1)[0]
+            print(len(confuse), len(model.labels))
+            model.PlotConfuse(confuse)
+        else:
+            models[modelIndex].PlotConfuse(confuse)
+    elif mode == 'makeClusters':
+        confuse = pickle.load(open(join('confuse', models[modelIndex].name+".p"), "rb" ))
+        clusters = models[modelIndex].PlotConfuse(confuse, show = False)
+        models[modelIndex].MakeClusters(clusters)
+    else:
+        print('incorrect command:', mode)
     
     
 if __name__ == '__main__':
     print('BEGIN:', datetime.now().strftime('%H:%M'))
-    Launcher(name, modelType, mode)
+    for mode in  modes:
+        Launcher(name, modelType, mode)
     print('FINISH', datetime.now().strftime('%H:%M'))
