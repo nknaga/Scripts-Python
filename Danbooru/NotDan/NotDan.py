@@ -187,7 +187,7 @@ def GetPagesMode0(index):
     
 def GetPagesMode1(index):
     global res
-    res[index] = GetInfo(index, pages = True)
+    res.append(GetInfo(index, pages = True))
     
 def CheckOnDan(pixivId):
     payload = {'limit': '1',
@@ -273,7 +273,8 @@ def JsonReading(files):
                 for tag in set(tags.split()).intersection(set(v['t'])):
                     try:
                         a = cor[hierarch[tag]]
-                        hierarchIm[a].append(int(i))
+                        if int(i) not in hierarchIm[a]:
+                            hierarchIm[a].append(int(i))
                     except Exception as e:
                         print(tag)
     
@@ -341,14 +342,8 @@ def Index():
 
 
 def ShowPixiv():
-    n = int(input('Proxy number ? '))
-    if not n:
-        m = input('import url from file ? (y/n) : ')
-    else:
-        m = False
+    m = input('import url from file ? (y/n) : ')
     if m != 'y':
-        if n:
-            SetProxy(n)
         urls = Routeur123(mode=3, data=Index())
         file = open('2-directlink.html', 'w')
         for url in urls:
@@ -359,8 +354,7 @@ def ShowPixiv():
             url for url in open(
                 '2-directlink.html',
                 'r').readline().split('https')]
-    if not n:
-        ShowImgs(Routeur123(mode=2, data=urls[1:]))
+    ShowImgs(Routeur123(mode=2, data=urls[1:]))
 
 #
 #def PixivId2Url(i):
@@ -537,7 +531,6 @@ def Routeur123(mode=0, data=None):
         print('--------------------------\n---- PIXIV ID TO URL -----')
         global score
         score = 0
-        res = {}
     limit = len(index)
     limit_active = int(input('Number of threads ? ')) + \
         threading.active_count()
@@ -598,7 +591,7 @@ def Routeur123(mode=0, data=None):
             file.close()
         elif mode == 3:
             res2 = []
-            for key, value in res.items():
+            for value in res:
                 if value is None:
                     continue
                 for url in value:
