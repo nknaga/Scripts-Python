@@ -34,22 +34,28 @@ import pickle
 
 name = 'illustrations'  # name of the folder hosting the dataset 
 modes = ['test']  # train, test, testH, trainH, move, export, plotConfuse, makeClusters
-modelType = 1  # 1 flat, 2 folder based
-modelIndex = 0  # !=0 if folder based
-currentEpoch = 0  # Not 0 we want to resume a training
+modelType = 2  # 1 flat, 2 folder based
+modelIndex = 0  # folder based if != 0
+if modelType == 1:
+    modelIndex = 0
+
+currentEpoch = 24  # Not 0 we want to resume a training
 
 #                     Cluster parameters
 
-clustering = 'import' # automatic, import or False
+clustering = False # automatic, import or False
+if modelType!=1:
+    clustering = False
+
 miniClusterSize = 0  # If not 0, communityGamma is an iterable, float else
 communityGamma = [x/10 for x in range(20, 0, -1)]
 communityGamma = 0.8
 
 #                    Dataset parameters
 
-trainNumPic = (2500, True) # Number of picture on which train
+trainNumPic = (10000, True) # Number of picture on which train
                        # False for each class, True for total number
-testNumPic = 20 # Number of picture per label on which test
+testNumPic = 200 # Number of picture per label on which test
 
 validationSplit = 0.1  # Percentage of picture used for validation during train
 picSize = (128, 128, 3)
@@ -120,7 +126,7 @@ class PlotLearning(Callback):
         plt.savefig('plot.png')
 
 class Model():
-    def __init__(self, labels, name, files, folder, mode):
+    def __init__(self, labels, name, files, folder, mode, index):
         """Initialization of the model
         
         Input:
@@ -135,7 +141,14 @@ class Model():
         self.files = files
         self.name = name
         self.folder = folder
-
+        self.index = index
+        
+        if self.index == 0 and self.mode == 2:
+            for i, files in enumerate(self.files):
+                self.files[i] = [file[::-1] for file in self.files[i]]
+                self.files[i].sort()
+                self.files[i] = [file[::-1] for file in self.files[i]]
+                
         self.flatFiles = FlattenList(self.files)
 
 #        print()
@@ -166,6 +179,7 @@ class Model():
             self.files = [files[:trainNumPic[0]//len(self.files)] for files in self.files]
         else:
             self.files = [files[:trainNumPic[0]] for files in self.files]
+            
         self.flatFiles = FlattenList(self.files)
         output = [[int(file in files) for file in self.flatFiles] for files in self.files]
         input_ = []
@@ -377,6 +391,8 @@ class Model():
             for i in axes:
                     ax.axhline(i-0.5)
                     ax.axvline(i-0.5)
+        else:
+            clusters = []
             
         img = ax.imshow(confuse,cmap='viridis', vmax = 1, vmin = 0)
         fig.colorbar(img, ax=ax)
@@ -789,7 +805,7 @@ def ModelsGenerator(folder, mode):
                     filesL[label2index[label]].append(file)
 
         if mode == 1:
-            models = [Model(labels, folder, filesL, folder, mode)]
+            models = [Model(labels, folder, filesL, folder, mode, 0)]
 #        elif mode == 3:
 #            flatFiles = FlattenList(filesL)
 #            for label, files in zip(labels, filesL):
@@ -815,7 +831,7 @@ def ModelsGenerator(folder, mode):
                 for label in labels:
                     if label in file:
                         filesL[label2index[label]].append(file)
-            models.append(Model(labels, modelName, filesL, folder, mode))
+            models.append(Model(labels, modelName, filesL, folder, mode, i))
     print(datetime.now() - begin, 'to generate models')        
     return models
 
@@ -838,7 +854,10 @@ def Launcher(name, modelType, mode):
         'makeClusters' -- divide the folders into clusters"""
     models = ModelsGenerator(name,modelType)
     if mode == 'test':
-        models[modelIndex].Test()
+        if modelIndex == 0 and modelType == 4:
+            ModelsGenerator(name, 1).Test()
+        else:
+            models[modelIndex].Test()
     elif mode == 'train':
         models[modelIndex].PrepareData()
         models[modelIndex].Train(resume=currentEpoch)
@@ -858,15 +877,15 @@ def Launcher(name, modelType, mode):
     elif mode == 'export':
         models[modelIndex].ExportSummary()
     elif mode == 'plotConfuse':
-        confuse = pickle.load(open(join('confuse', models[modelIndex].name+".p"), "rb" ))
+        confuse = pickle.load(open(join('confuse', str(models[modelIndex].mode)+models[modelIndex].name+".p"), "rb" ))
         if modelType == 4:
             model = ModelsGenerator(name, 1)[0]
             print(len(confuse), len(model.labels))
             model.PlotConfuse(confuse)
         else:
             models[modelIndex].PlotConfuse(confuse)
-    elif mode == 'makeClusters':
-        confuse = pickle.load(open(join('confuse', models[modelIndex].name+".p"), "rb" ))
+    elif mode == 'makeClusters': 
+        confuse = pickle.load(open(join('confuse', str(models[modelIndex].mode)+models[modelIndex].name+".p"), "rb" ))
         clusters = models[modelIndex].PlotConfuse(confuse, show = False)
         models[modelIndex].MakeClusters(clusters)
     else:
