@@ -32,18 +32,18 @@ import pickle
 
 #                    Mode paramaters
 
-name = 'illustrations'  # name of the folder hosting the dataset 
-modes = ['test']  # train, test, testH, trainH, move, export, plotConfuse, makeClusters
-modelType = 2  # 1 flat, 2 folder based
+name = 'illustrations(white)'  # name of the folder hosting the dataset 
+modes = ['plotConfuse']  # train, test, testH, trainH, move, export, plotConfuse, makeClusters
+modelType = 1  # 1 flat, 2 folder based
 modelIndex = 0  # folder based if != 0
 if modelType == 1:
     modelIndex = 0
 
-currentEpoch = 24  # Not 0 we want to resume a training
+currentEpoch = 0  # Not 0 we want to resume a training
 
 #                     Cluster parameters
 
-clustering = False # automatic, import or False
+clustering = 'import' # automatic, import or False
 if modelType!=1:
     clustering = False
 
@@ -55,7 +55,7 @@ communityGamma = 0.8
 
 trainNumPic = (10000, True) # Number of picture on which train
                        # False for each class, True for total number
-testNumPic = 200 # Number of picture per label on which test
+testNumPic = 100 # Number of picture per label on which test
 
 validationSplit = 0.1  # Percentage of picture used for validation during train
 picSize = (128, 128, 3)
@@ -364,7 +364,6 @@ class Model():
                 for i in range(1, len(c)):
                     if c[i][0] != c[i-1][0]:
                         axes.append(i)
-                print(p, axes)
         elif clustering == 'import':
             clusters = self.ImportClusters()
             p = [self.labels.index(label) for label in FlattenList(clusters)]
@@ -374,11 +373,17 @@ class Model():
                     axes.append(len(cluster))
                 else:
                     axes.append(axes[-1]+len(cluster))
+        if clustering and p:
+            for i in range(len(self.labels)):
+                if i not in p:
+                    print(self.labels[i])
+                    p.append(i)
+                    axes.append(axes[-1]+1)
             
-        if clustering:
             # 2/ Actually sort
             confuse = np.array(confuse)[p][:,p]
             labels = np.array(self.labels)[p]
+            
             
             clusters = [[]]
             for i, label in enumerate(labels):
@@ -386,14 +391,14 @@ class Model():
                     clusters.append([label])
                 else:
                     clusters[-1].append(label)
-        
+                    
             # 3/ Plot the frontier between clusters
             for i in axes:
                     ax.axhline(i-0.5)
                     ax.axvline(i-0.5)
         else:
             clusters = []
-            
+        
         img = ax.imshow(confuse,cmap='viridis', vmax = 1, vmin = 0)
         fig.colorbar(img, ax=ax)
         
@@ -406,7 +411,7 @@ class Model():
         plt.ylabel('Reality')
         plt.title(self.name)
         plt.tight_layout()
-
+        print(len(labels))
         if show:
             plt.show()
         return clusters
@@ -576,6 +581,7 @@ class Model():
             for i in range(len(confuse)):
                 print(self.labels[i], ':', confuse[i][i])
                 res+= confuse[i][i]/len(confuse)
+                pickle.dump(confuse, open(join('confuse', 'H'+self.name+".p"), "wb" ))
             print(mode, 'succes:', res)
             self.PlotConfuse(confuse)
         return res
@@ -601,8 +607,11 @@ class Model():
                 clusters[mother] = [child]
             elif child not in clusters[mother]:
                 clusters[mother].append(child)
-        clusters = [clusters[key] for key in clusters if key != self.folder] +\
-                   [[label] for label in clusters[self.folder]]
+        if self.folder != 'illustration123':# There is no rootted label
+            clusters = [clusters[key] for key in clusters if key != self.folder]
+        else:
+            clusters = [clusters[key] for key in clusters if key != self.folder]+\
+                       [[label] for label in clusters[self.folder] if self.folder != 'illustrations123']
         return clusters
 
 def HierarchIni(models):
@@ -880,7 +889,6 @@ def Launcher(name, modelType, mode):
         confuse = pickle.load(open(join('confuse', str(models[modelIndex].mode)+models[modelIndex].name+".p"), "rb" ))
         if modelType == 4:
             model = ModelsGenerator(name, 1)[0]
-            print(len(confuse), len(model.labels))
             model.PlotConfuse(confuse)
         else:
             models[modelIndex].PlotConfuse(confuse)
