@@ -20,22 +20,20 @@ from keras import optimizers, regularizers
 from keras.models import Sequential, load_model
 from keras.layers import Flatten, Dense, Conv2D, Dropout, MaxPooling2D, GaussianNoise
 from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, Callback
-from random import shuffle
 import tensorflow as tf
 from bct import modularity_und as SortConfusionMatrix
 import pickle
+from random import shuffle
 #from bct import community_louvain as SortConfusionMatrix
 
 
 ###################### Hyperparameters ######################
-
-
 #                    Mode paramaters
 
-name = 'illustrations(white)'  # name of the folder hosting the dataset 
-modes = ['plotConfuse']  # train, test, testH, trainH, move, export, plotConfuse, makeClusters
-modelType = 1  # 1 flat, 2 folder based
-modelIndex = 0  # folder based if != 0
+name = 'illustrationsDeep'  # name of the folder hosting the dataset 
+modes = ['train']  # train, test, testH, trainH, move, export, plotConfuse, makeClusters
+modelType = 2  # 1 flat, 2 folder based
+modelIndex = 3  # folder based if != 0
 if modelType == 1:
     modelIndex = 0
 
@@ -43,18 +41,17 @@ currentEpoch = 0  # Not 0 we want to resume a training
 
 #                     Cluster parameters
 
-clustering = 'import' # automatic, import or False
-if modelType!=1:
-    clustering = False
+clustering = 'automatic' # automatic, import or False
 
-miniClusterSize = 0  # If not 0, communityGamma is an iterable, float else
+miniClusterSize = 3  # If not 0, communityGamma is an iterable, float else
 communityGamma = [x/10 for x in range(20, 0, -1)]
-communityGamma = 0.8
+#communityGamma = 0.8
 
 #                    Dataset parameters
 
-trainNumPic = (10000, True) # Number of picture on which train
-                       # False for each class, True for total number
+trainNumPic = (0.25, '%') # each, all, or %
+trainNumPic = (400, 'each') # each, all, or %
+
 testNumPic = 100 # Number of picture per label on which test
 
 validationSplit = 0.1  # Percentage of picture used for validation during train
@@ -145,9 +142,10 @@ class Model():
         
         if self.index == 0 and self.mode == 2:
             for i, files in enumerate(self.files):
-                self.files[i] = [file[::-1] for file in self.files[i]]
-                self.files[i].sort()
-                self.files[i] = [file[::-1] for file in self.files[i]]
+                self.files[i] = [[file[-10:-4], file] for file in self.files[i]]
+                self.files[i] = sorted(self.files[i])
+                self.files[i] = [file[1] for file in self.files[i]]
+                #self.files[i] = [file[::-1] for file in self.files[i]]
                 
         self.flatFiles = FlattenList(self.files)
 
@@ -175,10 +173,13 @@ class Model():
         input -- an array containing the images"""
         print()
         print()
-        if trainNumPic[1]:
+        if trainNumPic[1] == 'all':
             self.files = [files[:trainNumPic[0]//len(self.files)] for files in self.files]
-        else:
+        elif trainNumPic[1] == 'each':
             self.files = [files[:trainNumPic[0]] for files in self.files]
+        elif trainNumPic[1] == '%':
+            self.files = [files[:int(trainNumPic[0]*len(files))] for files in self.files]
+            
             
         self.flatFiles = FlattenList(self.files)
         output = [[int(file in files) for file in self.flatFiles] for files in self.files]
@@ -317,6 +318,7 @@ class Model():
 
         print('undecided:', undecided)
         pickle.dump(confuse, open(join('confuse', str(self.mode)+self.name+".p"), "wb" ))
+        pickle.dump(self.labels, open(join('confuse', str(self.mode)+self.name+"_header.p"), "wb" ))
         self.PlotConfuse(confuse)
 
     
@@ -411,7 +413,6 @@ class Model():
         plt.ylabel('Reality')
         plt.title(self.name)
         plt.tight_layout()
-        print(len(labels))
         if show:
             plt.show()
         return clusters
@@ -541,7 +542,6 @@ class Model():
                     print(invHier)
                                         
                 begin = datetime.now()
-                shuffle(models[0].flatFiles)
                 total = {label:0 for label in self.labels}
                 for i, file in enumerate(models[0].flatFiles[:testNumPic*len(self.labels)]):
                     if mode == 2:
@@ -581,7 +581,8 @@ class Model():
             for i in range(len(confuse)):
                 print(self.labels[i], ':', confuse[i][i])
                 res+= confuse[i][i]/len(confuse)
-                pickle.dump(confuse, open(join('confuse', 'H'+self.name+".p"), "wb" ))
+            print(self.labels)
+            pickle.dump(confuse, open(join('confuse', 'H'+self.name+".p"), "wb" ))
             print(mode, 'succes:', res)
             self.PlotConfuse(confuse)
         return res
@@ -898,6 +899,7 @@ def Launcher(name, modelType, mode):
         models[modelIndex].MakeClusters(clusters)
     else:
         print('incorrect command:', mode)
+    
     
     
 if __name__ == '__main__':
