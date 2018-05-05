@@ -77,14 +77,14 @@ class Question_Canvas(tk.Tk):
                 self._result[self.question.question][0] += 1
                 self._result['timeline'].append(True)
                 self._result['count'][self.question] += 1
-                print('Right : ', self.question.answer)
+                print('Right : ', self.question.answer, len(worklist))
             self._update = True
         else:
             if not self.second:
                 self._result[self.question.question][1] += 1
                 self._result['timeline'].append(False)
                 self._result['count'][self.question] = 0
-                print('False : ', self.question.question, '->', self.question.answer)
+                print('False : ', self.question.question, '->', self.question.answer, len(worklist))
                 
             self._update = self.question
         sys.stdout.flush()
