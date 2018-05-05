@@ -18,11 +18,11 @@ f = open("../Danbooru_Codes.txt")
 api_key = f.readline().split()[1]
 username = f.readline().split()[1]
 f.close()
-known_tags = {'g' : 'flat_chest', 's' : 'small_breasts', 'm' : 'medium_breasts',
+known_tags = {'f' : 'flat_chest', 's' : 'small_breasts', 'm' : 'medium_breasts',
               'l' : 'large_breasts', 'h' : 'huge_breasts', '-' : '-sideboob -cleavage -breasts',
               'look' : 'looking_at_viewer', 'hair' : 'hair_between_eyes',
               'eye' : 'eyebrows_visible_through_hair ', 'see' : 'see-through',
-              'p' : 'pass', 'f' : 'gigantic_breasts' }
+              'p' : 'pass', 'g' : 'gigantic_breasts' }
 """known_tags = {',' : 'flat_chest', '1' : 'small_breasts', '2' : 'medium_breasts',
               '4' : 'large_breasts', '3' : 'huge_breasts', '-' : '-sideboob -cleavage -breasts',
               'look' : 'looking_at_viewer', 'hair' : 'hair_between_eyes',
@@ -52,7 +52,7 @@ class Sample:
     def __init__(self, dic):
         self._Id = str(dic['id'])
 
-        url_sample = 'https://danbooru.donmai.us'+dic['large_file_url']+"?login="+username+"&api_key="+api_key
+        url_sample = dic['large_file_url']+"?login="+username+"&api_key="+api_key
         ok = 0
         while ok <5:
             try:
@@ -154,8 +154,8 @@ def ListImgs(data):
 def main():
     inf = 2990000
     sup = 4000000
-    tags = "breasts age:<30d -comic -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
-    limit = 2000
+    tags = "breasts age:<60d -comic -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
+    limit = 3000
     data = []
     res = []
     for i in range((limit-1)//100+1):
