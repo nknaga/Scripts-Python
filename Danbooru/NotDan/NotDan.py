@@ -190,16 +190,20 @@ def GetPagesMode1(index):
     res.append(GetInfo(index, pages = True))
     
 def CheckOnDan(pixivId):
-    payload = {'limit': '1',
-               'tags': 'pixiv:' + str(pixivId),
+    payload = {#'limit': '1',
+               #'tags': 'pixiv:' + str(pixivId),
                'api_key': api_key,
                'login': dan_username}
-    req = requests.get(api_url, data=payload, headers=headers, stream=True)
+    url = 'https://danbooru.donmai.us/counts/posts?tags=pixiv%3A'+str(pixivId)
+    req = requests.get(url, data=payload, headers=headers, stream=True)
     t = 0
     while req.status_code != 200 and t < 5:
-        req = requests.get(api_url, data=payload, headers=headers, stream=True)
+        req = requests.get(url, data=payload, headers=headers, stream=True)
         t += 1
-    if len(req.content) >= 100 or t == 5:
+        
+    soup = BeautifulSoup.BeautifulSoup(req.content, "lxml")
+    count = soup.find('div', {'id':"a-posts"})
+    if t == 5 or str(count).split()[-2] != '0':
         return True
     else:
         global file
@@ -642,6 +646,7 @@ def Routeur456(mode):
             i += 1
     except Exception as e:
         print(e)
+    time.sleep(20)
     print()
     print('MEAN TIME:', (datetime.now() - begin) / len(links))
     file.close()
