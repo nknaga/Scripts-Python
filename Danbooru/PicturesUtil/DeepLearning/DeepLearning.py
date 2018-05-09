@@ -7,7 +7,7 @@ import os
 os.environ['TF_CPP_MIN_VLOG_LEVEL'] = '3'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-from os.path import join, exists
+from os.path import join, exists, split as splitF
 from os import listdir, walk, makedirs
 from datetime import datetime
 from shutil import copyfile, move
@@ -30,17 +30,16 @@ from random import shuffle
 ###################### Hyperparameters ######################
 #                    Mode paramaters
 
-name = 'illustrationsDeep'  # name of the folder hosting the dataset 
+names = ['illustrationsDeep']# name of the folder hosting the dataset 
+
 modes = ['train']  # train, test, testH, trainH, move, export, plotConfuse, makeClusters
-modelType = 2  # 1 flat, 2 folder based
-modelIndex = 3  # folder based if != 0
-if modelType == 1:
-    modelIndex = 0
+modelTypes =  [2] # 1 flat, 2 folder based*
+modelIndexs = [6]
 
 currentEpoch = 0  # Not 0 we want to resume a training
 
 #                     Cluster parameters
-
+plot = False
 clustering = 'automatic' # automatic, import or False
 
 miniClusterSize = 3  # If not 0, communityGamma is an iterable, float else
@@ -49,10 +48,10 @@ communityGamma = [x/10 for x in range(20, 0, -1)]
 
 #                    Dataset parameters
 
-trainNumPic = (0.25, '%') # each, all, or %
-trainNumPic = (400, 'each') # each, all, or %
+trainNumPic = (0.5, '%') # each, all, or %
+#trainNumPic = (800, 'each') # each, all, or %
 
-testNumPic = 100 # Number of picture per label on which test
+testNumPic = (0.2, '%')# Number of picture per label on which test
 
 validationSplit = 0.1  # Percentage of picture used for validation during train
 picSize = (128, 128, 3)
@@ -84,11 +83,12 @@ ReduceLRFactor = 0.5  # Decrease the learning rate by multiply it by n
 ReduceLRCooldown = 1
 
 ##################################################################
-if not exists('models'):
-    makedirs(join('models'))
-if not exists(join('models', name)):
-    makedirs(join('models', name))
-    
+for name in names:
+    if not exists('models'):
+        makedirs(join('models'))
+    if not exists(join('models', name)):
+        makedirs(join('models', name))
+        
 
 class PlotLearning(Callback):
     """Callback generating a fitness plot in a file after each epoch"""
@@ -136,21 +136,20 @@ class Model():
         self.labels = labels
         self.mode = mode
         self.files = files
-        self.name = name
-        self.folder = folder
+        self.name = name.replace('(white)', '')
+        self.folder = folder.replace('(white)', '')
         self.index = index
         
-        if self.index == 0 and self.mode == 2:
-            for i, files in enumerate(self.files):
-                self.files[i] = [[file[-10:-4], file] for file in self.files[i]]
-                self.files[i] = sorted(self.files[i])
-                self.files[i] = [file[1] for file in self.files[i]]
+        for i, files in enumerate(self.files):
+            self.files[i] = [[file[-10:-4], file] for file in self.files[i]]
+            self.files[i] = sorted(self.files[i])
+            self.files[i] = [file[1] for file in self.files[i]]
                 #self.files[i] = [file[::-1] for file in self.files[i]]
                 
         self.flatFiles = FlattenList(self.files)
-
-#        print()
-#        print('name:', self.name)
+        print()
+        print(self.name)
+        print(', '.join(self.labels))
 #        print('labels:', self.labels)
 #        print('files:', self.files)
 
@@ -178,8 +177,8 @@ class Model():
         elif trainNumPic[1] == 'each':
             self.files = [files[:trainNumPic[0]] for files in self.files]
         elif trainNumPic[1] == '%':
-            self.files = [files[:int(trainNumPic[0]*len(files))] for files in self.files]
-            
+            total = int(len(self.flatFiles)*trainNumPic[0])
+            self.files = [files[:total//len(self.files)] for files in self.files]
             
         self.flatFiles = FlattenList(self.files)
         output = [[int(file in files) for file in self.flatFiles] for files in self.files]
@@ -208,12 +207,16 @@ class Model():
             change the value to continue a previously stopped training
         """
         print('Train', self.name)
+        print('labels:', ', '.join(self.labels))
         begin = datetime.now()
         if resume:
             weight = join("models", self.folder, self.name+".h5")
             model = load_model(weight)
         else:
             model = self.ImportModel(False)
+            if self.index != 0:
+                print('load from 0')
+                model.load_weights(join("models", self.folder, self.name[:-len(str(self.index))]+'0.h5'), by_name=True)
         calls = [ModelCheckpoint(join("models", self.folder, self.name+".h5"), save_best_only=True),
                  EarlyStopping(monitor='val_loss', patience=earlyStopPatience),
                  ReduceLROnPlateau(monitor='val_loss', factor=ReduceLRFactor, 
@@ -272,13 +275,23 @@ class Model():
         confuse = [[0 for x in self.labels] for y in self.labels]
         begin = datetime.now()
         undecided = 0
-        limit = len(self.files)*testNumPic
         for files, label in zip(self.files, self.labels):
+            if testNumPic[1] == '%':
+                nbPerLabel = int(testNumPic[0]*len(files))
+                nbTotal = int(testNumPic[0]*len(self.flatFiles))
+            elif testNumPic[1] == 'each':
+                nbPerLabel = testNumPic[0]
+                nbTotal = testNumPic[0]*len(self.files)
+            elif testNumPic[1] == 'all':
+                nbPerLabel = testNumPic[0]//len(self.files)
+                nbTotal = testNumPic[0]
+                
+                
             decided = 0
             if len(files) != 0:
                 res[label] = 0
             for i, file in enumerate(files[::-1]): # Reverse makes more probable to not use the training picts
-                if i > testNumPic:
+                if i >= nbPerLabel:
                     continue
                 try:
                     r = self.Recognize(file)
@@ -287,27 +300,19 @@ class Model():
                         undecided += 1
                     else:  # We decide something
                         decided += 1
-                        confuse[self.labels.index(labelMax)][self.labels.index(label)] += 1
+                        confuse[self.labels.index(label)][self.labels.index(labelMax)] += 1/nbPerLabel
                         if label == labelMax:  # Our prediction is correct
-                            res[label] += 1
-                    ending = (datetime.now() - begin) / k  * limit + begin
-                    Progress(str(k) +'\\' +str(limit) + " | " +  ending.strftime('%H:%M'))
+                            res[label] += 1/nbPerLabel
+                    ending = (datetime.now() - begin) / k  * nbTotal + begin
+                    Progress(str(k) +'\\' +str(nbTotal) + " | " +  ending.strftime('%H:%M'))
                     k+=1
                     #print('\\'.join(file.split('\\')[3:]), 'detected as', labelMax, p)
                 except Exception as e:
                     print(e)
                     k+=1
-            if decided:
-                res[label]/=decided
-                for labelMax in self.labels:
-                    confuse[self.labels.index(labelMax)][self.labels.index(label)] /= decided
-            else:
-                res[label] = 1
-                for labelMax in self.labels:
-                    confuse[self.labels.index(labelMax)][self.labels.index(label)] = 1
 
         print()
-        return res, confuse, undecided/limit
+        return res, confuse, undecided/nbTotal
 
     def Test(self):
         """Launch the model for tests and print plots and stats"""
@@ -317,8 +322,6 @@ class Model():
             print(label, ':', success)
 
         print('undecided:', undecided)
-        pickle.dump(confuse, open(join('confuse', str(self.mode)+self.name+".p"), "wb" ))
-        pickle.dump(self.labels, open(join('confuse', str(self.mode)+self.name+"_header.p"), "wb" ))
         self.PlotConfuse(confuse)
 
     
@@ -328,6 +331,8 @@ class Model():
         Input:
         confuse -- a 2d-matrix of float
             confuse[i][j] -- %age of label[j] being decided as label[i]"""
+        pickle.dump(confuse, open(join('confuse', str(self.mode)+self.name+".p"), "wb" ))
+        pickle.dump(self.labels, open(join('confuse', str(self.mode)+self.name+"_header.p"), "wb" ))
         res = np.mean([confuse[i][i] for i in range(len(confuse))])
         print('overall succes:', res)
         labels = np.array(self.labels)
@@ -351,7 +356,6 @@ class Model():
                     for i in range(1, len(c)):
                         if c[i][0] != c[i-1][0]:
                             axes.append(i)
-                    print(gamma, len(axes), axes)
                     if len(axes) == 0:
                         continue
                     if len(self.labels)/len(axes) > miniClusterSize:
@@ -413,7 +417,7 @@ class Model():
         plt.ylabel('Reality')
         plt.title(self.name)
         plt.tight_layout()
-        if show:
+        if plot and show:
             plt.show()
         return clusters
 
@@ -454,50 +458,50 @@ class Model():
         modelD - a keras model"""
         modelD = Sequential()
         # Block 1
-        modelD.add(Conv2D(64, (3, 3), input_shape = input_shape, activation='relu', padding='same', name='B1C1'))
-        modelD.add(Conv2D(64, (3, 3), activation='relu', padding='same', name='B1C2'))
+        modelD.add(Conv2D(64, (3, 3), input_shape = input_shape, activation='selu', padding='same', name='B1C1'))
+        modelD.add(Conv2D(64, (3, 3), activation='selu', padding='same', name='B1C2'))
         modelD.add(MaxPooling2D((2, 2), strides=(2, 2), name='B1P'))
 
         # Block 2
-        modelD.add(Conv2D(128, (3, 3), activation='relu', padding='same', name='B2C1'))
-        modelD.add(Conv2D(128, (3, 3), activation='relu', padding='same', name='B2C3'))
+        modelD.add(Conv2D(128, (3, 3), activation='selu', padding='same', name='B2C1'))
+        modelD.add(Conv2D(128, (3, 3), activation='selu', padding='same', name='B2C3'))
         modelD.add(MaxPooling2D((2, 2), strides=(2, 2), name='B2P'))
 
         # Block 3
-        modelD.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='B3C1'))
-        modelD.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='B3C2'))
-        modelD.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='B3C3'))
-#        modelD.add(Conv2D(256, (3, 3), activation='relu', padding='same', name='B3C4'))
+        modelD.add(Conv2D(256, (3, 3), activation='selu', padding='same', name='B3C1'))
+        modelD.add(Conv2D(256, (3, 3), activation='selu', padding='same', name='B3C2'))
+        modelD.add(Conv2D(256, (3, 3), activation='selu', padding='same', name='B3C3'))
         modelD.add(MaxPooling2D((2, 2), strides=(2, 2), name='B3P'))
-
-        # Block 4
-        modelD.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='B4C1'))
-        modelD.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='B4C2'))
-        modelD.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='B4C3'))
-#        modelD.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='B4C4'))
+        if self.mode == 1:pass
+            # Block 4
+        modelD.add(Conv2D(512, (3, 3), activation='selu', padding='same', name='B4C1'))
+        modelD.add(Conv2D(512, (3, 3), activation='selu', padding='same', name='B4C2'))
+        modelD.add(Conv2D(512, (3, 3), activation='selu', padding='same', name='B4C3'))
         modelD.add(MaxPooling2D((2, 2), strides=(2, 2), name='B4P'))
-    #
-    #    # Block 5
-        modelD.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='B5C1'))
-        modelD.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='B5C2'))
-        modelD.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='B5C3'))
-##        modelD.add(Conv2D(512, (3, 3), activation='relu', padding='same', name='B5C4'))
+    
+        # Block 5
+        modelD.add(Conv2D(512, (3, 3), activation='selu', padding='same', name='B5C1'))
+        modelD.add(Conv2D(512, (3, 3), activation='selu', padding='same', name='B5C2'))
+        modelD.add(Conv2D(512, (3, 3), activation='selu', padding='same', name='B5C3'))
         modelD.add(MaxPooling2D((2, 2), strides=(2, 2), name='B5P'))
         modelD.add(GaussianNoise(noise, name='gaussianNoise'))
-    #
 
         # Classification block
         modelD.add(Flatten(name='flatten'))
-        modelD.add(Dense(denseSize[0], kernel_regularizer=regularizers.l2(weightDecay), activation='relu', name='fc1'))
+        if self.mode == 1:pass
+        modelD.add(Dense(denseSize[0], kernel_regularizer=regularizers.l2(weightDecay), activation='selu', name='fc1'))
         modelD.add(Dropout(dropOut, name='do1'))
-        modelD.add(Dense(denseSize[1], kernel_regularizer=regularizers.l2(weightDecay), activation='relu', name='fc2'))
+        modelD.add(Dense(denseSize[1], kernel_regularizer=regularizers.l2(weightDecay), activation='selu', name='fc2'))
         modelD.add(Dropout(dropOut, name='do2'))
-        modelD.add(Dense(denseSize[2], kernel_regularizer=regularizers.l2(weightDecay), activation='relu', name='fc5'))
+        modelD.add(Dense(denseSize[2], kernel_regularizer=regularizers.l2(weightDecay), activation='selu', name='fc5'))
         modelD.add(Dropout(dropOut, name='do3'))
-        modelD.add(Dense(len(self.labels), activation='softmax', name='predictions'))
+        modelD.add(Dense(len(self.labels), activation='softmax', name='predictions'+str(len(self.labels))))
 
-        #opt = optimizers.Adam(lr=learningRate, decay=decay,)
         sgd = optimizers.SGD(lr=learningRate,momentum=momentum,decay=lrDecay, nesterov=True)
+
+        if self.index != 0:
+            for layer in modelD.layers[:20]:
+                layer.trainable = False
 
         modelD.compile(optimizer = sgd,
                       loss='categorical_crossentropy',
@@ -588,22 +592,22 @@ class Model():
         return res
         
     def MakeClusters(self, clusters):
-        folders = ['\\'.join(files[0].split('\\')[:-1]) for files in self.files]
+        folders = [join(SplitPath(files[0])[:-1]) for files in self.files]
         for i in range(len(clusters)):
-            folder = '\\'.join(folders[0].split('\\')[:-1]+[str(i)])
+            folder = join(SplitPath(folders[0])[:-1]+[str(i)])
             if not exists(folder):
                 makedirs(folder)
         for folder in folders:
-            label = folder.split('\\')[-1]
+            label = SplitPath(folder)[-1]
             for i, cluster in enumerate(clusters):
                 if label in cluster:
-                    newFolder = '\\'.join(folder.split('\\')[:-1]+[str(i)]+[label])
+                    newFolder = join(SplitPath(folder)[:-1]+[str(i)]+[label])
             move(folder, newFolder)
 
     def ImportClusters(self):
         clusters = {}
         for file in self.flatFiles:
-            mother, child = file.split('\\')[-3:-1]
+            mother, child = SplitPath(file)[-3:-1]
             if mother not in clusters:
                 clusters[mother] = [child]
             elif child not in clusters[mother]:
@@ -631,7 +635,7 @@ def HierarchIni(models):
         modelflat = set(model.flatFiles)
         for currentflat, root in currentFlats:
             if currentflat == modelflat:
-                hierarch[root.split('\\')[-1]] = model
+                hierarch[SplitPath(root)[-1]] = model
     return hierarch
 
 def MaxLabelTree(model1, hierarch, file, mode, models=None, invHier = None):
@@ -805,13 +809,13 @@ def ModelsGenerator(folder, mode):
     begin = datetime.now()
     allFiles = glob(join('.', 'imgs', folder, '**', '*.jpg'),  recursive=True)
     if mode in [1,3]:
-        labels = sorted(list(set([path.split('\\')[-2]  for path in allFiles])))
+        labels = sorted(list(set([SplitPath(path)[-2]  for path in allFiles])))
         
         filesL = [[] for label in labels]
         label2index = {label:labels.index(label) for label in labels}
         for file in allFiles:
             for label in labels:
-                if label == file.split('\\')[-2]:
+                if label == SplitPath(file)[-2]:
                     filesL[label2index[label]].append(file)
 
         if mode == 1:
@@ -824,28 +828,27 @@ def ModelsGenerator(folder, mode):
 #                binLabels = [label, 'not_'+label]
 #                models.append(Model(binLabels, label, binFiles, folder))
     elif mode in (2, 4):
-        pathsL = []
-        add = [[join('.', 'imgs', folder, fold) for fold in listdir(join('.', 'imgs', folder))]]
-        while add:
-            pathsL += add
-            add = [[join(root, fold) for fold in listdir(root) if not fold.endswith('.jpg')] for root in pathsL[-1]]
-        pathsL = [paths for paths in pathsL if paths]
-
-        for i, paths in enumerate(pathsL):
-            modelName = folder+str(i)
-            labels = [path.split('\\')[-1] for path in paths]
+        archFolders = {}
+        archFiles = {}
+        for root, dirs, files in walk(join('.', 'imgs', folder)):
+            archFolders[root] = [join(root,folder) for folder in dirs]
+            archFiles[root] = [join(root,file) for file in files]
+        j = 0
+        tuples = [(root, dirs) for root, dirs in archFolders.items() if dirs]
+        tuples = sorted(tuples)
+        for root, dirs in tuples:
+            modelName = folder+str(j)
+            labels = archFolders[root]
+            filesL = [glob(join(label, '**', '*.jpg'), recursive=True) for label in labels]
             
-            filesL = [[] for label in labels]
-            label2index = {label:labels.index(label) for label in labels}
-            for file in allFiles:
-                for label in labels:
-                    if label in file:
-                        filesL[label2index[label]].append(file)
-            models.append(Model(labels, modelName, filesL, folder, mode, i))
+            labels = [SplitPath(label)[-1] for label in labels]
+            models.append(Model(labels, modelName, filesL, folder, mode, j))
+            j+=1
     print(datetime.now() - begin, 'to generate models')        
     return models
 
-def Launcher(name, modelType, mode):
+    
+def Launcher(name, modelType, mode, modelIndex):
     """
     Input:
     name -- a string: the root of the imgs
@@ -900,10 +903,17 @@ def Launcher(name, modelType, mode):
     else:
         print('incorrect command:', mode)
     
-    
+def SplitPath(path):
+    head, tail = splitF(path)
+    if not head:
+        return [tail]
+    else:
+        return SplitPath(head) + [tail]
     
 if __name__ == '__main__':
     print('BEGIN:', datetime.now().strftime('%H:%M'))
-    for mode in  modes:
-        Launcher(name, modelType, mode)
+    for name, modelType, mode, modelIndex in zip(names, modelTypes, modes, modelIndexs):
+        with tf.Session() as sess:
+            Launcher(name, modelType, mode, modelIndex)
+        sess
     print('FINISH', datetime.now().strftime('%H:%M'))
