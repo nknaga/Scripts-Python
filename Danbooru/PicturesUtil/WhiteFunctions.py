@@ -13,6 +13,9 @@ import re
 import os
 from sys import stdout
 
+for folder in [join('results', 'google'), join('results', 'wikipedia')]:
+    if not os.path.exists(folder):   
+        os.makedirs(folder)
 
 def Progress(s):
     stdout.write('\r')
@@ -218,11 +221,11 @@ def onFile(f, i, folder = ''):
     if image._border[0] > image._border[1]:
         image.Sym_Y()
         image.ArrayToIm()
-    os.remove(image._name)
     if goal:
+        os.remove(image._name)
         goal = ['wikipedia','google'][goal-1]
         path = image._name.split('\\')
-        image._name = join('\\'.join(path[:-1]), goal,str(374-2+i)+'.jpg')
+        image._name = join('\\'.join(path[:-1]), goal,str(383-2+i)+'.jpg')
         image.Save()
 
 
