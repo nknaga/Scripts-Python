@@ -8,7 +8,6 @@ import bs4 as BeautifulSoup
 from threading import Thread
 import threading
 import time
-import requests
 import json
 #from pixivpy3 import AppPixivAPI
 from io import BytesIO
@@ -16,7 +15,7 @@ from PIL import Image
 from os import system
 import urllib
 from lib.progress import Progress
-from lib.Proxy import SetProxy, TestProxy, renew_tor
+from lib.Proxy import SetProxy, renew_tor
 import io
 
 
@@ -28,7 +27,8 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
 api_url = 'http://danbooru.donmai.us/posts.json'
 prefix = 'https://www.pixiv.net/member_illust.php?mode=medium&illust_id='
-
+global score
+score = 0
 
 class Sample:
     """Depict a sample with:
@@ -61,6 +61,7 @@ class Sample:
         system("taskkill /f /im dllhost.exe")
         return self._adds
 
+        
 
 #def AddEntry(index):
 #    try:
@@ -106,6 +107,8 @@ def GetInfo(index, pages = False):
                 return []
             elif code != 200:
                 retry += 1
+            else:
+                retry = 4
             soup = BeautifulSoup.BeautifulSoup(page, "lxml")
             
             if pages:
@@ -125,19 +128,19 @@ def GetInfo(index, pages = False):
             total_bookmarks = int(total_bookmarks.find_all('span')[-1].text)
             
             if total_bookmarks > score:
-                res[index] = {}
-                res[index]['t'] = tags
-                res[index]['s'] = total_bookmarks
-                res[index]['r'] = 1 # Default
-                res[index]['n'] = 1
+                res[index] = {'t':tags, 's':total_bookmarks}
             return
         except Exception as e:
             retry+=1
     return []
     
 def FinalJPGorPNG():
-    urls = open('3-final.html', 'r').readlines()[0].split('<br/>')
-    urls = [link.split('"')[1] for link in urls[:-1]]
+    with open('3-final.html', 'r') as file:
+        lines = file.readlines()
+        urls = lines[0].split('<br/>')
+        urls = [link.split('"')[1] for link in urls[:-1]]
+        if not urls and lines:
+            urls = lines
     pages = []
     for url in urls:
         if url is None:
@@ -190,20 +193,20 @@ def GetPagesMode1(index):
     res.append(GetInfo(index, pages = True))
     
 def CheckOnDan(pixivId):
-    payload = {#'limit': '1',
-               #'tags': 'pixiv:' + str(pixivId),
-               'api_key': api_key,
-               'login': dan_username}
-    url = 'https://danbooru.donmai.us/counts/posts?tags=pixiv%3A'+str(pixivId)
-    req = requests.get(url, data=payload, headers=headers, stream=True)
-    t = 0
-    while req.status_code != 200 and t < 5:
-        req = requests.get(url, data=payload, headers=headers, stream=True)
-        t += 1
-        
-    soup = BeautifulSoup.BeautifulSoup(req.content, "lxml")
-    count = soup.find('div', {'id':"a-posts"})
-    if t == 5 or str(count).split()[-2] != '0':
+#    payload = {#'limit': '1',
+#               #'tags': 'pixiv:' + str(pixivId),
+#               'api_key': api_key,
+#               'login': dan_username}
+#    url = 'https://danbooru.donmai.us/counts/posts?tags=pixiv%3A'+str(pixivId)
+#    req = requests.get(url, data=payload, headers=headers, stream=True)
+#    t = 0
+#    while req.status_code != 200 and t < 5:
+#        req = requests.get(url, data=payload, headers=headers, stream=True)
+#        t += 1
+#        
+#    soup = BeautifulSoup.BeautifulSoup(req.content, "lxml")
+#    count = soup.find('div', {'id':"a-posts"})
+    if False:# and (t == 5 or str(count).split()[-2] != '0'):
         return True
     else:
         global file
@@ -292,7 +295,7 @@ def JsonReading(files):
                     data.append(i)
     print('----------------------------')
     if input(str(len(data)) + ' images found. Check on Dan ? (y/n) ') == 'y':
-        Routeur123(mode=1, data=data)
+        Routeur456(mode=6, links=data)
         if input('Continue to extract urls ? (y/n) : ') == 'y':
             ShowPixiv()
 
@@ -346,7 +349,7 @@ def Index():
 
 
 def ShowPixiv():
-    m = input('import url from file ? (y/n) : ')
+    m = input('import url from 1.html ? (y/n) : ')
     if m != 'y':
         urls = Routeur123(mode=3, data=Index())
         file = open('2-directlink.html', 'w')
@@ -358,8 +361,55 @@ def ShowPixiv():
             url for url in open(
                 '2-directlink.html',
                 'r').readline().split('https')]
-    ShowImgs(Routeur123(mode=2, data=urls[1:]))
+                
+    imgs = Routeur123(mode=2, data=urls[1:])
+    if input('\nCheck if manga ? (y/n) : ') == 'y':
+        imgs = IsManga(imgs)
+    ShowImgs(imgs)
 
+def IsManga(imgs):
+    finalImgs = []
+    import os
+    os.environ['TF_CPP_MIN_VLOG_LEVEL'] = '3'
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    import numpy as np
+    from keras.preprocessing import image as image_utils
+    from keras.models import load_model
+    model = load_model('IsComic.h5')
+    from keras import backend as K
+    
+    begin = datetime.now()
+    l = len(imgs)
+    for i,img in enumerate(imgs):
+        x = image_utils.load_img(img._data, target_size=(150,150),grayscale=False)
+        x = image_utils.img_to_array(x)
+        x = np.expand_dims(x, axis=0)
+        
+        dim_ordering = K.image_dim_ordering()
+        if dim_ordering == 'th':
+            x[:, 0, :, :] -= 103.939
+            x[:, 1, :, :] -= 116.779
+            x[:, 2, :, :] -= 123.68
+            # 'RGB'->'BGR'
+            x = x[:, ::-1, :, :]
+        else:
+            x[:, :, :, 0] -= 103.939
+            x[:, :, :, 1] -= 116.779
+            x[:, :, :, 2] -= 123.68
+            # 'RGB'->'BGR'
+            x = x[:, :, :, ::-1]
+        
+        preds = model.predict(x)
+        if preds[0][0]<preds[0][1]:
+            finalImgs.append(img)
+            
+            
+        ending = (datetime.now() - begin) / (i+1) * l + begin
+        Progress(str(i+1) + ' on ' + str(l) + ' | ' +
+                 ending.strftime('%H:%M'))
+    print('\nOut of', str(l)+',', len(finalImgs),'were illustrations')
+    return finalImgs
+        
 #
 #def PixivId2Url(i):
 #    try:
@@ -516,9 +566,9 @@ def Routeur123(mode=0, data=None):
     global file, res, illust_detail
     index = data
     res = []
+    global score
     if mode == 0:
         print('--------------------------\n--- BEGIN JSON WRITING ---')
-        global score
         score = int(input('Minimum score? '))
         ran = input('Range? ').split()
         index = []
@@ -533,7 +583,6 @@ def Routeur123(mode=0, data=None):
         print('--------------------------\n------ DOWNLOAD IMG ------')
     elif mode == 3:
         print('--------------------------\n---- PIXIV ID TO URL -----')
-        global score
         score = 0
     limit = len(index)
     limit_active = int(input('Number of threads ? ')) + \
@@ -609,11 +658,12 @@ def Routeur123(mode=0, data=None):
         print('\nFOUND:', len(res),'\n--------------------------')
 
 
-def Routeur456(mode):
+def Routeur456(mode, linked=[]):
     global file
     global find
     global links
-    nb, k, i, find, ts = 24, 0, 0, 0, []
+    links = linked
+    nb, k, i, find, ts = 15, 0, 0, 0, []
     file = open('1-NotDanbooru_Result.html', 'w')
     if mode == 4:
         tags = input("Write some tags (split search with blanck): ")
@@ -625,14 +675,16 @@ def Routeur456(mode):
         links = open('3-final.html', 'r').readlines()[0].split('<br/>')
         links = [link.split('"')[1] for link in links[:-1]]
     elif mode == 6:
-        links = open('2-directlink.html', 'r').readline().split('https')
-        links = ['https' + link for link in links]
+        if not links:
+            links = open('2-directlink.html', 'r').readline().split('https')
+            links = ['https' + link for link in links]
     try:
         begin = datetime.now()
         l = len(links)
         while i < int(l / nb) + 1:
             l = len(links)
             renew_tor()
+            time.sleep(2)
             for j in range(nb):
                 if k < l - 1:
                     k += 1
