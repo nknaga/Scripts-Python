@@ -8,12 +8,6 @@ from os.path import join, exists
 from os import makedirs, listdir
 unknowns = []
 
-class Window():
-    def __init__(self, line, arc):
-        name = arc.name+line[0]+'.html'
-        self.characters = line[1:]
-        self.line = '<a href="'+name+' onclick="window.open(\''+name+'\', \'newwindow\', \'width=300,height=250\');\">'+str(1)+'</a>\n'
-        
 class Arc():
     def __init__(self, line):
         if line:
@@ -73,7 +67,7 @@ class Arc():
         newlines.append('<h1>'+self.name+' ('+self.episodes[0]+', '+self.episodes[1]+') </h1>')
         for line in self.lines:
             newlines.append('<h2>'+line[0]+'</h2>\n')
-            for character in line[1:]:
+            for character in [character for character in line[1:] if character]:
                 die = False
                 joinC = False
                 if character.endswith('-die-'):
@@ -149,6 +143,7 @@ def AlternBackground(arcs, maxLevel):
 if __name__ == '__main__':
     #root = input('Which folder run ? ')
     for root in listdir():
+        print(root)
         if root in ['index.html', 'ListArcs.py']:
             continue
         if not exists(join(root, 'res')):
