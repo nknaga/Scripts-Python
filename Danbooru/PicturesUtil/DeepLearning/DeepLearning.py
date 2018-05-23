@@ -19,6 +19,7 @@ from keras import backend as K
 from keras import optimizers, regularizers
 from keras.models import Sequential, load_model
 from keras.layers import Flatten, Dense, Conv2D, Dropout, MaxPooling2D, GaussianNoise
+from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, Callback
 import tensorflow as tf
 from bct import modularity_und as SortConfusionMatrix
@@ -30,17 +31,17 @@ from random import shuffle
 ###################### Hyperparameters ######################
 #                    Mode paramaters
 
-names = ['illustrationsDeep']# name of the folder hosting the dataset 
+names =  ['illustrations']# name of the folder hosting the dataset
 
-modes = ['train']  # train, test, testH, trainH, move, export, plotConfuse, makeClusters
-modelTypes =  [2] # 1 flat, 2 folder based*
-modelIndexs = [6]
+modes =  ['train'] # train, test, testH, trainH, move, export, plotConfuse, makeClusters, plotDiff
+modelTypes =  [1]  # 1 flat, 2 folder based*
+modelIndexs = [0]
 
 currentEpoch = 0  # Not 0 we want to resume a training
 
 #                     Cluster parameters
-plot = False
-clustering = 'automatic' # automatic, import or False
+plot = True
+clustering = 'train' # automatic, import or False
 
 miniClusterSize = 3  # If not 0, communityGamma is an iterable, float else
 communityGamma = [x/10 for x in range(20, 0, -1)]
@@ -48,10 +49,10 @@ communityGamma = [x/10 for x in range(20, 0, -1)]
 
 #                    Dataset parameters
 
-trainNumPic = (0.5, '%') # each, all, or %
+trainNumPic = (0.5, '%') # each, all, % or absolute
 #trainNumPic = (800, 'each') # each, all, or %
 
-testNumPic = (0.2, '%')# Number of picture per label on which test
+testNumPic = (0.1, '%')# Number of picture per label on which test
 
 validationSplit = 0.1  # Percentage of picture used for validation during train
 picSize = (128, 128, 3)
@@ -59,11 +60,18 @@ grayscale = picSize[-1]==1
 
 #                    Network parameters
 
-denseSize = (3072, 3072, 1024)  # Size of the last three hidden layers
+denseSize = (3072, 512, 512)  # Size of the last three hidden layers
 
 #                    Training parameters
 
-epochs = 200  # maximal number of epochs
+# Data augmentation
+minAugmentation = 20000
+params = {'rotation_range':20, 'width_shift_range':0.2,
+          'height_shift_range':0.2, 'horizontal_flip':True,
+          'zoom_range':(1.0, 1.2)}
+                      
+activation = 'selu'
+epochs = 300  # maximal number of epochs
 batchSize = 32  # number of picture put in the network with each batch
 
 learningRate = 1*10**-3
@@ -112,14 +120,19 @@ class PlotLearning(Callback):
         f, (ax1, ax2) = plt.subplots(1, 2, sharex=True)
 
         ax1.set_yscale('log')
-        ax1.plot(self.x, self.losses, label="loss")
-        ax1.plot(self.x, self.val_losses, label="val_loss")
+        ax1.plot(self.x, self.losses, label="Training")
+        ax1.plot(self.x, self.val_losses, label="Validation")
+        ax1.set_xlabel('Epochs')
+        ax1.set_ylabel('Crossentropy')
         ax1.legend()
 
-        ax2.plot(self.x, self.acc, label="accuracy")
-        ax2.plot(self.x, self.val_acc, label="validation accuracy")
+        ax2.plot(self.x, self.acc, label="Training")
+        ax2.plot(self.x, self.val_acc, label="Validation")
+        ax2.set_xlabel('Epochs')
+        ax2.set_ylabel('Accuracy')
         ax2.legend()
 
+        plt.tight_layout()
         plt.savefig('plot.png')
 
 class Model():
@@ -136,6 +149,10 @@ class Model():
         self.labels = labels
         self.mode = mode
         self.files = files
+        if 'white' in name:
+            self.white = True
+        else:
+            self.white = False
         self.name = name.replace('(white)', '')
         self.folder = folder.replace('(white)', '')
         self.index = index
@@ -148,8 +165,7 @@ class Model():
                 
         self.flatFiles = FlattenList(self.files)
         print()
-        print(self.name)
-        print(', '.join(self.labels))
+        print(self.name, ':', ', '.join(self.labels))
 #        print('labels:', self.labels)
 #        print('files:', self.files)
 
@@ -179,6 +195,8 @@ class Model():
         elif trainNumPic[1] == '%':
             total = int(len(self.flatFiles)*trainNumPic[0])
             self.files = [files[:total//len(self.files)] for files in self.files]
+        elif trainNumPic[1] == 'abssolute':
+            total = len(self.flatFiles)
             
         self.flatFiles = FlattenList(self.files)
         output = [[int(file in files) for file in self.flatFiles] for files in self.files]
@@ -222,8 +240,25 @@ class Model():
                  ReduceLROnPlateau(monitor='val_loss', factor=ReduceLRFactor, 
                                    patience=ReduceLRPatience, cooldown=ReduceLRCooldown),
                  PlotLearning()]
-        model.fit(epochs=epochs, verbose=1, validation_split = validationSplit,x=self.input, y=self.output,
-                  batch_size = batchSize, callbacks=calls, initial_epoch = resume)
+            
+        if self.input.shape[0] < minAugmentation:
+            lenValidation = int(self.input.shape[0]*(1-validationSplit))
+            trainingInput = self.input[:lenValidation]
+            trainingOutput = self.output[:lenValidation]
+            validationInput = self.input[lenValidation:]
+            validationOutput = self.output[lenValidation:]
+            
+            trainingGenerator = ImageDataGenerator(params).flow(trainingInput, y=trainingOutput,
+                                batch_size = batchSize)
+            validationGenerator=ImageDataGenerator().flow(validationInput, y=validationOutput)
+                                
+            model.fit_generator(trainingGenerator,
+                                callbacks=calls, initial_epoch = resume, epochs=epochs, 
+                                verbose=1, 
+                                validation_data=validationGenerator)
+        else:
+            model.fit(epochs=epochs, verbose=1, validation_split = validationSplit,x=self.input, y=self.output,
+                      batch_size = batchSize, callbacks=calls, initial_epoch = resume)
         print('time needed:', datetime.now()-begin)
 
     def Move(self):
@@ -233,13 +268,13 @@ class Model():
                 makedirs(join('result',label))
         self.LoadModel()
         
-        files = listdir('todo')
+        files = glob(join('todo', '**', '*jpg'), recursive=True)
         limit = len(files)
         begin = datetime.now()
         for k, file in enumerate(files):
-            r = self.Recognize(join('todo', file))
+            r = self.Recognize(file)
             labelMax,p = getMaxTuple(r)
-            copyfile(join('todo', file), join('result', labelMax, file))
+            copyfile(file, join('result', labelMax, str(k)+'.jpg'))
             ending = (datetime.now() - begin) / (k+1)  * limit + begin
             Progress(str((k+1)) +'\\' +str(limit) + " | " +  ending.strftime('%H:%M'))
             
@@ -325,16 +360,20 @@ class Model():
         self.PlotConfuse(confuse)
 
     
-    def PlotConfuse(self, confuse, show = True):
+    def PlotConfuse(self, confuse, show = True, dump = True):
         """Plot the confusion matrix and cluster the labels
         
         Input:
         confuse -- a 2d-matrix of float
             confuse[i][j] -- %age of label[j] being decided as label[i]"""
-        pickle.dump(confuse, open(join('confuse', str(self.mode)+self.name+".p"), "wb" ))
-        pickle.dump(self.labels, open(join('confuse', str(self.mode)+self.name+"_header.p"), "wb" ))
+        if dump:
+            name = join('confuse', str(self.mode)+self.name)
+            if self.white == True:
+                name+= '(white)'
+                
+            pickle.dump(confuse, open(name+".p", "wb" ))
+            pickle.dump(self.labels, open(name+"_header.p", "wb" ))
         res = np.mean([confuse[i][i] for i in range(len(confuse))])
-        print('overall succes:', res)
         labels = np.array(self.labels)
 
         # Plot the matrix
@@ -372,6 +411,7 @@ class Model():
                         axes.append(i)
         elif clustering == 'import':
             clusters = self.ImportClusters()
+            print(clusters)
             p = [self.labels.index(label) for label in FlattenList(clusters)]
             axes = []
             for cluster in clusters:
@@ -399,18 +439,33 @@ class Model():
                     clusters[-1].append(label)
                     
             # 3/ Plot the frontier between clusters
-            for i in axes:
-                    ax.axhline(i-0.5)
-                    ax.axvline(i-0.5)
+            inClusterP = 0
+            for i, maxAxe in enumerate(axes):
+                ax.axhline(maxAxe-0.5, color=(.1,.1,.1))
+                ax.axvline(maxAxe-0.5, color=(.1,.1,.1))
+                if i == 0:
+                    minAxe = 0
+                else:
+                    minAxe = axes[i-1]
+                for x in range(minAxe, maxAxe):
+                    for y in range(minAxe, maxAxe):
+                        inClusterP += confuse[x,y]
+            print('In cluster probability:', inClusterP/len(self.labels))
         else:
             clusters = []
-        
-        img = ax.imshow(confuse,cmap='viridis', vmax = 1, vmin = 0)
+        print('overall succes:', res)
+        if np.min(confuse)<0:
+            vmin = -.3
+            vmax = .3
+        else:
+            vmin = 0
+            vmax = 1
+        img = ax.imshow(confuse,cmap='viridis', vmax = vmax, vmin = vmin, interpolation='nearest')
         fig.colorbar(img, ax=ax)
         
         # Write the labels  and titles
-        ax.set_xticklabels(labels, rotation=40, ha="right")
-        ax.set_yticklabels(labels)
+        ax.set_xticklabels(labels, rotation=40, ha="right", fontsize=8)
+        ax.set_yticklabels(labels, fontsize=8)
         ax.set_xticks(list(range(len(labels))))
         ax.set_yticks(list(range(len(labels))))
         plt.xlabel('Predicted')
@@ -441,8 +496,6 @@ class Model():
         res = []
         for i in range(len(self.labels)):
             res.append((self.labels[i], preds[i]))
-
-
         return res
 
     def ImportModel(self, weight, input_shape = picSize):
@@ -458,50 +511,48 @@ class Model():
         modelD - a keras model"""
         modelD = Sequential()
         # Block 1
-        modelD.add(Conv2D(64, (3, 3), input_shape = input_shape, activation='selu', padding='same', name='B1C1'))
-        modelD.add(Conv2D(64, (3, 3), activation='selu', padding='same', name='B1C2'))
+        modelD.add(Conv2D(64, (3, 3), input_shape = input_shape, activation=activation, padding='same', name='B1C1'))
+        #modelD.add(Conv2D(64, (3, 3), activation=activation, padding='same', name='B1C2'))
         modelD.add(MaxPooling2D((2, 2), strides=(2, 2), name='B1P'))
 
         # Block 2
-        modelD.add(Conv2D(128, (3, 3), activation='selu', padding='same', name='B2C1'))
-        modelD.add(Conv2D(128, (3, 3), activation='selu', padding='same', name='B2C3'))
+        modelD.add(Conv2D(128, (3, 3), activation=activation, padding='same', name='B2C1'))
+        #modelD.add(Conv2D(128, (3, 3), activation=activation, padding='same', name='B2C3'))
         modelD.add(MaxPooling2D((2, 2), strides=(2, 2), name='B2P'))
 
         # Block 3
-        modelD.add(Conv2D(256, (3, 3), activation='selu', padding='same', name='B3C1'))
-        modelD.add(Conv2D(256, (3, 3), activation='selu', padding='same', name='B3C2'))
-        modelD.add(Conv2D(256, (3, 3), activation='selu', padding='same', name='B3C3'))
+        modelD.add(Conv2D(128, (3, 3), activation=activation, padding='same', name='B3C1'))
+        modelD.add(Conv2D(128, (3, 3), activation=activation, padding='same', name='B3C2'))
+        #modelD.add(Conv2D(256, (3, 3), activation=activation, padding='same', name='B3C3'))
         modelD.add(MaxPooling2D((2, 2), strides=(2, 2), name='B3P'))
-        if self.mode == 1:pass
-            # Block 4
-        modelD.add(Conv2D(512, (3, 3), activation='selu', padding='same', name='B4C1'))
-        modelD.add(Conv2D(512, (3, 3), activation='selu', padding='same', name='B4C2'))
-        modelD.add(Conv2D(512, (3, 3), activation='selu', padding='same', name='B4C3'))
+        # Block 4
+        modelD.add(Conv2D(128, (3, 3), activation=activation, padding='same', name='B4C1'))
+        modelD.add(Conv2D(128, (3, 3), activation=activation, padding='same', name='B4C2'))
+        #modelD.add(Conv2D(512, (3, 3), activation=activation, padding='same', name='B4C3'))
         modelD.add(MaxPooling2D((2, 2), strides=(2, 2), name='B4P'))
     
         # Block 5
-        modelD.add(Conv2D(512, (3, 3), activation='selu', padding='same', name='B5C1'))
-        modelD.add(Conv2D(512, (3, 3), activation='selu', padding='same', name='B5C2'))
-        modelD.add(Conv2D(512, (3, 3), activation='selu', padding='same', name='B5C3'))
+        modelD.add(Conv2D(128, (3, 3), activation=activation, padding='same', name='B5C1'))
+        modelD.add(Conv2D(128, (3, 3), activation=activation, padding='same', name='B5C2'))
+        #modelD.add(Conv2D(512, (3, 3), activation=activation, padding='same', name='B5C3'))
         modelD.add(MaxPooling2D((2, 2), strides=(2, 2), name='B5P'))
         modelD.add(GaussianNoise(noise, name='gaussianNoise'))
 
         # Classification block
         modelD.add(Flatten(name='flatten'))
-        if self.mode == 1:pass
-        modelD.add(Dense(denseSize[0], kernel_regularizer=regularizers.l2(weightDecay), activation='selu', name='fc1'))
-        modelD.add(Dropout(dropOut, name='do1'))
-        modelD.add(Dense(denseSize[1], kernel_regularizer=regularizers.l2(weightDecay), activation='selu', name='fc2'))
+#        modelD.add(Dense(denseSize[0], kernel_regularizer=regularizers.l2(weightDecay), activation=activation, name='fc11'))
+#        modelD.add(Dropout(dropOut, name='do1'))
+        modelD.add(Dense(denseSize[1], kernel_regularizer=regularizers.l2(weightDecay), activation=activation, name='fc21'))
         modelD.add(Dropout(dropOut, name='do2'))
-        modelD.add(Dense(denseSize[2], kernel_regularizer=regularizers.l2(weightDecay), activation='selu', name='fc5'))
+        modelD.add(Dense(denseSize[2], kernel_regularizer=regularizers.l2(weightDecay), activation=activation, name='fc51'))
         modelD.add(Dropout(dropOut, name='do3'))
         modelD.add(Dense(len(self.labels), activation='softmax', name='predictions'+str(len(self.labels))))
 
         sgd = optimizers.SGD(lr=learningRate,momentum=momentum,decay=lrDecay, nesterov=True)
 
-        if self.index != 0:
-            for layer in modelD.layers[:20]:
-                layer.trainable = False
+#        if self.index != 0:
+#            for layer in modelD.layers[:16]:
+#                layer.trainable = False
 
         modelD.compile(optimizer = sgd,
                       loss='categorical_crossentropy',
@@ -543,27 +594,31 @@ class Model():
                                 for label, model2 in hierarch.items():
                                     if model1 == model2:
                                         invHier[label1] = label
-                    print(invHier)
                                         
                 begin = datetime.now()
                 total = {label:0 for label in self.labels}
-                for i, file in enumerate(models[0].flatFiles[:testNumPic*len(self.labels)]):
-                    if mode == 2:
-                        labelmax = MaxLabelTree(models[0], hierarch, file, mode)
-                    elif mode == 4:
-                        labelmax = MaxLabelTree(self, hierarch, file, mode, models=models, invHier = invHier)
-                    total[labelmax] += 1
-                    for labelBis, files in zip(self.labels, self.files):
-                        if file in files:
-                            confuse[self.labels.index(labelmax)][self.labels.index(labelBis)] += 1
-                    eta = ((datetime.now()-begin)/(i+1)*(testNumPic*len(self.files))+begin).strftime('%H:%M')
-                    Progress(str(i+1)+'/'+str(testNumPic*len(self.files))+' | '+eta)
-                for i, label1 in enumerate(self.labels):
-                    for j, label2 in enumerate(self.labels):
-                        if total[label1] == 0:
-                            confuse[i][j] = 0
-                        else:
-                            confuse[i][j]/=total[label1]
+                
+                if testNumPic[1] == '%':
+                    nbTotal = int(testNumPic[0]*len(self.flatFiles))
+                    nbEach = nbTotal//len(self.files)
+                elif testNumPic[1] == 'each':
+                    nbTotal = testNumPic[0]*len(self.files)
+                    nbTotal = testNumPic[0]
+                elif testNumPic[1] == 'all':
+                    nbTotal = testNumPic[0]
+                    nbEach = nbTotal//len(self.files)
+                for j, files in enumerate(self.files):
+                    for i, file in enumerate(files[::-1]):
+                        if i >= nbEach:
+                            continue
+                        if mode == 2:
+                            labelmax = MaxLabelTree(models[0], hierarch, file, mode)
+                        elif mode == 4:
+                            labelmax = MaxLabelTree(self, hierarch, file, mode, models=models, invHier = invHier)
+                        total[labelmax] += 1
+                        confuse[self.labels.index(self.labels[j])][self.labels.index(labelmax)] += 1/nbEach
+                        eta = ((datetime.now()-begin)/(nbEach*j+i+1)*(nbTotal)+begin).strftime('%H:%M')
+                        Progress(str(nbEach*j+i+1)+'/'+str(nbTotal)+' | '+eta)
 
 #            if mode == 3:
 #                fileLabelModel = SortedDict()
@@ -580,13 +635,15 @@ class Model():
 #                    Progress(str(i+1)+'/'+str(len(fileLabelModel))+' | '+eta)
 
             print('--------------\nmode:', mode)
-            print('confuse:', confuse)
             res = 0
             for i in range(len(confuse)):
                 print(self.labels[i], ':', confuse[i][i])
                 res+= confuse[i][i]/len(confuse)
             print(self.labels)
-            pickle.dump(confuse, open(join('confuse', 'H'+self.name+".p"), "wb" ))
+            if self.white:
+                pickle.dump(confuse, open(join('confuse', 'H'+self.name+".p"), "wb" ))
+            else:
+                pickle.dump(confuse, open(join('confuse', 'H'+self.name+"(white).p"), "wb" ))
             print(mode, 'succes:', res)
             self.PlotConfuse(confuse)
         return res
@@ -630,7 +687,10 @@ def HierarchIni(models):
         k -- a string: the label
         v -- the model used to decide on this label"""
     hierarch = {}
-    currentFlats = [(set(glob(join(root, '**', '*.jpg'),  recursive=True)),root) for root, subdirs, files in walk(join('.', 'imgs', models[0].folder))]
+    folder = models[0].folder
+    if models[0].white:
+        folder +='(white)'
+    currentFlats = [(set(glob(join(root, '**', '*.jpg'),  recursive=True)),root) for root, subdirs, files in walk(join('.', 'imgs', folder))]
     for model in models:
         modelflat = set(model.flatFiles)
         for currentflat, root in currentFlats:
@@ -793,7 +853,7 @@ def PlotHist(r, s):
     plt.title(s)
     plt.show()
 
-def ModelsGenerator(folder, mode):
+def ModelsGenerator(folder, mode, index=None):
     """Generate a list of models with architecture
     
     Input:
@@ -810,7 +870,7 @@ def ModelsGenerator(folder, mode):
     allFiles = glob(join('.', 'imgs', folder, '**', '*.jpg'),  recursive=True)
     if mode in [1,3]:
         labels = sorted(list(set([SplitPath(path)[-2]  for path in allFiles])))
-        
+    
         filesL = [[] for label in labels]
         label2index = {label:labels.index(label) for label in labels}
         for file in allFiles:
@@ -836,13 +896,17 @@ def ModelsGenerator(folder, mode):
         j = 0
         tuples = [(root, dirs) for root, dirs in archFolders.items() if dirs]
         tuples = sorted(tuples)
+        models = [None for i in range(len(tuples))]
+        if index != None:
+            tuples = [tuples[index]]
+            j = index
         for root, dirs in tuples:
             modelName = folder+str(j)
             labels = archFolders[root]
             filesL = [glob(join(label, '**', '*.jpg'), recursive=True) for label in labels]
             
             labels = [SplitPath(label)[-1] for label in labels]
-            models.append(Model(labels, modelName, filesL, folder, mode, j))
+            models[j] = Model(labels, modelName, filesL, folder, mode, j)
             j+=1
     print(datetime.now() - begin, 'to generate models')        
     return models
@@ -865,7 +929,10 @@ def Launcher(name, modelType, mode, modelIndex):
         "export' -- create .txt and a .png describing the model
         'plotConfuse' -- show the confusion matrix
         'makeClusters' -- divide the folders into clusters"""
-    models = ModelsGenerator(name,modelType)
+    if mode in ['testH', 'trainH']:
+        models = ModelsGenerator(name,modelType)
+    else:
+        models = ModelsGenerator(name, modelType, index = modelIndex)        
     if mode == 'test':
         if modelIndex == 0 and modelType == 4:
             ModelsGenerator(name, 1).Test()
@@ -893,13 +960,20 @@ def Launcher(name, modelType, mode, modelIndex):
         confuse = pickle.load(open(join('confuse', str(models[modelIndex].mode)+models[modelIndex].name+".p"), "rb" ))
         if modelType == 4:
             model = ModelsGenerator(name, 1)[0]
-            model.PlotConfuse(confuse)
+            model.PlotConfuse(confuse, dump=False)
         else:
-            models[modelIndex].PlotConfuse(confuse)
+            models[modelIndex].PlotConfuse(confuse, dump=False)
     elif mode == 'makeClusters': 
         confuse = pickle.load(open(join('confuse', str(models[modelIndex].mode)+models[modelIndex].name+".p"), "rb" ))
-        clusters = models[modelIndex].PlotConfuse(confuse, show = False)
+        clusters = models[modelIndex].PlotConfuse(confuse, show = False, dump=False)
         models[modelIndex].MakeClusters(clusters)
+    elif mode == 'plotDiff':
+        confuse1 = np.array(pickle.load(open(join('confuse', '1illustrations.p'), "rb" )))
+        confuse2 = np.array(pickle.load(open(join('confuse', 'Hillustrations.p'), "rb" )))
+        confuse = confuse2-confuse1
+        models[modelIndex].PlotConfuse(confuse, dump=False)
+        models[modelIndex].PlotConfuse(confuse1, dump=False)
+        models[modelIndex].PlotConfuse(confuse2, dump=False)
     else:
         print('incorrect command:', mode)
     
