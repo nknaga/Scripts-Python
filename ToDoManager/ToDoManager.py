@@ -36,7 +36,7 @@ def SubDate(str1, str2):
 def FromYoutube(line, mode = 1):
     line = line.split('\t')
     if len(line) in [0, 1, 2, 4]:
-        print('ERROR : check TODO file (not enough values)')
+        print('Youtube ERROR : check TODO file (not enough values)')
         return '', '', True
     if len(line) == 3:
         name, link, ext = line[:3]
@@ -61,7 +61,7 @@ def CutVideo(line, mode = 1):
         if x:
             l2.append(x)
     if len(l2)<5:
-        print('ERROR : check TODO file (not enough values)', l2)
+        print('Video ERROR : check TODO file (not enough values)', l2)
         return '', '', True
     res_name, begin, end, epi, path = l2[:5]
     res_name = join(local, 'output', res_name +'.mkv')
@@ -73,7 +73,7 @@ def CutVideo(line, mode = 1):
         end =  "-t " + end
     else:
         end = ""
-    opt = "-c:v libx265 -c:a aac -c:s copy -map 0:a -map 0:v -map 0:s? -force_key_frames 0 -crf 23"
+    opt = "-c:v libx265 -c:a aac -c:s copy -map 0:a -map 0:v -map 0:s? -vf scale=-1:720 -force_key_frames 0 -crf 23"
     line = ' '.join(["ffmpeg", "-ss", begin, '-i', '"'+path+'"', end,  opt, '"'+res_name+'"'])
     if exists(res_name):
         error = True
@@ -95,7 +95,7 @@ def FuseVideo(line, mode = 1):
         cond = [full_path in generated, exists(full_path)][mode]
         if not cond:
             error = True
-            print('ERROR : no source file', file)
+            print('Fuse ERROR : no source file', file)
             return '', '', True
     if mode:
         with open('concat.txt', "w") as files:
@@ -123,7 +123,7 @@ def ToMP3(line, mode = 1):
         if x:
             l2.append(x)
     if len(l2) not in [2, 4]:
-        print('ERROR : check TODO file', l2)
+        print('Audio ERROR : check TODO file', l2)
         return '', '', True
     elif len(l2) == 2:
         name = l2[0]
@@ -164,6 +164,7 @@ def SwitchIni(youtube, video, mp3, fusion, line):
     if line.startswith('youtube'):
         youtube = True
     elif line.startswith('video'):
+        print(line)
         youtube = False
         video = True
     elif line.startswith('fusion'):
