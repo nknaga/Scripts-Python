@@ -6,6 +6,7 @@ Created on Thu Jun 15 15:03:58 2017
 """
 import os
 from os.path import join, exists, getsize
+import subprocess
 import pytube
 
 
@@ -43,10 +44,14 @@ def FromYoutube(line, mode = 1):
         begin, end = '0000', '0000'
     else:
         name, link, ext, begin, end = line[:5]
+    link = link.replace('\\', '/')
     yt = pytube.YouTube(link)
     MakeOutputPath(join(local,"input", name))
     yt.set_filename(name)
-    yt.filter('mp4')[-1].download(join(local,"input"))
+    try:
+        yt.filter('mp4')[-1].download(join(local,"input"))
+    except:
+        pass
     if ext == 'mp3':
         return ToMP3('\t'.join([name + '.mp3', begin, end, name+ '.mp4']), mode=mode)
     else:
@@ -73,8 +78,7 @@ def CutVideo(line, mode = 1):
         end =  "-t " + end
     else:
         end = ""
-    opt = "-c:v libx265 -c:a aac -c:s copy -map 0:a -map 0:v -map 0:s? -vf scale=-1:720 -force_key_frames 0 -crf 23"
-    line = ' '.join(["ffmpeg", "-ss", begin, '-i', '"'+path+'"', end,  opt, '"'+res_name+'"'])
+        
     if exists(res_name):
         error = True
         print('ERROR : file already exist')
@@ -82,6 +86,11 @@ def CutVideo(line, mode = 1):
         error = True
         print('ERROR : no source file')
     elif mode:
+        command = 'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "' + path+'"'
+        opt = "-c:v libx265 -c:a aac -c:s copy -map 0:a -map 0:v -map 0:s? -force_key_frames 0 -crf 23"
+        if '1080' in subprocess.run(command, stdout=subprocess.PIPE).stdout.decode('utf-8'):
+            opt +=  " -vf scale=-1:720 "
+        line = ' '.join(["ffmpeg", "-ss", begin, '-i', '"'+path+'"', end,  opt, '"'+res_name+'"'])
         os.system(line)
     return res_name, line, error
 
@@ -133,6 +142,7 @@ def ToMP3(line, mode = 1):
     old = join(local, 'input', old)
     name = join(local, 'output', name)
     MakeOutputPath(name)
+    MakeOutputPath(old)
     begin, end = [ConvertTime(d) for d in [begin, end]]
     if end != '00:00:00':
         end =  " -to " + end
@@ -152,6 +162,8 @@ def ToMP3(line, mode = 1):
     return name, line, error
 
 def ConvertTime(d):
+    if d == '0':
+        d = '0000'
     res = d[0:2] + ':' + d[2:4]
     if len(d) == 6:
         res += ':' + d[4:6]
@@ -222,6 +234,8 @@ def MakeOutputPath(name):
     split = name.split('\\')[localLength:]
     todo = ['\\'.join(split[:i]) for i in range(1,len(split))]
     for ele in todo:
+        if not os.path.exists(join(local, ele)) and '.' not in ele:
+            os.makedirs(join(local, ele))
         if not os.path.exists(join(local, ele)) and '.' not in ele:
             os.makedirs(join(local, ele))
 
