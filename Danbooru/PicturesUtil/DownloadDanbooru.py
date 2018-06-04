@@ -26,8 +26,8 @@ if exists("../Danbooru_Codes.txt"):
 else:
     print('no danbooru account: will be limited to two tags')
     payload = {}
-if not exists('result'):
-    os.makedirs('result')
+if not exists('results'):
+    os.makedirs('results')
                    
 def Progress(s):
     stdout.write('\r')
@@ -73,8 +73,8 @@ def Launch():
             name = tag.split()[-1]
             for key in replace:
                 name = name.replace(key, '-')
-            if not exists(join('result', name)):
-                os.makedirs(join('result', name))
+            if not exists(join('results', name)):
+                os.makedirs(join('results', name))
         except Exception as e:
             print(e)
     limits = [int(i) for i in input("Number of pictures with the tags (split with blank): ").split()]
@@ -109,7 +109,7 @@ def Download(i, folder, url):
             name = '0'+name
         while folder.endswith('.'):
             folder = folder[:-1]
-        fullname = join('result', folder, name + '.' + url.split('.')[-1][:3])
+        fullname = join('results', folder, name + '.' + url.split('.')[-1][:3])
         k = 0
         while True:
             r = requests.get(url, stream=True, data=payload, headers=hdr)
