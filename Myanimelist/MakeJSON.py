@@ -5,7 +5,7 @@ Created on Fri Jun 23 13:31:34 2017
 @author: Rignak
 """
 
-from myanimelist import session
+from myanimelist import session, utilities, media
 from threading import Thread
 import time
 import threading
@@ -25,13 +25,22 @@ def IndividualNb(nb,):
     ok = 0
     while ok < 100:
         try:
-            anime[nb] = session.anime(nb)
-            anime[nb].load()
+            item = session.anime(nb)
+            item.load()
+            newEntry = {}
+            anime[nb]['length'] = (item.duration * item.episodes).seconds//60
+            anime[nb]['episodes'] = item.episodes
+            anime[nb]['year'], newEntry['season'], newEntry['aired'] = AddDateInfo(item.aired)
+            anime[nb]['genres'] = [genre.name for genre in item.genres]
+            anime[nb]['title'] = item.title
+            anime[nb]['type'] = item.type
+            anime[nb]['source'] = item.source
             ok = 100
-            return
         except Exception as e:
             if 'Too Many Requests' in str(e):
                 ok += 1
+                Progress('                        ')
+                Progress('Flood: '+str(ok))
                 time.sleep(0.3)
             else:
                 return
@@ -55,41 +64,15 @@ def CreateDic():
             p = str(int(nb/limit*1000)/10)
             ending = ((now - begin)/(nb+1)*limit + begin).strftime('%D-%H:%M')
             line = p+'% | ' + str(ending) + ' | ' + str(len(anime))
-            Progress(line)
+            Progress('                        '+line)
     except:
         pass
     finally:
         time.sleep(3)
-        anime = FormatAnime(anime)
         print('\mMEAN TIME:', (now-begin)/limit)
         with open(join('save', 'myanimelist.json'), 'w') as file:
             json.dump(anime, file, sort_keys=True, indent=4)
 
-def FormatAnime(anime):
-    newAnime = {}
-    begin = datetime.now()
-    nb = 0
-    for key, item in anime.items():
-        nb += 1
-        newEntry = {}
-        try:
-            newEntry['length'] = (item.duration * item.episodes).seconds//60
-            newEntry['episodes'] = item.episodes
-            newEntry['year'], newEntry['season'], newEntry['aired'] = AddDateInfo(item.aired)
-            newEntry['genres'] = [genre.name for genre in item.genres]
-            newEntry['title'] = item.title
-            newEntry['type'] = item.type
-            newAnime[key] = newEntry
-
-        except Exception as e:
-            print(e)
-            pass
-        p = str(int(nb/len(anime)*1000)/10)
-        now = datetime.now()
-        ending = ((now - begin)/(nb+1)*len(anime) + begin).strftime('%D-%H:%M')
-        line = p+'% | ' + str(ending)
-        Progress(line)
-    return newAnime
 
 def AddDateInfo(td):
     d = [date.strftime('%d/%m/%Y') for date in td if date]
@@ -111,6 +94,8 @@ def AddDateInfo(td):
             s = 'summer ' + year
         elif month in ['09', '10', '11']:
             s = 'fall ' + year
+        else:
+            s = None
     a = [int(date.toordinal()) for date in td if date]
     y = begin.split('/')[-1]
     return y, s, a
