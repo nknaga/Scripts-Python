@@ -7,7 +7,7 @@ Created on Tue Jul 19 12:13:11 2016
 
 
 from datetime import timedelta, date
-from py_functions import Lib
+from stats_functions import Lib
 
 if __name__ == '__main__':
     api_key, username = Lib.DanbooruCodes()
