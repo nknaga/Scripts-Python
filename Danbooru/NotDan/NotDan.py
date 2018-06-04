@@ -9,6 +9,7 @@ from threading import Thread
 import threading
 import time
 import json
+
 #from pixivpy3 import AppPixivAPI
 from io import BytesIO
 from PIL import Image
@@ -294,10 +295,8 @@ def JsonReading(files):
                 if i not in data:
                     data.append(i)
     print('----------------------------')
-    if input(str(len(data)) + ' images found. Check on Dan ? (y/n) ') == 'y':
-        Routeur456(mode=6, links=data)
-        if input('Continue to extract urls ? (y/n) : ') == 'y':
-            ShowPixiv()
+    if input('Continue to extract urls ? (y/n) : ') == 'y':
+        ShowPixiv(data=data)
 
 
 def JsonSpliting(files):
@@ -334,7 +333,7 @@ def SplitDirectLink():
 
 def Index():
     file = open('1-NotDanbooru_Result.html', 'r')
-    r = input('Range ? ')
+    r = ''#input('Range ? ')
     lines = file.readline().split('<br/>')[:-1]
     if 'pximg' not in lines[0]:
         index = [int(ele.split('=')[-1]) for ele in lines]
@@ -348,24 +347,24 @@ def Index():
         return index
 
 
-def ShowPixiv():
-    m = input('import url from 1.html ? (y/n) : ')
-    if m != 'y':
-        urls = Routeur123(mode=3, data=Index())
+def ShowPixiv(data=[]):
+    if data:
+        urls = Routeur123(mode=3, data=data)
         file = open('2-directlink.html', 'w')
         for url in urls:
             file.write(url)
     else:
-        urls = [
-            'https' +
-            url for url in open(
-                '2-directlink.html',
-                'r').readline().split('https')]
+        urls = ['https' +url for url in open('2-directlink.html','r').readline().split('https')]
+    
+    if input('Check with IQDB ? (y/n) : ') =='y':
+        Routeur456(mode=6, linked=urls)
+    imgs = Index()
                 
-    imgs = Routeur123(mode=2, data=urls[1:])
+    imgs = Routeur123(mode=2, data=urls)
     if input('\nCheck if manga ? (y/n) : ') == 'y':
         imgs = IsManga(imgs)
     ShowImgs(imgs)
+    FinalJPGorPNG()
 
 def IsManga(imgs):
     finalImgs = []
@@ -377,27 +376,25 @@ def IsManga(imgs):
     from keras.models import load_model
     model = load_model('IsComic.h5')
     from keras import backend as K
+    K.image_dim_ordering()
     
     begin = datetime.now()
     l = len(imgs)
+    size = (150, 150)
     for i,img in enumerate(imgs):
-        x = image_utils.load_img(img._data, target_size=(150,150),grayscale=False)
+        try:
+            img = Image.open(img._data)
+            img.thumbnail(size)
+            x, y = img.size
+            newIm = Image.new('RGB', size, (0,0,0))
+            newIm.paste(img, (int((size[0] - x)/2), int((size[1] - y)/2)))
+            
+            x = image_utils.load_img(newIm, target_size=size)
+        except Exception as e:
+            print(e)
+            continue
         x = image_utils.img_to_array(x)
         x = np.expand_dims(x, axis=0)
-        
-        dim_ordering = K.image_dim_ordering()
-        if dim_ordering == 'th':
-            x[:, 0, :, :] -= 103.939
-            x[:, 1, :, :] -= 116.779
-            x[:, 2, :, :] -= 123.68
-            # 'RGB'->'BGR'
-            x = x[:, ::-1, :, :]
-        else:
-            x[:, :, :, 0] -= 103.939
-            x[:, :, :, 1] -= 116.779
-            x[:, :, :, 2] -= 123.68
-            # 'RGB'->'BGR'
-            x = x[:, :, :, ::-1]
         
         preds = model.predict(x)
         if preds[0][0]<preds[0][1]:
@@ -435,20 +432,21 @@ def ShowImgs(imgs):
     begin = datetime.now()
     print('-----------------------\n--- BEGIN SHOW IMGS ---')
     print('Begin at', begin.strftime('%H:%M'), len(imgs))
-    i, l = 0, len(imgs)
+    i, l, t = 0, len(imgs),0
     file = open('3-final.html', 'w')
     while imgs:
         img = imgs[0]
         imgs = imgs[1:]
         img.InputTags()
         if img._adds == 'y':
+            t+=1
             file.write('<A HREF="' + img._url + '"> ' + img._url + '<br/>')
         elif img._adds == 'exit':
             break
         i += 1
         ending = ((datetime.now() - begin) / i * l + begin).strftime('%H:%M')
         s = str(i) + '/' + str(l) + ' | ' + ending + \
-            ' | ' + img._url.split('/')[-1]
+            ' | ' + img._url.split('/')[-1]+' | '+str(t)
         Progress(s)
     print()
     print('-----------------------')
@@ -663,7 +661,7 @@ def Routeur456(mode, linked=[]):
     global find
     global links
     links = linked
-    nb, k, i, find, ts = 15, 0, 0, 0, []
+    nb, k, i, find, ts = 24, 0, 0, 0, []
     file = open('1-NotDanbooru_Result.html', 'w')
     if mode == 4:
         tags = input("Write some tags (split search with blanck): ")
@@ -684,7 +682,7 @@ def Routeur456(mode, linked=[]):
         while i < int(l / nb) + 1:
             l = len(links)
             renew_tor()
-            time.sleep(2)
+            time.sleep(10)
             for j in range(nb):
                 if k < l - 1:
                     k += 1
