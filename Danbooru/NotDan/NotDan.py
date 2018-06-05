@@ -41,6 +41,7 @@ class Sample:
         ok = 0
         self._url = url
         self._adds = ''
+        self._data = None
         while ok <7 :
             try:
                 req = urllib.request.Request(url)
@@ -330,36 +331,39 @@ def SplitDirectLink():
                 file.write(links[i*nb+j])
     print(nbFile, 'files created')
 
-
-def Index():
-    file = open('1-NotDanbooru_Result.html', 'r')
-    r = ''#input('Range ? ')
-    lines = file.readline().split('<br/>')[:-1]
-    if 'pximg' not in lines[0]:
-        index = [int(ele.split('=')[-1]) for ele in lines]
-    else:
-        index = [int(ele.split('/')[-1].split('_')[0]) for ele in lines]
-
-    if ':' in r:
-        begin, end = r.split(':')
-        return index[index.index(int(begin)):index.index(int(end))]
-    else:
-        return index
+#
+#def Index():
+#    file = open('1-NotDanbooru_Result.html', 'r')
+#    r = ''#input('Range ? ')
+#    lines = file.readline().split('<br/>')[:-1]
+#    if 'pximg' not in lines[0]:
+#        index = [int(ele.split('=')[-1]) for ele in lines]
+#    else:
+#        index = [int(ele.split('/')[-1].split('_')[0]) for ele in lines]
+#
+#    if ':' in r:
+#        begin, end = r.split(':')
+#        return index[index.index(int(begin)):index.index(int(end))]
+#    else:
+#        return index
 
 
 def ShowPixiv(data=[]):
     if data:
         urls = Routeur123(mode=3, data=data)
-        file = open('2-directlink.html', 'w')
-        for url in urls:
-            file.write(url)
+        with open('2-directlink.html', 'w') as file:
+            for url in urls:
+                file.write(url)
     else:
-        urls = ['https' +url for url in open('2-directlink.html','r').readline().split('https')]
+        with open('2-directlink.html', 'r') as file:
+            urls = ['https' +url for url in file.readline().split('https')][1:]
     
     if input('Check with IQDB ? (y/n) : ') =='y':
         Routeur456(mode=6, linked=urls)
-    imgs = Index()
-                
+    with open('1-NotDanbooru_Result.html', 'r') as file:
+        urls = [url for url in  file.readline().split('"') if url.startswith('http')]
+        
+    print(len(urls), 'imgs found')
     imgs = Routeur123(mode=2, data=urls)
     if input('\nCheck if manga ? (y/n) : ') == 'y':
         imgs = IsManga(imgs)
@@ -382,18 +386,14 @@ def IsManga(imgs):
     l = len(imgs)
     size = (150, 150)
     for i,img in enumerate(imgs):
-        try:
-            img = Image.open(img._data)
-            img.thumbnail(size)
-            x, y = img.size
-            newIm = Image.new('RGB', size, (0,0,0))
-            newIm.paste(img, (int((size[0] - x)/2), int((size[1] - y)/2)))
-            
-            x = image_utils.load_img(newIm, target_size=size)
-        except Exception as e:
-            print(e)
+        if not img._data:
             continue
-        x = image_utils.img_to_array(x)
+        tempImg = Image.open(img._data)
+        tempImg.thumbnail(size)
+        x, y = tempImg.size
+        newIm = Image.new('RGB', size, (0,0,0))
+        newIm.paste(tempImg, (int((size[0] - x)/2), int((size[1] - y)/2)))
+        x = image_utils.img_to_array(newIm)
         x = np.expand_dims(x, axis=0)
         
         preds = model.predict(x)
@@ -681,8 +681,9 @@ def Routeur456(mode, linked=[]):
         l = len(links)
         while i < int(l / nb) + 1:
             l = len(links)
+            time.sleep(8)
             renew_tor()
-            time.sleep(10)
+            time.sleep(8)
             for j in range(nb):
                 if k < l - 1:
                     k += 1
