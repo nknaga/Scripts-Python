@@ -222,10 +222,10 @@ def onFile(f, i, folder = ''):
         image.Sym_Y()
         image.ArrayToIm()
     if goal:
-        os.remove(image._name)
+        #os.remove(image._name)
         goal = ['wikipedia','google'][goal-1]
         path = image._name.split('\\')
-        image._name = join('\\'.join(path[:-1]), goal,str(383-2+i)+'.jpg')
+        image._name = join('\\'.join(path[:-1]), goal,str(415-2+i)+'.jpg')
         image.Save()
 
 
@@ -245,5 +245,5 @@ def Launch(files, folder = ''):
 if __name__ == '__main__':
     wikiRate = 1
     gooRate = 1.1
-    a = 'result'
+    a = 'results'
     onFolder(folder=a)
