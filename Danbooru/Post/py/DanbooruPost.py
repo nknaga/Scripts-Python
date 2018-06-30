@@ -5,15 +5,15 @@ Created : 26/08/2016
 Python version : 3.5
 @author: Rignak
 """
-from os.path import join
+from os.path import join, exists
 from os import remove, rename
 
-root = "../files"
+root = join('..', 'files')
 list_T = ["T1.txt", "T2.txt", "T3.txt", "T4.txt", "TP.txt"]
 list_T = [join(root, 'tags', e) for e in list_T]
 list_L = ["L1.txt", "L2.txt", "L3.txt", "L4.txt", "LP.txt"]
 list_L = [join(root, 'links', e) for e in list_L]
-list_HTML = ["F1.html", "F2.html", "F3.html", "F4.html", "FP.html"]
+list_HTML = ["F1.html", "F2.html", "F3.html", "F4.html", "FP.html", 'stock.html']
 list_HTML = [join(root,'html', e) for e in list_HTML]
 
 # Create a list of error to correct
@@ -69,13 +69,18 @@ def ReplaceAll(text, lst_error):
     text - A corrected string"""
     global number_replacements
     text = ' ' + text + ' '
-    for k in range(2):
+    for k in range(10):
+        text3 = text
         for i, j in lst_error:
             text2 = text.replace(i, j)
             if text2 != text:
                 if i != '  ':
                     number_replacements += 1
+                if k>3:
+                    print('multiple? ','|'+str(i)+'|'+str(j)+'|')
                 text = text2
+        if text == text3:
+            break
     l = []
     for tag in text.split():
         if tag not in l:
@@ -108,11 +113,11 @@ def PrintUrl(list_n):
     while len(list_n) < len(list_HTML):
         list_n.append(0)
     lines = []
-    for i in range(len(list_HTML)):
-        lines += open(list_HTML[i], 'r').readlines()[:int(list_n[i])]
+    for i,file in enumerate(list_HTML[:-1]):
+        lines += open(file, 'r').readlines()[:int(list_n[i])]
     for line in lines:
         url = line.split('"')[1]
-        print('http://danbooru.donmai.us/uploads/new?url='+url)
+        print('https://danbooru.donmai.us/uploads/new?url='+url)
     return
 
 
@@ -127,8 +132,8 @@ def TrimHTML():
 
     rem = 0
     for i in range(len(list_HTML)):
-        newHTML = open(list_HTML[i] + '~', 'w')
-        oldHTML = open(list_HTML[i], 'r')
+        newHTML = open(list_HTML[i] + '~', 'w', encoding="utf-8")
+        oldHTML = open(list_HTML[i], 'r', encoding="utf-8")
         for line in oldHTML:
             suppr = 0
             for url in list_url:
@@ -182,6 +187,10 @@ def GenerateHTML():
         fileL = open(list_L[i], 'r')
 
         for lineL in fileL:
+            if 'yande.re' in lineL:
+                if '%20' in lineL:
+                    lineL = lineL.split('/')
+                    lineL = '/'.join(lineL[:-1]+[lineL[-1].split('%20')[1]+lineL[-1][-5:]])
             lineT = fileT.readline()
             lineT = lineT.replace("\n", '')
             fileT.readline()
@@ -199,8 +208,31 @@ def GenerateHTML():
     global number_replacements
     print('Number of deleted :', banned)
     print('Number of remplacements :',number_replacements)
+    
     return
 
+def CheckNovelIllust():
+    from noise_lib import NoiseFunctions
+    import urllib
+    from io import BytesIO
+    for file in list_HTML:
+        with open(file, 'r', encoding="utf-8") as file:
+            lines = file.readlines()
+        for line in lines:
+            if 'novel_illustration' in line:
+                url = line.split('"')[1]
+                try:
+                    req = urllib.request.Request(url)
+                    data = BytesIO(urllib.request.urlopen(req).read())
+                    noise = NoiseFunctions.DetectJPG(data)
+                    if noise[1][0] < noise[0][0] and noise[1][0] < noise[2][0]:
+                        print(url)
+                    else:
+                        print('---', url)
+                except Exception as e:
+                    print(e, url)
+            
+            
 def CountLine():
     """Count the number of line of each .txt"""
     s = 0
@@ -227,6 +259,27 @@ def CheckTags():
     prefix =['copy', 'art', 'char', 'pool', 'rating', 'parent', 'source']
     for tag in [tag for tag in tags if tag not in true_tags and not any([tag.startswith(i) for i in ok]) and not tag.split(':')[0] in prefix]:
         print(tag)
+        
+def Stock(selection, onTags = ''):
+    lines = []
+    if exists(join(root, 'html', 'stock.html')):
+        with open(join(root, 'html', 'stock.html'), 'r', encoding="utf-8") as file:
+            lines = file.readlines()
+    for file in list_HTML[:-1]:
+        with open(file, 'r') as file:
+            for line in file.readlines():
+                if onTags and onTags in line:
+                    lines.append(line)
+                else:
+                    for url in selection:
+                        if url in line:
+                            lines.append(line)
+                            break
+    lines.sort()
+    with open(join(root, 'html', 'stock.html'), 'w', encoding="utf-8") as file:
+        for line in lines:
+            file.write(line)
+    
 
 if __name__ == '__main__':
     print("Case 1 : Generate HTML")
@@ -236,6 +289,9 @@ if __name__ == '__main__':
     print("Case 5 : Count the line in each link file")
     print("Case 6 : Print unknown tags")
     print("Case 7 : Print urls to post")
+    print("Case 8 : Print novel illustration from BookWalker")
+    print("Case 9 : Stock some pictures for later")
+    print("Case 10 : Stock novel illustrations")
     case = int(input('Choisir un mode : '))
     if case == 1:
         GenerateHTML()
@@ -255,3 +311,10 @@ if __name__ == '__main__':
     elif case == 7:
         list_n = input("How many lines to show? ")
         PrintUrl(list_n.split())
+    elif case == 8:
+        CheckNovelIllust()
+    elif case == 9:
+        Stock(input('which urls to stock ? ').split())
+    elif case == 10:
+        Stock('', onTags='novel_illustration')
+        
