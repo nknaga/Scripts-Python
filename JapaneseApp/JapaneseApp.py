@@ -11,7 +11,7 @@ import sys
 import codecs
 import random
 import matplotlib.pyplot as plt
-
+from random import shuffle
 
 class Question:
     def __init__(self, line, question, answer):
@@ -204,6 +204,8 @@ if __name__ == '__main__':
         worklist = worklist[r[0]:]
     else:
         worklist = worklist[r[0]:r[1]]
+    shuffle(worklist)
+    worklist = worklist[:75]
     worklist = [question for question in worklist if question.answer != '']
     print('You have', len(worklist), 'questions')
     sys.stdout.flush()
