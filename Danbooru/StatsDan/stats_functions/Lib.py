@@ -6,7 +6,6 @@ Created on Sat Oct 14 22:39:43 2017
 """
 
 import urllib
-from time import sleep
 from sys import stdout
 
 str1 = "http://hijiribe.donmai.us/counts/posts.json?tags="
@@ -14,19 +13,13 @@ str1 = "http://hijiribe.donmai.us/counts/posts.json?tags="
 def NbTags(tags, username, api_key):
     tags = tags.replace(' ', '%20')
     request = str1 + tags + '&login=' + username + '&api_key=' + api_key
-    e = True
-    while e:
-        try:
-            e = False
-            page = urllib.request.urlopen(request)
-        except urllib.error.HTTPError as e:
-            print('Spam?', e)
-            sleep(10)
-            e = True
-
-    bytespage = page.read()
-    deleted_number = int(bytespage.decode('utf-8')[21:-2])
-    return deleted_number
+    try:
+        page = urllib.request.urlopen(request)
+        bytespage = page.read()
+        deleted_number = int(bytespage.decode('utf-8')[21:-2])
+        return deleted_number
+    except:
+        return 0
 
 def DanbooruCodes(inside = False):
     if inside:
