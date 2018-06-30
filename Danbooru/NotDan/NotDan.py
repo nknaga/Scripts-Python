@@ -9,6 +9,7 @@ from threading import Thread
 import threading
 import time
 import json
+from os.path import join
 
 #from pixivpy3 import AppPixivAPI
 from io import BytesIO
@@ -109,6 +110,7 @@ def GetInfo(index, pages = False):
                 return []
             elif code != 200:
                 retry += 1
+                continue
             else:
                 retry = 4
             soup = BeautifulSoup.BeautifulSoup(page, "lxml")
@@ -229,7 +231,7 @@ def GetHierarch():
         tagsHierarch = '\t'.join(line.split('\t')[:-1])
         tagsHierarch = [word for word in tagsHierarch.split() if word]
         if tagsHierarch:
-            if line.startswith('\t') or line.startswith(' \t'):
+            if not (line.startswith('\t') or line.startswith(' \t')):
                 copy = tagsHierarch[0]
             for tag in tagsHierarch:
                 hierarch[tag] = copy
@@ -301,18 +303,20 @@ def JsonReading(files):
 
 
 def JsonSpliting(files):
-    l = 1000000
+    l = 100000
     data = {}
     dic = {}
-    for file in files:
-        with open('pixiv/' + file + '.json', 'r') as file:
+    for filename in files:
+        with open(join('pixiv',filename + '.json'), 'r') as file:
             data.update(json.load(file))
+        Progress('Load ' + str(filename))
     for key, value in data.items():
         if int(key) // l not in dic.keys():
             dic[int(key) // l] = {}
         dic[int(key) // l][key] = value
+    print()
     for key, value in dic.items():
-        name = 'pixiv/' + str(key) + '.json'
+        name = join('pixiv', 'new',str(key) + '.json')
         with open(name, 'w') as file:
             json.dump(value, file, sort_keys=True, indent=4)
         Progress('Done on ' + str(key))
@@ -371,8 +375,12 @@ def ShowPixiv(data=[]):
     FinalJPGorPNG()
 
 def IsManga(imgs):
+    
+
     finalImgs = []
     import os
+    if not os.path.exists('manga'):   
+        os.makedirs('manga')
     os.environ['TF_CPP_MIN_VLOG_LEVEL'] = '3'
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     import numpy as np
@@ -399,6 +407,8 @@ def IsManga(imgs):
         preds = model.predict(x)
         if preds[0][0]<preds[0][1]:
             finalImgs.append(img)
+        else:
+            tempImg.save(join('manga', str(i)+'.jpg'), 'JPEG')
             
             
         ending = (datetime.now() - begin) / (i+1) * l + begin
@@ -600,7 +610,7 @@ def Routeur123(mode=0, data=None):
         for i, x in enumerate(index):
 #            m = 0
             while threading.active_count() > limit_active:
-                time.sleep(0.1)
+                time.sleep(0.01)
 #                m += 1
 #                if m == 50 and mode in [0, 3]:
 #                    # Can stop because of proxy, or because of rate limit
@@ -623,11 +633,11 @@ def Routeur123(mode=0, data=None):
 #                    api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
 #                    n = 0
             Thread(target=function, args=(x, )).start()
-            if p != int(i / limit * 1000) / 10:
+            if p != int(i / limit * 1000):
                 mean_time = (datetime.now() - begin) / (i + 1)
                 ending = (mean_time * limit + begin).strftime('%D-%H:%M')
-                Progress(str(p) + '% | ' + ending + ' | ' + str(mean_time))
-                p = int(i / limit * 1000) / 10
+                Progress(str(p/10) + '% | ' + ending + ' | ' + str(mean_time))
+                p = int(i / limit * 1000)
         time.sleep(10)
     except Exception as e:
         print('\n',e)
@@ -635,7 +645,7 @@ def Routeur123(mode=0, data=None):
     finally:
         if mode in [0, 1]:
             if not mode and res:
-                name = 'pixiv/temp' + str((index[0]) // 1000000) + '.json'
+                name = 'pixiv/temp' + str((index[0]) // 100000) + '.json'
                 temp = res
                 with open(name, 'w') as file:
                     json.dump(temp, file, sort_keys=True, indent=4)
