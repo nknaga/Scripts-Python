@@ -8,9 +8,8 @@ from scipy import signal as sg
 from PIL import Image
 import numpy as np
 import io
-from os.path import join, dirname, realpath
+from os.path import join
 
-root = join(dirname(realpath(__file__)), "Example")
 
 def np_from_img(im):
     if im.mode in ('RGBA', 'LA') or (im.mode == 'P' and 'transparency' in im.info):
@@ -48,7 +47,7 @@ def DetectJPG(fname, mode = 0):
     array0 = Grayscale(np_from_img(im0))
     array0 = Filter(array0, p)
     i = Intensity(array0)
-    for q in [74,75,76,79,80,81,84,85,86,89,90,91,94,95,96]:
+    for q in range(74, 97):#[74,75,76,79,80,81,84,85,86,89,90,91,94,95,96]:
         f2 = io.BytesIO()
         im0.save(f2, format="JPEG", quality=q)
         im2 = Image.open(f2)
@@ -58,37 +57,33 @@ def DetectJPG(fname, mode = 0):
         ar3 = np.absolute(array0-array2)
         noise.append((Intensity(ar3)/i, q))
     if mode == 1:
-        img_from_np(array2).show()
-        print(noise[FirstLocalMinimum(noise)][1])
+        #img_from_np(array2).show()
         return noise
     else:
         return(noise[FirstLocalMinimum(noise)][1])
 
 def FirstLocalMinimum(t):
-    for i in [1,4,7,10,13]:
-        if t[i-1][0]-t[i][0] > 0.05 and t[i+1][0]-t[i][0] > 0.05:
+    for i in range(1, len(t)):
+        if t[i-1][0]-t[i][0] > 0.05 and t[i+1][0]-t[i][0] > 0.03:
             return i
     return -1
 
 
 def Test():
     from matplotlib import pyplot as plt
-    n1 =  'example/Miki 9A.jpg'
-    y = DetectJPG(n1, mode=1)
-    x = [y[a][1] for a in range(len(y))]
-    y = [y[a][0] for a in range(len(y))]
-    plt.plot(x, y)
-
-    n2 =  'example/Miki 9B.jpg'
-    y = DetectJPG(n2, mode=1)
-    x = [y[a][1] for a in range(len(y))]
-    y = [y[a][0] for a in range(len(y))]
-    plt.plot(x, y)
-
+    
+    x = []
+    files = ['1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg']
+    for file in files:
+        y = DetectJPG(join('example', file), mode=1)
+        x.append([1-y[a][0] for a in range(len(y))])
+    y = [y[a][1] for a in range(len(y))]
+    for data in x:
+        plt.plot(y, data)
 
     plt.xlabel("Quality")
-    plt.ylabel("Intesity")
-    plt.legend(['Noisy picture', 'Noiseless picture'])
+    plt.ylabel("Noise likehood")
+    plt.legend(files, loc='upper left')
 
 
 if __name__ == '__main__':
