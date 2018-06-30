@@ -7,17 +7,17 @@ Created on Sat Oct 14 21:18:59 2017
 import requests
 import json
 from datetime import datetime
-from py_functions import Lib
+from stats_functions import Lib
 from os.path import join
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
-api_url = 'http://hijiribe.donmai.us/posts.json'
+api_url = 'https://hijiribe.donmai.us/posts.json'
 
 def Req(page, once, mode):
     if mode == 1:
         tag = 'user:'+username
     elif mode == 0:
-        tag = 'pokemon fav:'+username
+        tag = 'fav:'+username
     payload = {'limit': str(once),
                'tags': tag,
                'api_key': api_key,
@@ -28,7 +28,7 @@ def Req(page, once, mode):
 def FillJson(mode):
     full = []
     once = 200
-    total = [5163, 20383][mode]
+    total = [4328, 24474][mode]
     error = 0
     begin = datetime.now()
     for i in range(int(total/once)):
