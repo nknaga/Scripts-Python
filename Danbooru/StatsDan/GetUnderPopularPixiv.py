@@ -44,11 +44,11 @@ def FillNbTags(tags):
         
 def ReduceArttags(doublets, artists):
     for artist, nb in doublets.items():
-        if nb > 10:
+        if nb > 25:#↓10:
             artists[artist] = -1
     print()
     for artist,score in sorted(artists.items(), key=lambda p:p[1], reverse=True):
-        if score > 5 and score <=10:
+        if score > 10:# and score <=10:
             print('https://danbooru.donmai.us/posts?tags='+artist)
 if __name__ == '__main__':
     artists = GetArttags()

@@ -225,7 +225,7 @@ def onFile(f, i, folder = ''):
         #os.remove(image._name)
         goal = ['wikipedia','google'][goal-1]
         path = image._name.split('\\')
-        image._name = join('\\'.join(path[:-1]), goal,str(415-2+i)+'.jpg')
+        image._name = join('\\'.join(path[:-1]), goal,str(430-1+i)+'.jpg')
         image.Save()
 
 
