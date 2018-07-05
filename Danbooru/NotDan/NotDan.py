@@ -64,39 +64,6 @@ class Sample:
         system("taskkill /f /im dllhost.exe")
         return self._adds
 
-        
-
-#def AddEntry(index):
-#    try:
-#        retry = 0
-#        while retry < 6:
-#            try:
-#                json = illust_detail(index, req_auth=True)
-#                while 'error' in json and 'Rate Limit' == json['error']['message']:
-#                    time.sleep(60)
-#                    json = illust_detail(index, req_auth=True)
-#                if 'reason' not in json:
-#                    retry = 7
-#                else:
-#                    retry += 1
-#            except BaseException:
-#                retry += 1
-#        if 'illust' in json:
-#            json = json.illust
-#            if json.total_bookmarks > score and json.page_count < 10:
-#                global res
-#                res[index] = {}
-#                res[index]['t'] = [tag.name for tag in json.tags] + \
-#                                [str(json.user.id)]
-#                #res[index]['u'] = json.image_urls.medium
-#                res[index]['n'] = json.page_count
-#                #res[index]['d'] = json.create_date
-#                res[index]['s'] = json.total_bookmarks
-#                res[index]['r'] = json.height / json.width
-#        elif 'error' in json and 'ID' not in json.error.user_message:
-#            print(json.error)
-#    except Exception as e:
-#        print(e, '\n')
 
 def GetInfo(index, pages = False):
     global res
@@ -197,20 +164,7 @@ def GetPagesMode1(index):
     res.append(GetInfo(index, pages = True))
     
 def CheckOnDan(pixivId):
-#    payload = {#'limit': '1',
-#               #'tags': 'pixiv:' + str(pixivId),
-#               'api_key': api_key,
-#               'login': dan_username}
-#    url = 'https://danbooru.donmai.us/counts/posts?tags=pixiv%3A'+str(pixivId)
-#    req = requests.get(url, data=payload, headers=headers, stream=True)
-#    t = 0
-#    while req.status_code != 200 and t < 5:
-#        req = requests.get(url, data=payload, headers=headers, stream=True)
-#        t += 1
-#        
-#    soup = BeautifulSoup.BeautifulSoup(req.content, "lxml")
-#    count = soup.find('div', {'id':"a-posts"})
-    if False:# and (t == 5 or str(count).split()[-2] != '0'):
+    if False:
         return True
     else:
         global file
@@ -335,22 +289,6 @@ def SplitDirectLink():
                 file.write(links[i*nb+j])
     print(nbFile, 'files created')
 
-#
-#def Index():
-#    file = open('1-NotDanbooru_Result.html', 'r')
-#    r = ''#input('Range ? ')
-#    lines = file.readline().split('<br/>')[:-1]
-#    if 'pximg' not in lines[0]:
-#        index = [int(ele.split('=')[-1]) for ele in lines]
-#    else:
-#        index = [int(ele.split('/')[-1].split('_')[0]) for ele in lines]
-#
-#    if ':' in r:
-#        begin, end = r.split(':')
-#        return index[index.index(int(begin)):index.index(int(end))]
-#    else:
-#        return index
-
 
 def ShowPixiv(data=[]):
     if data:
@@ -417,21 +355,6 @@ def IsManga(imgs):
     print('\nOut of', str(l)+',', len(finalImgs),'were illustrations')
     return finalImgs
         
-#
-#def PixivId2Url(i):
-#    try:
-#        res1 = illust_detail(i, req_auth=True)
-#        while 'error' in res1 and 'Rate Limit' == res1['error']['message']:
-#            time.sleep(60)
-#            res1 = illust_detail(i, req_auth=True)
-#        if 'illust' in res1:
-#            res2 = [dic.image_urls.original for dic in res1.illust.meta_pages]
-#            if not res2:
-#                res2 = [res1.illust.meta_single_page.original_image_url]
-#            res[i] = res2
-#    except Exception as e:
-#        print('IndividualUrl - error on :', i, e)
-
 
 def Url2Data(url):
     res.append(Sample(url))
@@ -564,12 +487,6 @@ def ShowYandere():
     ShowImgs(samples)
 
 
-#def GetPixApi(id_mail, mails, password):
-#    id_mail = (id_mail+1)%len(mails)
-#    api = AppPixivAPI()
-#    api.login(mails[id_mail], password)
-#    return api, id_mail, api.illust_detail
-
 def Routeur123(mode=0, data=None):
     global file, res, illust_detail
     index = data
@@ -597,41 +514,12 @@ def Routeur123(mode=0, data=None):
         threading.active_count()
     function = [GetInfo, CheckOnDan, Url2Data, GetPagesMode1][mode]
     begin = datetime.now()
-#    if mode in [0, 3]:
-#        with open("../Pixiv_Codes.txt", 'r') as f:
-#            mails = f.readline().split()[1:]
-#            password = f.readline().split()[1]
-#        lastLogin = begin
-#        id_mail = -1
-#        n = -1
     print('Begin at', begin.strftime('%H:%M'))
     p = 0.0
     try:
         for i, x in enumerate(index):
-#            m = 0
             while threading.active_count() > limit_active:
                 time.sleep(0.01)
-#                m += 1
-#                if m == 50 and mode in [0, 3]:
-#                    # Can stop because of proxy, or because of rate limit
-#                    test = illust_detail(i, req_auth=True)
-#                    if 'error' in test and test['error']['message'] == 'Rate Limit':
-#                        api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
-#                        n = 0
-#                        #print('\nSwitch account to', mails[id_mail])
-#                        time.sleep(20)
-#                    else:
-#                        pass
-#                        #print('\nWill proced to change the proxy')
-#                        #SetProxy(TestProxy())
-#            if mode in [0,3]:
-#                n+= 1
-#                if not n%800:
-#                    api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
-#                elif (datetime.now() - lastLogin).seconds > 3590:
-#                    lastLogin = datetime.now()
-#                    api, id_mail, illust_detail = GetPixApi(id_mail, mails, password)
-#                    n = 0
             Thread(target=function, args=(x, )).start()
             if p != int(i / limit * 1000):
                 mean_time = (datetime.now() - begin) / (i + 1)
@@ -640,8 +528,7 @@ def Routeur123(mode=0, data=None):
                 p = int(i / limit * 1000)
         time.sleep(10)
     except Exception as e:
-        print('\n',e)
-#        print('\n',mails[id_mail], e, 'Stop at', i,'\n--------------------------')
+        print('\n', e)
     finally:
         if mode in [0, 1]:
             if not mode and res:
