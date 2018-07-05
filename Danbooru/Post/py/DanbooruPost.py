@@ -96,8 +96,8 @@ def DelLine(list_n):
     while len(list_n) < len(list_HTML):
         list_n.append(0)
     for i in range(len(list_HTML)):
-        newHTML = open(list_HTML[i] + '~', 'w')
-        oldHTML = open(list_HTML[i], 'r')
+        newHTML = open(list_HTML[i] + '+', 'w', encoding="utf-8")
+        oldHTML = open(list_HTML[i], 'r', encoding="utf-8")
         j = 0
         for line in oldHTML:
             if j >= int(list_n[i]):
@@ -105,8 +105,9 @@ def DelLine(list_n):
             j = j + 1
         oldHTML.close()
         newHTML.close()
-        remove(list_HTML[i])
-        rename(list_HTML[i] + '~', list_HTML[i])
+        remove(list_HTML[i] + '~')
+        rename(list_HTML[i], list_HTML[i] + '~')
+        rename(list_HTML[i] + '+', list_HTML[i])
     return
 
 def PrintUrl(list_n):
@@ -259,7 +260,20 @@ def CheckTags():
     prefix =['copy', 'art', 'char', 'pool', 'rating', 'parent', 'source']
     for tag in [tag for tag in tags if tag not in true_tags and not any([tag.startswith(i) for i in ok]) and not tag.split(':')[0] in prefix]:
         print(tag)
-        
+
+def CountTags():
+    tags = []
+    nb = 0
+    for file in list_HTML[:-1]:
+        for line in open(file, 'r'):
+            for tag in line.split('">')[-1].split():
+                tags.append(tag)
+            nb += 1
+    print('Mean number of tags:', round(len(tags)/nb, 1))
+    print('Variety:', len(set(tags)))
+    return               
+    
+    
 def Stock(selection, onTags = ''):
     lines = []
     if exists(join(root, 'html', 'stock.html')):
@@ -292,6 +306,7 @@ if __name__ == '__main__':
     print("Case 8 : Print novel illustration from BookWalker")
     print("Case 9 : Stock some pictures for later")
     print("Case 10 : Stock novel illustrations")
+    print("Case 11 : Count the mean number of tags")
     case = int(input('Choisir un mode : '))
     if case == 1:
         GenerateHTML()
@@ -317,4 +332,5 @@ if __name__ == '__main__':
         Stock(input('which urls to stock ? ').split())
     elif case == 10:
         Stock('', onTags='novel_illustration')
-        
+    elif case == 11:
+        CountTags()
