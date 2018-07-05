@@ -148,7 +148,7 @@ def ToMP3(line, mode = 1):
         end =  " -to " + end
     else:
         end = ""
-    line = " ".join(['ffmpeg -i', '"'+old+'"', "-ss", begin, end, '"'+name+'"'])
+    line = 'ffmpeg -i "'+old+'" -codec:a libmp3lame -qscale:a 3 -ss '+begin+" " +end+' "'+name+'"'
     if exists(name):
         error = True
         print('ERROR : file already exist')
