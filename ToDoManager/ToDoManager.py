@@ -31,7 +31,7 @@ def SubDate(str1, str2):
     for o in [a, b, c]:
         if len(o) < 2:
             o = '0'+o
-    str3 = ':'.join([a, b, c])
+    str3 = f'{a}:{b}:{c}'
     return str3
 
 def FromYoutube(line, mode = 1):
@@ -45,17 +45,18 @@ def FromYoutube(line, mode = 1):
     else:
         name, link, ext, begin, end = line[:5]
     link = link.replace('\\', '/')
+    name = name.replace('/', '\\')
     yt = pytube.YouTube(link)
     MakeOutputPath(join(local,"input", name))
     yt.set_filename(name)
     try:
         yt.filter('mp4')[-1].download(join(local,"input"))
-    except:
-        pass
+    except Exception as e:
+        print(e)
     if ext == 'mp3':
-        return ToMP3('\t'.join([name + '.mp3', begin, end, name+ '.mp4']), mode=mode)
+        return ToMP3(f"{name}.mp3\t{begin}\t{end}\t{name}.mp4", mode=mode)
     else:
-        return CutVideo('\t'.join([name, begin, end, '0', name + '.mp4']), mode=mode)
+        return CutVideo(f'{name}\t{begin}\t{end}\t0\t{name}.mp4', mode=mode)
 
 
 def CutVideo(line, mode = 1):
@@ -78,7 +79,13 @@ def CutVideo(line, mode = 1):
         end =  "-t " + end
     else:
         end = ""
-        
+
+    command = f'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "{path}"'
+    opt = "-c:v libx265 -c:s copy -map 0:a -map 0:v -map 0:s? -force_key_frames 0 -crf 23"
+    if '1080' in subprocess.run(command, stdout=subprocess.PIPE).stdout.decode('utf-8'):
+        opt +=  " -vf scale=-1:720 "
+    line = f'ffmpeg -ss {begin} -i "{path}" {end} {opt} "{res_name}"'
+    print(line)
     if exists(res_name):
         error = True
         print('ERROR : file already exist')
@@ -86,11 +93,6 @@ def CutVideo(line, mode = 1):
         error = True
         print('ERROR : no source file')
     elif mode:
-        command = 'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "' + path+'"'
-        opt = "-c:v libx265 -c:a aac -c:s copy -map 0:a -map 0:v -map 0:s? -force_key_frames 0 -crf 23"
-        if '1080' in subprocess.run(command, stdout=subprocess.PIPE).stdout.decode('utf-8'):
-            opt +=  " -vf scale=-1:720 "
-        line = ' '.join(["ffmpeg", "-ss", begin, '-i', '"'+path+'"', end,  opt, '"'+res_name+'"'])
         os.system(line)
     return res_name, line, error
 
@@ -110,10 +112,10 @@ def FuseVideo(line, mode = 1):
         with open('concat.txt', "w") as files:
             for file in line[1:]:
                 os.rename(join(local, 'output', file), file)
-                files.write('file '+ file + '\n')
+                files.write(f'file {file}\n')
     res_name = join(local, 'output', res_name +'.mkv')
     MakeOutputPath(res_name)
-    cmd = 'ffmpeg -f concat -safe 0 -i concat.txt -c copy  -map 0:a? -map 0:v -map 0:s? -fflags +genpts "'+res_name + '"'
+    cmd = f'ffmpeg -f concat -safe 0 -i concat.txt -c copy  -map 0:a? -map 0:v -map 0:s? -fflags +genpts "{res_name}"'
     if exists(res_name):
         error = True
         print('ERROR : file already exist')
@@ -148,8 +150,8 @@ def ToMP3(line, mode = 1):
         end =  " -to " + end
     else:
         end = ""
-    line = 'ffmpeg -i "'+old+'" -codec:a libmp3lame -qscale:a 3 -ss '+begin+" " +end+' "'+name+'"'
-    if exists(name):
+    line = f'ffmpeg -i "{old}" -codec:a libmp3lame -qscale:a 3 -ss {begin} {end} "{+name+}.mp3"'
+    if exists(name+'.mp3'):
         error = True
         print('ERROR : file already exist')
     elif not exists(old):
@@ -225,7 +227,7 @@ def Loop(lines, mode = 1):
                     print('ERROR : very small file created')
                     print('command:', cmd)
                 else:
-                    advance = '('+str(i)+'|'+str(len(lines))+')'
+                    advance = f'({i}|{len(lines)})'
                     generated.append(name)
                     print('OK:', advance, line.split('\t')[0])
 
