@@ -18,16 +18,17 @@ f = open("../Danbooru_Codes.txt")
 api_key = f.readline().split()[1]
 username = f.readline().split()[1]
 f.close()
-known_tags = {'f' : 'flat_chest', 's' : 'small_breasts', 'm' : 'medium_breasts',
-              'l' : 'large_breasts', 'h' : 'huge_breasts', '-' : '-sideboob -cleavage -breasts',
-              'look' : 'looking_at_viewer', 'hair' : 'hair_between_eyes',
-              'eye' : 'eyebrows_visible_through_hair ', 'see' : 'see-through',
-              'p' : 'pass', 'g' : 'gigantic_breasts' }
-"""known_tags = {',' : 'flat_chest', '1' : 'small_breasts', '2' : 'medium_breasts',
-              '4' : 'large_breasts', '3' : 'huge_breasts', '-' : '-sideboob -cleavage -breasts',
-              'look' : 'looking_at_viewer', 'hair' : 'hair_between_eyes',
-              'eye' : 'eyebrows_visible_through_hair ', 'see' : 'see-through',
-              'p' : 'pass', 'f' : 'gigantic_breasts' }"""
+#known_tags = {'f' : 'flat_chest', 's' : 'small_breasts', 'm' : 'medium_breasts',
+#              'l' : 'large_breasts', 'h' : 'huge_breasts', '-' : '-sideboob -cleavage -breasts',
+#              'look' : 'looking_at_viewer', 'hair' : 'hair_between_eyes',
+#              'eye' : 'eyebrows_visible_through_hair ', 'see' : 'see-through',
+#              'p' : 'pass', 'g' : 'gigantic_breasts' }
+#"""known_tags = {',' : 'flat_chest', '1' : 'small_breasts', '2' : 'medium_breasts',
+#              '4' : 'large_breasts', '3' : 'huge_breasts', '-' : '-sideboob -cleavage -breasts',
+#              'look' : 'looking_at_viewer', 'hair' : 'hair_between_eyes',
+#              'eye' : 'eyebrows_visible_through_hair ', 'see' : 'see-through',
+#              'p' : 'pass', 'f' : 'gigantic_breasts' }"""
+known_tags = {'y' : 'pass', 'n' : '-saber_alter', 'm' : 'medium_breasts'}
 f = open('tags.txt', 'r')
 dic_tags = {}
 for line in f:
@@ -155,6 +156,8 @@ def main():
     inf = 2990000
     sup = 4000000
     tags = "breasts age:<60d -comic -flat_chest -small_breasts -medium_breasts -large_breasts -huge_breasts -gigantic_breasts order:id id:>"
+    tags = "artoria_pendragon_(swimsuit_archer) saber"
+    #tags = "saber_alter  artoria_pendragon_(swimsuit_rider_alter)"
     limit = 3000
     data = []
     res = []
