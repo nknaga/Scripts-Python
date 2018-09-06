@@ -31,11 +31,11 @@ K.image_dim_ordering()
 
 names =  ['notComic']# name of the folder hosting the dataset
 
-modes =  ['move'] # train, test, testH, trainH, move, export, plotConfuse, makeClusters, plotDiff
+modes =  ['train'] # train, test, testH, trainH, move, export, plotConfuse, makeClusters, plotDiff
 modelTypes =  [1]  # 1 flat, 2 folder based*
 modelIndexs = [0]
 
-currentEpoch = 0  # Not 0 we want to resume a training
+currentEpoch = 20  # Not 0 we want to resume a training
 
 #                     Cluster parameters
 plot = True
@@ -47,10 +47,10 @@ communityGamma = [x/10 for x in range(20, 0, -1)]
 
 #                    Dataset parameters
 
-trainNumPic = (0.5, 'absolute') # each, all, % or absolute
+trainNumPic = (0.8, 'absolute') # each, all, % or absolute
 #trainNumPic = (800, 'each') # each, all, or %
 
-testNumPic = (0.5, '%')# Number of picture per label on which test
+testNumPic = (0.2, '%')# Number of picture per label on which test
 
 validationSplit = 0.1  # Percentage of picture used for validation during train
 picSize = (150, 150, 3)
@@ -63,12 +63,12 @@ denseSize = (512, 512)  # Size of the last three hidden layers
 #                    Training parameters
 
 # Data augmentation
-minAugmentation = 10000
-params = {'rotation_range':5, 'width_shift_range':0.2,
+minAugmentation = 20000
+params = {'rotation_range':30, 'width_shift_range':0.2,
           'height_shift_range':0.2, 'horizontal_flip':True,
-          'zoom_range':(1.0, 1.2)}
+          'zoom_range':(1.0, 1.75)}
                       
-activation = 'relu'
+activation = 'selu'
 epochs = 300  # maximal number of epochs
 batchSize = 32  # number of picture put in the network with each batch
 
@@ -784,7 +784,8 @@ def PrepareImage(file):
     
     Output:
     x -- a 3d array"""
-    img = image_utils.load_img(file, target_size=picSize[:2],grayscale=grayscale)
+    img = image_utils.load_img(file, target_size=picSize[:2],grayscale=grayscale,
+                               interpolation='bilinear')
     x = image_utils.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     return x

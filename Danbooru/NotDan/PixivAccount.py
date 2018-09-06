@@ -7,6 +7,7 @@ Created on Sun Oct  8 13:09:27 2017
 from pixivpy3 import AppPixivAPI
 from datetime import datetime
 from threading import Thread
+import urllib
 import threading
 
 import socks
@@ -43,16 +44,11 @@ def IndividualRequest():
     pixiv_mail, pixiv_code = GetId()
     api = AppPixivAPI()
     print('pixiv_mail:', pixiv_mail, 'pixiv code:',pixiv_code,'\n')
-    api.login(pixiv_mail, pixiv_code)
-    time = []
-    for i in range(1):
-        startTime= datetime.now()
-        json = api.illust_detail(59381952, req_auth=True)
-        print('------------------\n', json, '\n',
-              [tag.name for tag in json.illust.tags] + [json.illust.user.id])
-        time.append(datetime.now()-startTime)
-    for t in time:
-        print('Time elpased (hh:mm:ss.ms) {}'.format(t))
+    url = "https://www.pixiv.net/member_illust.php?mode=medium&illust_id=59381952"
+    
+    req = urllib.request.Request(url)
+    req.add_header('Referer', 'https://www.pixiv.net/')
+    print(urllib.request.urlopen(req).read())
 
 def TestRateLimit():
     pixiv_mail, pixiv_code = GetId()
@@ -102,6 +98,7 @@ def TestAccount():
     pass
 
 if __name__ == '__main__':
-    print('mode 0 : unique request\nmode 1 : test rate limit\nmode 2 : test accounts')
+    IndividualRequest()
+    """print('mode 0 : unique request\nmode 1 : test rate limit\nmode 2 : test accounts')
     mode = int(input('Mode ? '))
-    [IndividualRequest, TestRateLimit, TestAccount][mode]()
+    [IndividualRequest, TestRateLimit, TestAccount][mode]()"""

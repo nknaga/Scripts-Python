@@ -28,7 +28,7 @@ def Req(page, once, mode):
 def FillJson(mode):
     full = []
     once = 200
-    total = [4328, 24474][mode]
+    total = [4419, 24474][mode]
     error = 0
     begin = datetime.now()
     for i in range(int(total/once)):

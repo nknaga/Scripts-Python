@@ -20,6 +20,7 @@ def GetArttags():
     artists = {}
     for entry in data:
         if entry['pixiv_id']:
+            print(entry['pixiv_id'])
             for artist in entry['tag_string_artist'].split():
                 if artist in artists:
                     artists[artist].append(int(entry['score']))
@@ -53,6 +54,6 @@ def ReduceArttags(doublets, artists):
 if __name__ == '__main__':
     artists = GetArttags()
     #FillNbTags(artists)
-    with open(join('res', 'arttags.json'), 'r') as file:
-        doublets = json.load(file)
-    ReduceArttags(doublets, artists)
+#    with open(join('res', 'arttags.json'), 'r') as file:
+#        doublets = json.load(file)
+#    ReduceArttags(doublets, artists)

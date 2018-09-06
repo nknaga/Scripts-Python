@@ -11,6 +11,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+import math
 
 from keras.preprocessing import image as image_utils
 from keras import optimizers, regularizers
@@ -18,13 +19,16 @@ from keras.models import Sequential
 from keras.layers import Flatten, Dense, Conv2D, Dropout, MaxPooling2D, Reshape, UpSampling2D
 from keras.callbacks import ModelCheckpoint, EarlyStopping, Callback
 
-picSize = (128, 128, 1)
-epochs = 300
-batchSize = 32
-learningRate = 1*10**-3
-momentum = 0.5
+picSize = (243, 243, 3)
+epochs = 30
+batchSize = 16
+learningRate = 5*10**-3
+momentum = 0.9
 lrDecay = 10**-5  # learning rate decay (not weight decay)
 weightDecay = 4*10**-5  # weight decay
+activation = 'relu'
+
+
 
 weightPath = join("models", 'autoencoder.h5')
 import os
@@ -66,66 +70,52 @@ class PlotLearning(Callback):
         plt.savefig('plot.png')
         
 def ImportModel(weight):
+    convBloc = [(64,1), (128,1), (256,1), (512,1)]
+    convSize = (5, 5)
+    pooling = (math.ceil(convSize[0]/2), math.ceil(convSize[1]/2))
+    endSize = int(picSize[0]/pooling[0]**len(convBloc))
+    reshapeSize =  (endSize, endSize, convBloc[-1][0])
+    denseLayers = [2048, np.prod(reshapeSize)]
+    a = activation
+    p = 'same'
+    reg = regularizers.l2(weightDecay)
+
     model = Sequential()
     
-    model.add(Conv2D(128, (3, 3), input_shape = picSize, activation='relu', padding='same'))
-    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+    # Down convolutions
+    for i, (layer, jmax) in enumerate(convBloc):
+        for j in range(jmax):
+            if i == 0 and j == 0:
+                model.add(Conv2D(layer, convSize, input_shape = picSize, activation=a, padding=p))
+            else:
+                model.add(Conv2D(layer, convSize, activation=a, padding=p))
+        model.add(MaxPooling2D(pooling))
 
-    model.add(Conv2D(256, (3, 3), activation='selu', padding='same'))
-    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+    # Dense layers
+    model.add(Flatten(name='flatten'))
+    for j, layer in enumerate(denseLayers):
+        model.add(Dense(layer, kernel_regularizer=reg, activation=a))
+        if j != len(denseLayers)-1:
+            model.add(Dropout(0.5))
+    model.add(Reshape(reshapeSize))
+ 
+    # Up convolutions  
+    for i, (layer, jmax) in enumerate(convBloc[::-1]):
+        for j in range(jmax):
+            model.add(Conv2D(layer, convSize, activation=a, padding=p))
+        model.add(UpSampling2D(pooling))
+    
+    model.add(Conv2D(3, convSize, activation='sigmoid', padding='same'))
 
-
-    model.add(Conv2D(256, (3, 3), activation='selu', padding='same'))
-    model.add(Conv2D(256, (3, 3), activation='selu', padding='same'))
-    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
-    
-    model.add(Conv2D(256, (3, 3), activation='selu', padding='same'))
-    model.add(Conv2D(256, (3, 3), activation='selu', padding='same'))
-    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
-#
-#    model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
-#    model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
-#    model.add(MaxPooling2D((2, 2), strides=(2, 2)))  # size == (4,4, 128)
-
-#    model.add(Flatten(name='flatten'))
-#    model.add(Dense(512, kernel_regularizer=regularizers.l2(weightDecay), activation='relu'))
-#    model.add(Dropout(0.5))
-#    model.add(Dense(2048, kernel_regularizer=regularizers.l2(weightDecay), activation='relu'))
-#    model.add(Dropout(0.5))
-#    model.add(Reshape((4, 4, 128)))
-    
-#    model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
-#    model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
-#    model.add(UpSampling2D((2, 2)))
-#    
-    model.add(Conv2D(256, (3, 3), activation='selu', padding='same'))
-    model.add(Conv2D(256, (3, 3), activation='selu', padding='same'))
-    model.add(UpSampling2D((2, 2)))
-    
-    model.add(Conv2D(256, (3, 3), activation='selu', padding='same'))
-    model.add(Conv2D(256, (3, 3), activation='selu', padding='same'))
-    model.add(UpSampling2D((2, 2)))
-    
-    model.add(Conv2D(256, (3, 3), activation='selu', padding='same'))
-    model.add(UpSampling2D((2, 2)))
-    
-    model.add(Conv2D(128, (3, 3), activation='selu', padding='same'))
-    model.add(UpSampling2D((2, 2)))
-    
-    model.add(Conv2D(1, (3, 3), activation='sigmoid', padding='same'))
-
-    sgd = optimizers.SGD(lr=learningRate,momentum=momentum,decay=lrDecay, nesterov=True)
-#
-    model.compile(optimizer = sgd, loss='binary_crossentropy')
-
-    old = sys.stdout
-    
-    
+    sgd = optimizers.SGD(lr=learningRate,momentum=momentum,decay=lrDecay,
+                         nesterov=True)
+    model.compile(optimizer = sgd, loss='mean_squared_error')
     if weight:
         print('load weights')
         model.load_weights(weightPath)
             
     with open('currentModel.txt', 'w') as file:
+        old = sys.stdout
         sys.stdout = file
         model.summary()
         sys.stdout = old
@@ -139,7 +129,8 @@ def Progress(s):
     sys.stdout.flush()
     
 def PrepareImage(file):
-    img = image_utils.load_img(file, target_size=picSize[:2], grayscale=True)
+    img = image_utils.load_img(file, target_size=picSize[:2], grayscale=False,
+                               interpolation='bicubic')
     x = image_utils.img_to_array(img)
     x = np.expand_dims(x, axis=0)/255
     return x
@@ -164,6 +155,7 @@ def ListFilesRec(folder):
         for file in files:
             if file.endswith('.jpg'):
                 resFiles.append(join(root, file))
+    resFiles.sort(key =lambda z:int(z.split('(')[1].split(')')[0]))
     return resFiles
     
 
@@ -196,12 +188,15 @@ def Apply(files):
     print()
         
 if __name__ == '__main__':
+    if len(sys.argv) == 2:
+        mode = sys.argv[1]
+    else:
+        mode = '1'
     
-    files = ListFilesRec('user-rignak')[:1000]
-    mode = 1
-    if mode == 1:
-        Apply(files)[:20]
-    elif mode == 2:
+    files = ListFilesRec('fav-rignak')[:]
+    if mode == '1':
+        Apply(files[:20])
+    elif mode == '2':
         inputs = PrepareImages(files)
         Train(inputs)
     
