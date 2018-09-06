@@ -238,7 +238,7 @@ def CountLine():
     """Count the number of line of each .txt"""
     s = 0
     for file in list_HTML:
-        current = len(open(file, 'r').readlines())
+        current = len(open(file, 'r', encoding='utf-8').readlines())
         s+= current
         print(current)
     print(s)
@@ -247,7 +247,7 @@ def CountLine():
 def CheckTags():
     tags = []
     for file in list_HTML:
-        for line in open(file, 'r'):
+        for line in open(file, 'r', encoding="utf-8"):
             for tag in line.split('">')[-1].split():
                 tags.append(tag)
     tags = set(tags)
@@ -267,10 +267,11 @@ def CountTags():
     for file in list_HTML[:-1]:
         for line in open(file, 'r'):
             for tag in line.split('">')[-1].split():
-                tags.append(tag)
+                if tag != '<br></br>':
+                    tags.append(tag)
             nb += 1
     print('Mean number of tags:', round(len(tags)/nb, 1))
-    print('Variety:', len(set(tags)))
+    print('Variety:', len(set(tags)), 'unique on', len(tags))
     return               
     
     
