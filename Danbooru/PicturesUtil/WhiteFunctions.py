@@ -8,13 +8,14 @@ from PIL import Image
 import numpy as np
 from datetime import datetime as dt
 from os import listdir
-from os.path import join
-import re
+from os.path import join, split
 import os
 from sys import stdout
 
-for folder in [join('results', 'google'), join('results', 'wikipedia')]:
-    if not os.path.exists(folder):   
+baseFolder = 'results'
+for folder in ['google', 'wikipedia', 'done']:
+    folder = join(baseFolder, folder)
+    if not os.path.exists(folder):
         os.makedirs(folder)
 
 def Progress(s):
@@ -203,10 +204,13 @@ def onFile(f, i, folder = ''):
 #    if image._width > 1200 or image._height > 1200:
 #        image.Thumbnail((1200,1200))
 #        image.ImToArray()
-    image.GetBlocs()
-    image.TrimBloc()
-    image.Reduce()
-    image.GetBorder()
+    if not f.startswith("norem_"):
+        image.GetBlocs()
+        image.TrimBloc()
+        image.Reduce()
+        image.GetBorder()
+        if image._border[0] > image._border[1]:
+            image.Sym_Y()
     image.ArrayToIm()
     if image._ratio < 0.3:
         image.Thumbnail((int(174*wikiRate), int(839*wikiRate)))
@@ -217,16 +221,11 @@ def onFile(f, i, folder = ''):
         image.ImToArray()
         goal = 2
     else:
-        goal = 2
-    if image._border[0] > image._border[1]:
-        image.Sym_Y()
-        image.ArrayToIm()
-    if goal:
-        #os.remove(image._name)
-        goal = ['wikipedia','google'][goal-1]
-        path = image._name.split('\\')
-        image._name = join('\\'.join(path[:-1]), goal,str(430-1+i)+'.jpg')
-        image.Save()
+        return
+    os.rename(image._name, join(folder, 'done', f))
+    goal = ['wikipedia','google'][goal-1]
+    image._name = join(folder, goal,str(449-1+i)+'.jpg')
+    image.Save()
 
 
 def Launch(files, folder = ''):
@@ -238,12 +237,11 @@ def Launch(files, folder = ''):
             continue
         onFile(f, i, folder)
 
-        Progress(str(i+1)+' on '+str(n)+' | '+((dt.now()-begin)/(i+1)*n + begin).strftime('%H:%M'))
+        Progress(f"{i+1} on {n} | {((dt.now()-begin)/(i+1)*n + begin).strftime('%H:%M')}")
     print("MEAN TIME:", (dt.now()-begin)/n)
 
 
 if __name__ == '__main__':
     wikiRate = 1
     gooRate = 1.1
-    a = 'results'
-    onFolder(folder=a)
+    onFolder(folder=baseFolder)
