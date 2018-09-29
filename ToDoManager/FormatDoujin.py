@@ -6,7 +6,7 @@ Created on Sat Sep 15 18:38:56 2018
 """
 import os
 import re
-iniRoot = 'D:\\Telechargements\\Others'
+iniRoot = 'D:\\Telechargements\\Anime\\Manga - Copie - Copie - Copie - Copie'
 
 def StripTitle(title):
     if '[' in title:
@@ -77,7 +77,8 @@ def RenameFolders(iniRoot):
 
 def IntegerNamefile(iniRoot):
     for root, folders, files in os.walk(iniRoot):
-        files = sorted(files, key = lambda l: int(l[0]))
+        if files == ['desktop.ini']:
+            continue
         for i, file in enumerate(files):
             ext = os.path.splitext(file)[1]
             oldname = os.path.join(root, file)
@@ -93,10 +94,18 @@ def IntegerNamefile(iniRoot):
 
 def RemoveDone(iniRoot):
     for root, folders, files in os.walk(iniRoot):
-        files = sorted(files, key = lambda l: int(l[0]))
+        maxLen = 0
         for file in files:
+            l = len(file)
+            if maxLen < l:
+                maxLen = l
+        for file in files:
+            newname = file
+            while len(newname) < maxLen:
+                newname = '0'+newname
             path = os.path.join(root, file)
-            os.rename(path, path.replace('__done.', '.'))
+            newpath = os.path.join(root, newname).replace('__done.', '.')
+            os.rename(path, newpath)
 
 RenameFolders(iniRoot)
 IntegerNamefile(iniRoot)

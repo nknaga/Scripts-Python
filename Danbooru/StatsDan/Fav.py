@@ -17,7 +17,7 @@ def Req(page, once, mode):
     if mode == 1:
         tag = 'user:'+username
     elif mode == 0:
-        tag = 'fav:'+username
+        tag = 'fav:'+username+" date:>05/07/2018"
     payload = {'limit': str(once),
                'tags': tag,
                'api_key': api_key,

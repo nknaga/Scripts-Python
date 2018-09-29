@@ -18,10 +18,11 @@ from keras import optimizers, regularizers
 from keras.models import Sequential
 from keras.layers import Flatten, Dense, Conv2D, Dropout, MaxPooling2D, Reshape, UpSampling2D
 from keras.callbacks import ModelCheckpoint, EarlyStopping, Callback
+from keras.preprocessing.image import ImageDataGenerator
 
-picSize = (243, 243, 3)
+picSize = (128, 128, 3)
 epochs = 30
-batchSize = 16
+batchSize = 32
 learningRate = 5*10**-3
 momentum = 0.9
 lrDecay = 10**-5  # learning rate decay (not weight decay)
@@ -62,7 +63,7 @@ class PlotLearning(Callback):
         plt.plot(self.x, self.losses, label="Training")
         plt.plot(self.x, self.val_losses, label="Validation")
         plt.xlabel('Epoch')
-        plt.ylabel('cross entropy')
+        plt.ylabel('binary_crossentropy')
         plt.legend()
 
 
@@ -70,12 +71,12 @@ class PlotLearning(Callback):
         plt.savefig('plot.png')
 
 def ImportModel(weight):
-    convBloc = [(64,1), (128,1), (256,1), (512,1)]
-    convSize = (5, 5)
+    convBloc = [(64,2), (128,2), (256,2), (256,3), (512,3)]
+    convSize = (3, 3)
     pooling = (math.ceil(convSize[0]/2), math.ceil(convSize[1]/2))
     endSize = int(picSize[0]/pooling[0]**len(convBloc))
     reshapeSize =  (endSize, endSize, convBloc[-1][0])
-    denseLayers = [2048, np.prod(reshapeSize)]
+    denseLayers = [128, np.prod(reshapeSize)]
     a = activation
     p = 'same'
     reg = regularizers.l2(weightDecay)
@@ -93,10 +94,10 @@ def ImportModel(weight):
 
     # Dense layers
     model.add(Flatten(name='flatten'))
-    for j, layer in enumerate(denseLayers):
-        model.add(Dense(layer, kernel_regularizer=reg, activation=a))
-        if j != len(denseLayers)-1:
-            model.add(Dropout(0.5))
+#    for j, layer in enumerate(denseLayers):
+#        model.add(Dense(layer, kernel_regularizer=reg, activation=a))
+#        if j != len(denseLayers)-1:
+#            model.add(Dropout(0.5))
     model.add(Reshape(reshapeSize))
 
     # Up convolutions
@@ -105,11 +106,11 @@ def ImportModel(weight):
             model.add(Conv2D(layer, convSize, activation=a, padding=p))
         model.add(UpSampling2D(pooling))
 
-    model.add(Conv2D(3, convSize, activation='sigmoid', padding='same'))
+    model.add(Conv2D(picSize[2], convSize, activation=a, padding=p))
 
     sgd = optimizers.SGD(lr=learningRate,momentum=momentum,decay=lrDecay,
                          nesterov=True)
-    model.compile(optimizer = sgd, loss='mean_squared_error')
+    model.compile(optimizer = sgd, loss='binary_crossentropy')
     if weight:
         print('load weights')
         model.load_weights(weightPath)
@@ -123,16 +124,24 @@ def ImportModel(weight):
     return model
 
 
+def ExportSummary(model):
+    old = sys.stdout
+    with open('currentModel.txt', 'w') as file:
+        sys.stdout = file
+        model.summary()
+        sys.stdout = old
+
+
 def Progress(s):
     sys.stdout.write('\r')
     sys.stdout.write(s+'           ')
     sys.stdout.flush()
 
 def PrepareImage(file):
-    img = image_utils.load_img(file, target_size=picSize[:2], grayscale=False,
+    img = image_utils.load_img(file, target_size=picSize[:2], grayscale=picSize[2]==1,
                                interpolation='bicubic')
     x = image_utils.img_to_array(img)
-    x = np.expand_dims(x, axis=0)/255
+    x = np.expand_dims(x, axis=0).astype('float32')/255
     return x
 
 def PrepareImages(files):
@@ -147,55 +156,78 @@ def PrepareImages(files):
         inputs.append(x[0])
     print()
     inputs = np.array(inputs)
+    print(inputs.shape)
     return inputs
 
 def ListFilesRec(folder):
     resFiles = []
-    for root, dirs, files in walk(join('.', 'imgs', folder)):
+    for root, dirs, files in walk(folder):
         for file in files:
-            if file.endswith('.jpg'):
+            if file.endswith('.png'):
                 resFiles.append(join(root, file))
-    resFiles.sort(key =lambda z:int(z.split('(')[1].split(')')[0]))
+    print(len(resFiles))
+    #resFiles.sort(key =lambda z:int(z.split('(')[1].split(')')[0]))
     return resFiles
 
 
-def Train(inputs):
+def Train(folder):
     model = ImportModel(False)
+    print(folder)
+    trainDatagen = ImageDataGenerator(rotation_range=20,
+                                       zoom_range=(0.8, 1.2),
+                                       horizontal_flip=True,
+                                       fill_mode='reflect')
+    TrainGen = trainDatagen.flow_from_directory(folder,
+                                                color_mode = 'rgb',
+                                                target_size=picSize[:2],
+                                                batch_size=batchSize,
+                                                class_mode='input',
+                                                interpolation='bicubic')
+
+    ExportSummary(model)
     calls = [ModelCheckpoint(weightPath, save_best_only=True),
              EarlyStopping(monitor='val_loss', patience=15),
              PlotLearning()]
 
-    model.fit(epochs=epochs, verbose=1, validation_split = 0.1,
-              x=inputs, y=inputs, batch_size = batchSize,
-              callbacks=calls)
+    model.fit_generator(TrainGen, epochs=epochs, verbose=1,
+                        callbacks=calls,
+                        steps_per_epoch=100,
+                        validation_data=TrainGen,
+                        validation_steps=5)
 
-def Apply(files):
+def Apply(folder):
     model = ImportModel(True)
-    begin = datetime.now()
-    l = len(files)
-    for i, file in enumerate(files):
-        x = PrepareImage(file)
-        pred = model.predict(x)
+    testDatagen = ImageDataGenerator(rotation_range=20,
+                                     zoom_range=(0.8, 1.2),
+                                     horizontal_flip=True,
+                                     fill_mode='reflect')
+    TestGen = testDatagen.flow_from_directory(folder,
+                                              color_mode = 'rgb',
+                                              target_size=picSize[:2],
+                                              batch_size=2,
+                                              class_mode='input',
+                                              interpolation='bicubic')
 
-        im = image_utils.array_to_img(pred[0])
-        im.save(join('results', split(file)[-1]))
+    x, y = next(TestGen)
+    z = model.predict(x)
+    for i in range (0,1):
+        image = x[i].astype(int)
+        plt.subplot(1,2,1)
+        plt.imshow(image)
 
-        im = image_utils.array_to_img(x[0])
-        im.save(join('results', split(file)[-1][:-4]+'_source'+'.jpg'))
-
-        eta = ((datetime.now()-begin)/(i+1)*l+begin).strftime('%H:%M')
-        Progress(str(i)+'/'+str(l)+' - '+eta)
-    print()
+        plt.subplot(1,2,2)
+        res = z[i].astype(int)
+        plt.imshow(res)
+        plt.show()
 
 if __name__ == '__main__':
+    folder = join('.', 'imgs', 'fav-rignak')
     if len(sys.argv) == 2:
         mode = sys.argv[1]
     else:
         mode = '1'
 
-    files = ListFilesRec('fav-rignak')[:]
     if mode == '1':
-        Apply(files[:20])
+        Apply(folder)
     elif mode == '2':
-        inputs = PrepareImages(files)
-        Train(inputs)
+        Train(folder)

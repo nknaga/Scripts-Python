@@ -6,6 +6,9 @@
 from datetime import datetime
 import bs4 as BeautifulSoup
 from threading import Thread
+import browsercookie
+cj = browsercookie.chrome()
+import requests
 import threading
 import time
 import json
@@ -81,17 +84,21 @@ def GetInfo(index, pages = False):
             else:
                 retry = 4
             soup = BeautifulSoup.BeautifulSoup(page, "lxml")
+            tags = soup.find("meta", {'name':"keywords"}).get('content').split(',')
 
             if pages:
                 pages = [img.get('src') for img in soup.find_all('img') if \
                         'master' in img.get('src') and not 'square' in img.get('src')]
-                pages_bis = GetPagesMode0(index)
-                if len(pages_bis) > 1:
-                    pages = pages_bis
-                if len(set(pages)) <7:
-                    return list(set(pages))
+                if 'R-18'in tags:
+                    page = requests.get(url, cookies=cj)
+                    soup = BeautifulSoup.BeautifulSoup(page.content, "lxml")
+                    pages = [soup.find_all('script')[-3].text.split('"regular"')[1].split('"')[1].replace("\/", "/")]
+                else:
+                    pages_bis = GetPagesMode0(index)
+                    if len(pages_bis) > 1:
+                        pages = pages_bis
+                return list(set(pages))
 
-            tags = soup.find("meta", {'name':"keywords"}).get('content').split(',')
             user = soup.find('div', {'class':'usericon'})
             user = user.find('a').get('href').split('=')[-1]
             tags.append(user[:-2])

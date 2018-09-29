@@ -8,6 +8,7 @@ Created on Sun Nov 26 14:05:09 2017
 import json
 from os import path
 from myanimelist import session
+import bs4 as BeautifulSoup
 
 def UserList(username, index):
     if path.isfile(path.join('save', username+'.json')):
@@ -21,30 +22,45 @@ def UserList(username, index):
             res[key] = dic
     return res
 
+
 def SaveUser(name):
-    sess = session.Session()
+#    sess = session.Session()
+#    userList = {}
+#    a = sess.anime_list(name).list
+#    for key, dic in a.items():
+#        entry = {}
+#        entry['score'] = dic['score']
+#        status = dic['status']
+#        if status == 'Watching':
+#            entry['status'] = 1
+#        elif status == 'Completed':
+#            entry['status'] = 2
+#        elif status == 'On-Hold':
+#            entry['status'] = 3
+#        elif status == 'Dropped':
+#            entry['status'] = 4
+#        elif status == 'Plan to Watch':
+#            entry['status'] = 5
+#        else:
+#            print('Error on status:', key.title)
+#        userList[key.id] = entry
+#    with open(path.join('save', name+'.json'), 'w') as file:
+#        json.dump(userList, file, sort_keys=True, indent=4)
+#    return userList
     userList = {}
-    a = sess.anime_list(name).list
-    for key, dic in a.items():
-        entry = {}
-        entry['score'] = dic['score']
-        status = dic['status']
-        if status == 'Watching':
-            entry['status'] = 1
-        elif status == 'Completed':
-            entry['status'] = 2
-        elif status == 'On-Hold':
-            entry['status'] = 3
-        elif status == 'Dropped':
-            entry['status'] = 4
-        elif status == 'Plan to Watch':
-            entry['status'] = 5
-        else:
-            print('Error on status:', key.title)
-        userList[key.id] = entry
+    status = {"Watching":1, "Completed":2, "On-Hold":3, "Dropped":4,
+              "Plan to Watch":5}
+    with open(path.join('save', name+'.xml'), 'r') as file:
+          soup = BeautifulSoup.BeautifulSoup(file, "lxml")
+    anime = soup.find_all('anime')
+    for entry in anime:
+        userList[entry.find("series_animedb_id").text] = {
+                "score":entry.find("my_score").text,
+                "status":status[entry.find("my_status").text]
+                }
     with open(path.join('save', name+'.json'), 'w') as file:
         json.dump(userList, file, sort_keys=True, indent=4)
-    return userList
+
 
 def LoadDic():
     with open(path.join('save', 'myanimelist.json'), 'r') as file:

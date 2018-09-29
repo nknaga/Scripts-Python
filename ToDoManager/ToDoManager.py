@@ -5,7 +5,7 @@ Created on Thu Jun 15 15:03:58 2017
 @author: Rignak
 """
 import os
-from os.path import join, exists, getsize
+from os.path import join, exists, getsize, split, splitext
 import subprocess
 import pytube
 
@@ -46,17 +46,17 @@ def FromYoutube(line, mode = 1):
         name, link, ext, begin, end = line[:5]
     link = link.replace('\\', '/')
     name = name.replace('/', '\\')
-    yt = pytube.YouTube(link)
-    MakeOutputPath(join(local,"input", name))
-    yt.set_filename(name)
     try:
-        yt.filter('mp4')[-1].download(join(local,"input"))
+        yt = pytube.YouTube(link)
+        MakeOutputPath(join(local,"input", name))
+        name = yt.streams.first().download(join(local,"input"), filename=name)
+        newname = splitext(name.replace('input', 'output'))[0]
     except Exception as e:
         print(e)
     if ext == 'mp3':
-        return ToMP3(f"{name}.mp3\t{begin}\t{end}\t{name}.mp4", mode=mode)
+        return ToMP3(f"{newname}.mp3\t{begin}\t{end}\t{name}", mode=mode)
     else:
-        return CutVideo(f'{name}\t{begin}\t{end}\t0\t{name}.mp4', mode=mode)
+        return CutVideo(f'{newname}\t{begin}\t{end}\t0\t{name}', mode=mode)
 
 
 def CutVideo(line, mode = 1):
@@ -150,8 +150,10 @@ def ToMP3(line, mode = 1):
         end =  " -to " + end
     else:
         end = ""
-    line = f'ffmpeg -i "{old}" -codec:a libmp3lame -qscale:a 3 -ss {begin} {end} "{+name+}.mp3"'
-    if exists(name+'.mp3'):
+    if not name.endswith('.mp3'):
+        name += '.mp3'
+    line = f'ffmpeg -i "{old}" -codec:a libmp3lame -qscale:a 3 -ss {begin} {end} "{name}"'
+    if exists(name):
         error = True
         print('ERROR : file already exist')
     elif not exists(old):
@@ -232,9 +234,9 @@ def Loop(lines, mode = 1):
                     print('OK:', advance, line.split('\t')[0])
 
 def MakeOutputPath(name):
-    localLength = len(local.split('\\'))
-    split = name.split('\\')[localLength:]
-    todo = ['\\'.join(split[:i]) for i in range(1,len(split))]
+    localLength = len(split(local))
+    splited = split(name)[localLength:]
+    todo = [join(split[:i]) for i in range(1,len(splited))]
     for ele in todo:
         if not os.path.exists(join(local, ele)) and '.' not in ele:
             os.makedirs(join(local, ele))

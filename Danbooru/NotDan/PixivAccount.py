@@ -44,11 +44,19 @@ def IndividualRequest():
     pixiv_mail, pixiv_code = GetId()
     api = AppPixivAPI()
     print('pixiv_mail:', pixiv_mail, 'pixiv code:',pixiv_code,'\n')
-    url = "https://www.pixiv.net/member_illust.php?mode=medium&illust_id=59381952"
-    
-    req = urllib.request.Request(url)
-    req.add_header('Referer', 'https://www.pixiv.net/')
-    print(urllib.request.urlopen(req).read())
+    url = "https://www.pixiv.net/member_illust.php?mode=medium&illust_id=63917226"
+    import browsercookie
+    import requests
+    cj = browsercookie.chrome()
+    page = requests.get(url, cookies=cj)
+#    url = "https://www.pixiv.net/member_illust.php?mode=medium&illust_id=65732750"
+#
+#    req = urllib.request.Request(url)
+#    req.add_header('Referer', 'https://www.pixiv.net/')
+#    page = urllib.request.urlopen(req).read()
+    import bs4 as BeautifulSoup
+    soup = BeautifulSoup.BeautifulSoup(page.content, "lxml")
+    print(soup.find_all('script')[-3].text.split('"regular"')[1].split('"')[1])
 
 def TestRateLimit():
     pixiv_mail, pixiv_code = GetId()

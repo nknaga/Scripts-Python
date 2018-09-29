@@ -88,7 +88,7 @@ class IMG():
     def Save(self, ext = 'jpeg'):
         if ext == 'jpg':
             self._im.save(self._name[:-4] + ".jpg", format="JPEG", quality=100)
-        if ext == 'jpeg':
+        elif ext == 'jpeg':
             self._im.save(self._name[:-5] + ".jpeg", format="JPEG", quality=100)
         else:
             self._im.save(self._name[:-4] + ".png", format="PNG")
@@ -121,7 +121,6 @@ def main(root='.'):
                 radicals[radical].append(join(root, file))
         elif file.endswith('.png'):
             pngs.append(file)
-
     # No need to sort the lists, as listdir already do that
 
     for res, imgs in radicals.items():

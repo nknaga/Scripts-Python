@@ -29,7 +29,7 @@ def GetArttags():
     for artist in artists:
         artists[artist] = sum(artists[artist])/len(artists[artist])
     return artists
-    
+
 def FillNbTags(tags):
     api_key, username = Lib.DanbooruCodes()
     doublets = {}
@@ -37,12 +37,12 @@ def FillNbTags(tags):
     begin = datetime.now()
     for i, tag in enumerate(tags):
         doublets[tag] = Lib.NbTags(tag, username, api_key)
-        
+
         ending = (datetime.now() - begin) / (i + 1) * l + begin
         Lib.Progress(str(i+1) + '/' + str(l) + ' | ' + ending.strftime('%H:%M'))
     with open(join('res', 'arttags.json'), 'w') as file:
         json.dump(doublets, file, sort_keys=True, indent=4)
-        
+
 def ReduceArttags(doublets, artists):
     for artist, nb in doublets.items():
         if nb > 25:#↓10:
@@ -53,7 +53,7 @@ def ReduceArttags(doublets, artists):
             print('https://danbooru.donmai.us/posts?tags='+artist)
 if __name__ == '__main__':
     artists = GetArttags()
-    #FillNbTags(artists)
-#    with open(join('res', 'arttags.json'), 'r') as file:
-#        doublets = json.load(file)
-#    ReduceArttags(doublets, artists)
+#    FillNbTags(artists)
+    with open(join('res', 'arttags.json'), 'r') as file:
+        doublets = json.load(file)
+    ReduceArttags(doublets, artists)

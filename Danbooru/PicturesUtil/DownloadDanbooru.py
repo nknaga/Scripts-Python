@@ -17,7 +17,7 @@ from threading import Thread
 import threading
 
 hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
-    
+
 if exists("../Danbooru_Codes.txt"):
     with open("../Danbooru_Codes.txt") as f:
         api_key = f.readline().split()[1]
@@ -28,7 +28,7 @@ else:
     payload = {}
 if not exists('results'):
     os.makedirs('results')
-                   
+
 def Progress(s):
     stdout.write('\r')
     stdout.write(s+'           ')
@@ -59,7 +59,7 @@ def ListPicturesWithTag(tags, limit):
         soup = BeautifulSoup.BeautifulSoup(bytespage, "lxml")
         for j, sample in enumerate(soup.find_all('article')):
             entry = sample.get("data-large-file-url")
-            entry = sample.get("data-preview-file-url")
+            #entry = sample.get("data-preview-file-url")
             list_pictures_with.append(entry)
     return list_pictures_with
 
