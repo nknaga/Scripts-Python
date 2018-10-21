@@ -8,7 +8,6 @@ Created on Thu Jul 19 21:30:55 2018
 import subprocess
 import time
 
-for i in range(100):
+while True:
     time.sleep(60)
     subprocess.call(["taskkill", "/f", "/im", "dllhost.exe"])
-    print(i)
