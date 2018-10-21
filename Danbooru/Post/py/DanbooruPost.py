@@ -5,16 +5,13 @@ Created : 26/08/2016
 Python version : 3.5
 @author: Rignak
 """
-from os.path import join, exists
+from os.path import join
 from os import remove, rename
 
 root = join('..', 'files')
-list_T = ["T1.txt", "T2.txt", "T3.txt", "T4.txt", "TP.txt"]
-list_T = [join(root, 'tags', e) for e in list_T]
-list_L = ["L1.txt", "L2.txt", "L3.txt", "L4.txt", "LP.txt"]
-list_L = [join(root, 'links', e) for e in list_L]
-list_HTML = ["F1.html", "F2.html", "F3.html", "F4.html", "FP.html", 'stock.html']
-list_HTML = [join(root,'html', e) for e in list_HTML]
+list_T =    [join(root, 'tags',  f"T{i}.txt") for i in range(1, 5)]
+list_L =    [join(root, 'links', f"L{i}.txt") for i in range(1, 5)]
+list_HTML = [join(root, 'html',  f"F{i}.html") for i in range(1, 5)]
 
 # Create a list of error to correct
 lst_error = []
@@ -31,8 +28,6 @@ dic_banned = {}
 banned_f = open(join(root, "banned_artist.txt"), "r")
 for line in banned_f:
     dic_banned[line[:-1]] = True
-global number_replacements
-number_replacements = 0
 
 
 def CorrectorSample(url_sample):
@@ -45,7 +40,7 @@ def CorrectorSample(url_sample):
     if "g.hitomi" in url_sample:
         return url_sample.replace("g.hitomi", "a.hitomi")
     if "sample" in url_sample:
-        return url_sample.replace("sample", "jpeg")
+        return url_sample.replace("sample", "image")
     if "i.hitomi" in url_sample:
         return url_sample.replace("i.hitomi", "a.hitomi")
     if "twimg" in url_sample:
@@ -67,7 +62,7 @@ def ReplaceAll(text, lst_error):
 
     Output:
     text - A corrected string"""
-    global number_replacements
+    number_replacements = 0
     text = ' ' + text + ' '
     for k in range(10):
         text3 = text
@@ -86,7 +81,7 @@ def ReplaceAll(text, lst_error):
         if tag not in l:
             l.append(tag)
     text = ' '.join(l)+ ' '
-    return text
+    return text, number_replacements
 
 
 def DelLine(list_n):
@@ -110,6 +105,7 @@ def DelLine(list_n):
         rename(list_HTML[i] + '+', list_HTML[i])
     return
 
+
 def PrintUrl(list_n):
     while len(list_n) < len(list_HTML):
         list_n.append(0)
@@ -120,7 +116,6 @@ def PrintUrl(list_n):
         url = line.split('"')[1]
         print('https://danbooru.donmai.us/uploads/new?url='+url)
     return
-
 
 
 def TrimHTML():
@@ -154,6 +149,7 @@ def TrimHTML():
 def GenerateTXT():
     """Creation of two .txt (url and tags) for each .html"""
     print("Generation of .txt")
+    number_replacements = 0
     for file in list_T:
         try:
             remove(file[:-4] + '_old.txt')
@@ -169,11 +165,12 @@ def GenerateTXT():
                 lineL = line.split("\"")[-2]+ "\n"
                 lineT = line.split("<")[1].split('>')[1][:-1]
                 fileL.write(CorrectorSample(lineL))
-                fileT.write(ReplaceAll(lineT, lst_error))
+                l, nr = ReplaceAll(lineT, lst_error)
+                fileT.write(l)
+                number_replacements += nr
                 fileT.write('\n\n')
             except Exception as e:
                 print(e)
-    global number_replacements
     print('Number of remplacements :',number_replacements)
     return
 
@@ -182,6 +179,7 @@ def GenerateHTML():
     """Creation of .html for each duo of .txt"""
     print("Generation of .html")
     banned = 0
+    number_replacements = 0
     for i in range(len(list_T)):
         file = open(list_HTML[i], 'w')
         fileT = open(list_T[i], 'r')
@@ -200,40 +198,19 @@ def GenerateHTML():
                 banned += 1
                 print(lineL, 'Banned because of :', isbanned, '\n')
             else:
+                ele, nr = ReplaceAll(lineT, lst_error)
                 l = '<A HREF="' + CorrectorSample(lineL[:-1]) + '"> ' \
-                + ReplaceAll(lineT, lst_error) + '<br></br> \n'
+                    + ele + '<br></br> \n'
+                number_replacements += nr
                 l = l.replace('<br></br><br></br>','<br></br>')
                 l = l.replace('<br></br> <br></br>','<br></br>')
                 file.write(l)
 
-    global number_replacements
     print('Number of deleted :', banned)
     print('Number of remplacements :',number_replacements)
-    
     return
 
-def CheckNovelIllust():
-    from noise_lib import NoiseFunctions
-    import urllib
-    from io import BytesIO
-    for file in list_HTML:
-        with open(file, 'r', encoding="utf-8") as file:
-            lines = file.readlines()
-        for line in lines:
-            if 'novel_illustration' in line:
-                url = line.split('"')[1]
-                try:
-                    req = urllib.request.Request(url)
-                    data = BytesIO(urllib.request.urlopen(req).read())
-                    noise = NoiseFunctions.DetectJPG(data)
-                    if noise[1][0] < noise[0][0] and noise[1][0] < noise[2][0]:
-                        print(url)
-                    else:
-                        print('---', url)
-                except Exception as e:
-                    print(e, url)
-            
-            
+
 def CountLine():
     """Count the number of line of each .txt"""
     s = 0
@@ -244,10 +221,11 @@ def CountLine():
     print(s)
     return
 
+
 def CheckTags():
     tags = []
     for file in list_HTML:
-        for line in open(file, 'r', encoding="utf-8"):
+        for line in open(file, 'r', encoding="ISO-8859-1"):
             for tag in line.split('">')[-1].split():
                 tags.append(tag)
     tags = set(tags)
@@ -261,6 +239,7 @@ def CheckTags():
     for tag in [tag for tag in tags if tag not in true_tags and not any([tag.startswith(i) for i in ok]) and not tag.split(':')[0] in prefix]:
         print(tag)
 
+
 def CountTags():
     tags = []
     nb = 0
@@ -272,29 +251,8 @@ def CountTags():
             nb += 1
     print('Mean number of tags:', round(len(tags)/nb, 1))
     print('Variety:', len(set(tags)), 'unique on', len(tags))
-    return               
-    
-    
-def Stock(selection, onTags = ''):
-    lines = []
-    if exists(join(root, 'html', 'stock.html')):
-        with open(join(root, 'html', 'stock.html'), 'r', encoding="utf-8") as file:
-            lines = file.readlines()
-    for file in list_HTML[:-1]:
-        with open(file, 'r') as file:
-            for line in file.readlines():
-                if onTags and onTags in line:
-                    lines.append(line)
-                else:
-                    for url in selection:
-                        if url in line:
-                            lines.append(line)
-                            break
-    lines.sort()
-    with open(join(root, 'html', 'stock.html'), 'w', encoding="utf-8") as file:
-        for line in lines:
-            file.write(line)
-    
+    return
+
 
 if __name__ == '__main__':
     print("Case 1 : Generate HTML")
@@ -304,10 +262,7 @@ if __name__ == '__main__':
     print("Case 5 : Count the line in each link file")
     print("Case 6 : Print unknown tags")
     print("Case 7 : Print urls to post")
-    print("Case 8 : Print novel illustration from BookWalker")
-    print("Case 9 : Stock some pictures for later")
-    print("Case 10 : Stock novel illustrations")
-    print("Case 11 : Count the mean number of tags")
+    print("Case 8 : Count the mean number of tags")
     case = int(input('Choisir un mode : '))
     if case == 1:
         GenerateHTML()
@@ -328,10 +283,4 @@ if __name__ == '__main__':
         list_n = input("How many lines to show? ")
         PrintUrl(list_n.split())
     elif case == 8:
-        CheckNovelIllust()
-    elif case == 9:
-        Stock(input('which urls to stock ? ').split())
-    elif case == 10:
-        Stock('', onTags='novel_illustration')
-    elif case == 11:
         CountTags()
