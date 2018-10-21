@@ -170,6 +170,7 @@ class IMG():
 
     def Save(self, ext = 'jpg'):
         if ext == 'jpg':
+            self._im = self._im.convert('RGB')
             self._im.save(self._name[:-4] + ".jpg", format="JPEG", quality=100)
         else:
             self._im.save(self._name[:-4] + ".png", format="PNG")
