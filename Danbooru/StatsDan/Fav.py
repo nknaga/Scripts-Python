@@ -11,11 +11,11 @@ from stats_functions import Lib
 from os.path import join
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:43.0) Gecko/20100101 Firefox/43.0'}
-api_url = 'https://hijiribe.donmai.us/posts.json'
+api_url = 'https://shima.donmai.us/posts.json'
 
 def Req(page, once, mode):
     if mode == 1:
-        tag = 'user:'+username
+        tag = 'source:*pximg* user:'+username
     elif mode == 0:
         tag = 'fav:'+username+" date:>05/07/2018"
     payload = {'limit': str(once),
@@ -28,7 +28,7 @@ def Req(page, once, mode):
 def FillJson(mode):
     full = []
     once = 200
-    total = [4419, 24474][mode]
+    total = [4600, 22000][mode]
     error = 0
     begin = datetime.now()
     for i in range(int(total/once)):
