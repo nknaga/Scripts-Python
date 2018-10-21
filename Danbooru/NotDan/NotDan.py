@@ -21,8 +21,7 @@ import urllib
 from lib.progress import Progress
 from lib.Proxy import renew_tor
 import io
-
-
+import re
 
 with open("../Danbooru_Codes.txt", 'r') as f:
     api_key = f.readline().split()[1]
@@ -56,17 +55,6 @@ class Sample:
                 print("\nSample init - error on", self._url, e)
                 ok+=1
 
-    def InputTags(self, filename):
-        """Display a sample, and ask an input to add tags"""
-        try:
-            os.system(f'"{filename}"')
-        except BaseException:
-            return 'pass'
-        while self._adds == '':
-            self._adds = input('tags ? ')
-        #subprocess.call(["taskkill", "/f", "/im", "dllhost.exe"])
-        return self._adds
-
 
 def GetInfo(index, pages = False):
     global res
@@ -92,12 +80,14 @@ def GetInfo(index, pages = False):
                 if 'R-18'in tags:
                     page = requests.get(url, cookies=cj)
                     soup = BeautifulSoup.BeautifulSoup(page.content, "lxml")
-                    pages = [soup.find_all('script')[-3].text.split('"regular"')[1].split('"')[1].replace("\/", "/")]
+                    pages = [soup.find_all('script')[-3].\
+                             text.split('"regular"')[1].split('"')[1].replace("\/", "/")]
                 else:
                     pages_bis = GetPagesMode0(index)
                     if len(pages_bis) > 1:
                         pages = pages_bis
-                return list(set(pages))
+                pages = list(set(pages))
+                return pages
 
             user = soup.find('div', {'class':'usericon'})
             user = user.find('a').get('href').split('=')[-1]
@@ -183,25 +173,24 @@ def CheckOnDan(pixivId):
 
 def GetHierarch():
     with io.open("hierarch.txt", 'r', encoding='utf8') as f:
-        lines = f.readlines()
+        lines = f.readlines()[1:]
 
-    cor = {'artist':'artist'}
-    copy = 'artist'
+    cor = {}
     hierarch = {}
     for line in lines:
-        tagsHierarch = '\t'.join(line.split('\t')[:-1])
+        line= line[:-1]
+        tagsHierarch = '\t'.join(line.split('\t'))
         tagsHierarch = [word for word in tagsHierarch.split() if word]
         if tagsHierarch:
-            if not (line.startswith('\t') or line.startswith(' \t')):
-                copy = tagsHierarch[0]
+            if not line.startswith('\t'):
+                copy = tagsHierarch[-1].lower()
             for tag in tagsHierarch:
                 hierarch[tag] = copy
 
         tagsCor = ' '.join(line.split('\t'))
         tagsCor = [word for word in tagsCor.split() if word]
         for tag in tagsCor:
-            cor[tag] = line.split()[-1]
-
+            cor[tag] = copy
     return hierarch, cor
 
 
@@ -230,41 +219,38 @@ def JsonReading():
     tag_rem = input("Tags to blacklist ? ")
     hierarch, cor = GetHierarch()
     hierarchIm = {k:[] for k in cor.values()}
-    hierarchIm['none'] = []
     for tag in tag_rem.split():
         blacklist.append(tag)
     print('----------------------------\n---- BEGIN JSON READING ----')
     for files, tags_user in zip(lotFiles, lotTag):
         score = [int(scm), int(scM), tags_user]
         scm, scM, tags = score
+        tags = set(tags.split())
         for j, file in enumerate(files):
             Progress("read : " + str(j) + '/' + str(len(files)))
             with open('pixiv/' + file + '.json', 'r') as file:
                 temp = json.load(file)
             for i, v in temp.items():
-                if (v['s'] > scm and v['s'] < scM) \
-                and (not tag_f or any(tag in v['t'] for tag in tag_f))\
-                and (not any(tag in v['t'] for tag in blacklist))\
-                and (not tags or any(tag in v['t'] for tag in tags.split())):
-                    if not tags:
-                        hierarchIm['none'].append(int(i))
-
-                    for tag in set(tags.split()).intersection(set(v['t'])):
+                i, s, t = int(i), v['s'], v['t']
+                if (s > scm and s < scM) \
+                and (not tag_f or any(tag in t for tag in tag_f))\
+                and (not any(tag in t for tag in blacklist))\
+                and (not tags or any(tag in t for tag in tags)):
+                    for tag in tags.intersection(set(t)):
                         try:
-                            a = cor[hierarch[tag]]
-                            if int(i) not in hierarchIm[a]:
-                                hierarchIm[a].append(int(i))
+                            a = hierarch[tag]
+                            hierarchIm[a].append(i)
                         except Exception as e:
                             print(e,tag)
-
     data = []
     print()
     for k,l in sorted(hierarchIm.items()):
         if l:
             print(k, ':', len(l))
             for i in l:
-                if i not in data:
-                    data.append(i)
+                data.append(i)
+    seen = {}
+    data = [seen.setdefault(x, x) for x in data if x not in seen]
     print('----------------------------')
     print('total:', len(data))
     if input('Continue to extract urls ? (y/n) : ') == 'y':
@@ -337,7 +323,7 @@ def IsManga(imgs):
     import numpy as np
     from keras.preprocessing import image as image_utils
     from keras.models import load_model
-    model = load_model('IsComic.h5')
+    model = load_model('flatCat.h5')
     from keras import backend as K
     K.image_dim_ordering()
 
@@ -355,11 +341,11 @@ def IsManga(imgs):
         x = image_utils.img_to_array(newIm)
         x = np.expand_dims(x, axis=0)
 
-        preds = model.predict(x)
-        if preds[0][0]<preds[0][1]:
+        preds = model.predict(x)[0]
+        if np.argmax(preds)==1:
             finalImgs.append(img)
-#        else:
-#            tempImg.save(join('manga', str(i)+'.jpg'), 'JPEG')
+        else:
+            tempImg.save(join('discarded', str(i)+'.jpg'), 'JPEG')
 
 
         ending = (datetime.now() - begin) / (i+1) * l + begin
@@ -375,29 +361,97 @@ def Url2Data(url):
 def ShowImgs(imgs):
     files = []
     imgs = [img for img in imgs if img._data]
+    save = {}
     for j,  img in enumerate(imgs):
+        filename = join('res', f"{j}.jpg")
         tempImg = Image.open(img._data)
-        tempImg.save(join('res', str(j)+'.jpg'), 'JPEG')
-        files.append(join('res', str(j)+'.jpg'))
+        tempImg.save(filename, 'JPEG')
+        files.append(filename)
+        save[filename] = img._url
+    with open('save.json', 'w') as file:
+        json.dump(save, file, sort_keys=True, indent=4)
     input('Press a key to begin')
     begin = datetime.now()
     print('-----------------------\n--- BEGIN SHOW IMGS ---')
     print('Begin at', begin.strftime('%H:%M'), len(imgs))
-    i, l, t = 0, len(imgs),0
-    file = open('3-final.html', 'w')
-    for i, img in enumerate(imgs):
-        img.InputTags(files[i])
-        if img._adds == 'y':
-            t+=1
-            file.write('<A HREF="' + img._url + '"> ' + img._url + '<br/>')
-        elif img._adds == 'exit':
-            break
-        ending = ((datetime.now() - begin) / (i+1) * l + begin).strftime('%H:%M')
-        Progress(f"{i}/{str(l)} | {ending} | {img._url.split('/')[-1]} | {t}")
-    print()
+    ShowFromLocal()
     print('-----------------------')
-    #FinalJPGorPNG()
 
+def IQDBFromLocal():
+    with open('save.json', 'r') as file:
+        save = json.load(file)
+    imgs = os.listdir('res')
+    convert = lambda text: int(text) if text.isdigit() else text
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+    imgs =  sorted(imgs, key = alphanum_key)
+
+    urls = [save[join('res', file)] for file in imgs]
+    Routeur456(mode=6, linked=urls)
+
+    with open('1-NotDanbooru_Result.html', 'r') as file:
+        urls = [url for url in  file.readline().split('"') if url.startswith('http')]
+    print(len(urls), 'imgs found')
+    imgs = Routeur123(mode=2, data=urls)
+
+
+def ShowFromLocal():
+    with open('save.json', 'r') as file:
+        save = json.load(file)
+    imgs = os.listdir('res')
+    convert = lambda text: int(text) if text.isdigit() else text
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+    imgs =  sorted(imgs, key = alphanum_key)
+
+    ids = []
+    sameIds = {}
+    for filename in imgs:
+        filename = join('res', filename)
+        url = save[filename]
+        if 'pximg' in  url:
+            id_, page = url.split('/')[-1].split('_')[:2]
+            try:
+                page = int(page[1:])
+            except:
+                page = 0
+            if id_ in ids:
+                sameIds[id_].append((page, filename))
+            else:
+                sameIds[id_] = [(page, filename)]
+                ids.append(id_)
+        else:
+            sameIds[url] = [('', filename)]
+            ids.append(url)
+    for key, value in sameIds.items():
+        sameIds[key] = [e2 for e1, e2 in sorted(value)]
+
+    i, l, t = 0, len(imgs),0
+    begin = datetime.now()
+    exit_ = False
+    with open('3-final.html', 'w') as file:
+        for id_ in ids:
+            for filename in sameIds[id_]:
+                url = save[filename]
+                add = ''
+                try:
+                    os.system(f'"{filename}"')
+                except BaseException as e:
+                    add = 'pass'
+                    print(e)
+                while add == '':
+                    add = input('tags ? ')
+                splitedName = os.path.splitext(filename)
+                os.rename(filename, splitedName[0]+'_done'+splitedName[1])
+                if add == 'y':
+                    t+=1
+                    file.write(f'<A HREF="{url}">{url}<br/>')
+                elif add == 'exit':
+                    exit_ = True
+                    break
+                ending = ((datetime.now() - begin) / (i+1) * l + begin).strftime('%H:%M')
+                Progress(f"{i}/{str(l)} | {ending} | {url.split('/')[-1]} | {t}")
+                i += 1
+            if exit_:
+                break
 
 def IndividualIQDB(url, mode):
     global file
@@ -409,7 +463,7 @@ def IndividualIQDB(url, mode):
     try:
         if not IQDBreq(link, to_append=url):
             find += 1
-            file.write('<A HREF="' + url + '"> ' + url + '<br/>')
+            file.write(f'<A HREF="{url}">{url}<br/>')
     except Exception as e:
         print(e)
 
@@ -606,9 +660,9 @@ def Routeur456(mode, linked=[]):
         l = len(links)
         while i < int(l / nb) + 1:
             l = len(links)
-            time.sleep(8)
+            time.sleep(1.5)
             renew_tor()
-            time.sleep(8)
+            time.sleep(1.5)
             for j in range(nb):
                 if k < l:
                     ts.append(Thread(target=IndividualIQDB,
@@ -639,6 +693,8 @@ if __name__ == '__main__':
     print('mode 8 : Show images from yandere')
     print('mode 9 : png or jpg on 3-final')
     print('mode 10 : check from saved tweets')
+    print('mode 11 : show local images')
+    print('mode 12 : IQDB from local')
     mode = int(input('Which mode ? '))
     if mode == 0:
 #        n = int(input('Proxy number ? '))
@@ -667,3 +723,8 @@ if __name__ == '__main__':
         FinalJPGorPNG()
     elif mode == 10:
         CheckTweet()
+    elif mode == 11:
+        ShowFromLocal()
+        FinalJPGorPNG()
+    elif mode == 12:
+        IQDBFromLocal()
