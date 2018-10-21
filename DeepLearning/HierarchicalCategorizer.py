@@ -35,11 +35,11 @@ modes =  ['train'] # train, test, testH, trainH, move, export, plotConfuse, make
 modelTypes =  [1]  # 1 flat, 2 folder based*
 modelIndexs = [0]
 
-currentEpoch = 20  # Not 0 we want to resume a training
+currentEpoch = 0  # Not 0 we want to resume a training
 
 #                     Cluster parameters
 plot = True
-clustering = 'train' # automatic, import or False
+clustering = False # automatic, import or False
 
 miniClusterSize = 3  # If not 0, communityGamma is an iterable, float else
 communityGamma = [x/10 for x in range(20, 0, -1)]
@@ -58,16 +58,16 @@ grayscale = picSize[-1]==1
 
 #                    Network parameters
 
-denseSize = (512, 512)  # Size of the last three hidden layers
+denseSize = (512, 512)  # Size of the last hidden layers
 
 #                    Training parameters
 
 # Data augmentation
-minAugmentation = 20000
+minAugmentation = 25000
 params = {'rotation_range':30, 'width_shift_range':0.2,
           'height_shift_range':0.2, 'horizontal_flip':True,
-          'zoom_range':(1.0, 1.75)}
-                      
+          'zoom_range':(0.75, 1.25), 'fill_mode':'wrap'}
+
 activation = 'selu'
 epochs = 300  # maximal number of epochs
 batchSize = 32  # number of picture put in the network with each batch
@@ -94,7 +94,7 @@ for name in names:
         makedirs(join('models'))
     if not exists(join('models', name)):
         makedirs(join('models', name))
-        
+
 
 class PlotLearning(Callback):
     """Callback generating a fitness plot in a file after each epoch"""
@@ -136,7 +136,7 @@ class PlotLearning(Callback):
 class Model():
     def __init__(self, labels, name, files, folder, mode, index):
         """Initialization of the model
-        
+
         Input:
         labels -- a list of str
         name -- a string
@@ -154,13 +154,13 @@ class Model():
         self.name = name.replace('(white)', '')
         self.folder = folder.replace('(white)', '')
         self.index = index
-        
+
         for i, files in enumerate(self.files):
             self.files[i] = [[file[-10:-4], file] for file in self.files[i]]
             self.files[i] = sorted(self.files[i])
             self.files[i] = [file[1] for file in self.files[i]]
                 #self.files[i] = [file[::-1] for file in self.files[i]]
-                
+
         self.flatFiles = FlattenList(self.files)
         print()
         print(self.name, ':', ', '.join(self.labels))
@@ -179,8 +179,8 @@ class Model():
 
     def PrepareData(self):
         """Prepare the input and output of the model
-        
-        Output: 
+
+        Output:
         output -- 2d array of int (1 or 2)
             output[i] -- an array with 1 if label[i] correspond to the file, 0 else
         input -- an array containing the images"""
@@ -195,7 +195,7 @@ class Model():
             self.files = [files[:total//len(self.files)] for files in self.files]
         elif trainNumPic[1] == 'absolute':
             total = len(self.flatFiles)
-            
+
         self.flatFiles = FlattenList(self.files)
         output = [[int(file in files) for file in self.flatFiles] for files in self.files]
         input_ = []
@@ -214,10 +214,10 @@ class Model():
         self.output = np.array([output[i] for i in c])
         self.input = np.array([input_[i] for i in c])
 
-        
+
     def Train(self, resume=0):
         """Launch the training of the model
-        
+
         Input:
         resume -- an int
             change the value to continue a previously stopped training
@@ -235,24 +235,24 @@ class Model():
                 model.load_weights(join("models", self.folder, self.name[:-len(str(self.index))]+'0.h5'), by_name=True)
         calls = [ModelCheckpoint(join("models", self.folder, self.name+".h5"), save_best_only=True),
                  EarlyStopping(monitor='val_loss', patience=earlyStopPatience),
-                 ReduceLROnPlateau(monitor='val_loss', factor=ReduceLRFactor, 
+                 ReduceLROnPlateau(monitor='val_loss', factor=ReduceLRFactor,
                                    patience=ReduceLRPatience, cooldown=ReduceLRCooldown),
                  PlotLearning()]
-            
+
         if self.input.shape[0] < minAugmentation:
             lenValidation = int(self.input.shape[0]*(1-validationSplit))
             trainingInput = self.input[:lenValidation]
             trainingOutput = self.output[:lenValidation]
             validationInput = self.input[lenValidation:]
             validationOutput = self.output[lenValidation:]
-            
+
             trainingGenerator = ImageDataGenerator(params).flow(trainingInput, y=trainingOutput,
                                 batch_size = batchSize)
             validationGenerator=ImageDataGenerator().flow(validationInput, y=validationOutput)
-                                
+
             model.fit_generator(trainingGenerator,
-                                callbacks=calls, initial_epoch = resume, epochs=epochs, 
-                                verbose=1, 
+                                callbacks=calls, initial_epoch = resume, epochs=epochs,
+                                verbose=1,
                                 validation_data=validationGenerator)
         else:
             model.fit(epochs=epochs, verbose=1, validation_split = validationSplit,x=self.input, y=self.output,
@@ -266,7 +266,7 @@ class Model():
             if not exists(join('result', label)):
                 makedirs(join('result',label))
         self.LoadModel()
-        
+
         files = []
         for root, folders, cfiles in os.walk('todo'):
             for file in cfiles:
@@ -281,23 +281,23 @@ class Model():
                 copyfile(file, join('result', labelMax, str(k)+'.jpg'))
             ending = (datetime.now() - begin) / (k+1)  * limit + begin
             Progress(str((k+1)) +'\\' +str(limit) + " | " +  ending.strftime('%H:%M'))
-            
+
     def MoveMode2(self, models):
         """Predict the label of files and move them in the corresponding folder
         Works for model 2
-        
+
         Input:
         self -- the model with mode 1
         models -- a list of models with mode 2
         """
-        
+
         hierarch = HierarchIni(models)
         for model in models:
             model.LoadModel()
         for label in self.labels:
             if not exists(join('result', label)):
                 makedirs(join('result',label))
-        
+
         files = listdir('todo')
         limit = len(files)
         begin = datetime.now()
@@ -306,7 +306,7 @@ class Model():
             copyfile(join('todo', file), join('result', labelMax, file))
             ending = (datetime.now() - begin) / (k+1)  * limit + begin
             Progress(str((k+1)) +'\\' +str(limit) + " | " +  ending.strftime('%H:%M'))
-        
+
     def TestModel(self):
         """Launch the model for tests and compute plots and stats"""
         k = 1
@@ -324,8 +324,8 @@ class Model():
             elif testNumPic[1] == 'all':
                 nbPerLabel = testNumPic[0]//len(self.files)
                 nbTotal = testNumPic[0]
-                
-                
+
+
             decided = 0
             if len(files) != 0:
                 res[label] = 0
@@ -363,10 +363,10 @@ class Model():
         print('undecided:', undecided)
         self.PlotConfuse(confuse)
 
-    
+
     def PlotConfuse(self, confuse, show = True, dump = True):
         """Plot the confusion matrix and cluster the labels
-        
+
         Input:
         confuse -- a 2d-matrix of float
             confuse[i][j] -- %age of label[j] being decided as label[i]"""
@@ -374,7 +374,7 @@ class Model():
             name = join('confuse', str(self.mode)+self.name)
             if self.white == True:
                 name+= '(white)'
-                
+
             pickle.dump(confuse, open(name+".p", "wb" ))
             pickle.dump(self.labels, open(name+"_header.p", "wb" ))
         res = np.mean([confuse[i][i] for i in range(len(confuse))])
@@ -383,20 +383,20 @@ class Model():
         # Plot the matrix
         fig, ax = plt.subplots(1,1)
         p = False
-        
+
         if clustering=='automatic':
         # Sort the confusion matrix to make clusters
             # 1/ Get the index
-        
+
             if miniClusterSize:
                 for gamma in communityGamma:
                     ci = SortConfusionMatrix(confuse, gamma=gamma)[0]
                     axes = []
-                    
+
                     c = [(ci[i], i) for i in range(len(ci))]
                     c.sort()
                     p = [c[i][1] for i in range(len(c))]
-                    
+
                     for i in range(1, len(c)):
                         if c[i][0] != c[i-1][0]:
                             axes.append(i)
@@ -407,7 +407,7 @@ class Model():
             else:
                 axes = []
                 ci = SortConfusionMatrix(confuse, gamma=communityGamma)[0]
-                
+
                 c = [(ci[i], i) for i in range(len(ci))]
                 c.sort()
                 p = [c[i][1] for i in range(len(c))]
@@ -430,19 +430,19 @@ class Model():
                     print(self.labels[i])
                     p.append(i)
                     axes.append(axes[-1]+1)
-            
+
             # 2/ Actually sort
             confuse = np.array(confuse)[p][:,p]
             labels = np.array(self.labels)[p]
-            
-            
+
+
             clusters = [[]]
             for i, label in enumerate(labels):
                 if i in axes:
                     clusters.append([label])
                 else:
                     clusters[-1].append(label)
-                    
+
             # 3/ Plot the frontier between clusters
             inClusterP = 0
             for i, maxAxe in enumerate(axes):
@@ -467,7 +467,7 @@ class Model():
             vmax = 1
         img = ax.imshow(confuse,cmap='viridis', vmax = vmax, vmin = vmin, interpolation='nearest')
         fig.colorbar(img, ax=ax)
-        
+
         # Write the labels  and titles
         ax.set_xticklabels(labels, rotation=40, ha="right", fontsize=8)
         ax.set_yticklabels(labels, fontsize=8)
@@ -485,13 +485,13 @@ class Model():
         """Load the model with weigth"""
         weight = join("models", self.folder, self.name+".h5")
         self.model = self.ImportModel(weight)
-        
+
     def Recognize(self, file):
         """Launch the model on one image
-        
+
         Input:
         file -- a string, the namefile of the image
-        
+
         Output:
             res -- a list of tuple
                 res[i] -- a tuple (str, float) where str is a label"""
@@ -505,13 +505,13 @@ class Model():
 
     def ImportModel(self, weight, input_shape = picSize):
         """Create a model
-        
+
         Input:
         weight -- False or a string
             False: the model is loaded without weight
             string: the filename of the model, which will be uesd to load the weigth
         input_shape -- (int, int, int), the dimension of one image
-        
+
         Output:
         modelD - a keras model"""
         modelD = Sequential()
@@ -535,7 +535,7 @@ class Model():
         modelD.add(Conv2D(128, (3, 3), activation=activation, padding='same', name='B4C2'))
         #modelD.add(Conv2D(512, (3, 3), activation=activation, padding='same', name='B4C3'))
         modelD.add(MaxPooling2D((2, 2), strides=(2, 2), name='B4P'))
-    
+
         # Block 5
         modelD.add(Conv2D(128, (3, 3), activation=activation, padding='same', name='B5C1'))
         modelD.add(Conv2D(128, (3, 3), activation=activation, padding='same', name='B5C2'))
@@ -569,12 +569,12 @@ class Model():
 
     def TestHierarch(self, models, mode):
         """Test the architecture of models
-        
+
         Input:
         self -- the model with mode 1
         models -- a list of models with mode 2 or 3
         mode -- a int
-        
+
         output
         ress -- a float, the percentage of success of the architecture"""
         confuse = [[0 for x in self.labels] for y in self.labels]
@@ -588,7 +588,7 @@ class Model():
                 hierarch = HierarchIni(models)
                 if mode == 4:
                     self.LoadModel()
-                    
+
                     invHier = {}
                     for label1 in self.labels:
                         for model1 in models:
@@ -596,10 +596,10 @@ class Model():
                                 for label, model2 in hierarch.items():
                                     if model1 == model2:
                                         invHier[label1] = label
-                                        
+
                 begin = datetime.now()
                 total = {label:0 for label in self.labels}
-                
+
                 if testNumPic[1] == '%':
                     nbTotal = int(testNumPic[0]*len(self.flatFiles))
                     nbEach = nbTotal//len(self.files)
@@ -649,7 +649,7 @@ class Model():
             print(mode, 'succes:', res)
             self.PlotConfuse(confuse)
         return res
-        
+
     def MakeClusters(self, clusters):
         folders = [join(SplitPath(files[0])[:-1]) for files in self.files]
         for i in range(len(clusters)):
@@ -680,10 +680,10 @@ class Model():
 
 def HierarchIni(models):
     """Generate the architecture of the labels
-    
+
     Input:
     models -- a list of models
-    
+
     Output:
     hierarch -- a dictionary {k:v}
         k -- a string: the label
@@ -702,14 +702,14 @@ def HierarchIni(models):
 
 def MaxLabelTree(model1, hierarch, file, mode, models=None, invHier = None):
     """Decide of a final label with a hierarch architecture of mode 2
-    
+
     Input:
     model1 -- a model of mode 1
     hiearch -- a dictionary {k:v}
         k -- a string: the label
         v -- the model used to decide on this label
     file -- a string: the filename of a picture
-    
+
     Output:
     labelmax -- a string"""
     r = model1.Recognize(file)
@@ -722,15 +722,15 @@ def MaxLabelTree(model1, hierarch, file, mode, models=None, invHier = None):
         r = hierarch[labelmax].Recognize(file)
         labelmax = getMaxTuple(r)[0]
     return labelmax
-    
+
 
 def MaxLabelMultiBin(models, file):
     """Decide of a final label with a binary architeture of mode 3
-    
+
     Input:
     models -- a list of models
     file -- a string: the filename of a picture
-    
+
     Output:
     labelmax -- a string"""
     r = []
@@ -741,7 +741,7 @@ def MaxLabelMultiBin(models, file):
 
 def getMaxTuple(r):
     """Return the tuple with the maximal second member
-    
+
     Input:
     r -- a list of tuple (l, p)
         l -- a str: a label
@@ -755,10 +755,10 @@ def getMaxTuple(r):
 
 def FlattenList(l):
     """From a list of list return a list flattened
-    
+
     Input:
     l -- a list of list
-    
+
     Output:
     flatL -- a list"""
     flatL = []
@@ -768,7 +768,7 @@ def FlattenList(l):
 
 def Progress(s):
     """Print a carriage return then a string
-    
+
     Input:
     s -- a string"""
     sys.stdout.write('\r')
@@ -778,26 +778,26 @@ def Progress(s):
 
 def PrepareImage(file):
     """Return a matrix that can go in the network
-    
+
     Input:
     file -- a string: the namefile of a picture
-    
+
     Output:
     x -- a 3d array"""
     img = image_utils.load_img(file, target_size=picSize[:2],grayscale=grayscale,
-                               interpolation='bilinear')
+                               interpolation='bicubic')
     x = image_utils.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     return x
-        
+
 def GetColor(z, mini = 40, maxi=100):
     """From a float between 0 and 100, return a color
-    
+
     Input:
     z -- float between 0 and 100
     mini -- the maximum value for red
     maxi -- the minimum value for green
-    
+
     Output:
     rgb -- a color"""
     if z < mini:
@@ -812,7 +812,7 @@ def GetColor(z, mini = 40, maxi=100):
 
 def PlotHist(r, s):
     """Plot a histogram
-    
+
     Input:
     r -- a list of tuple (l, p)
         l -- a string, a label
@@ -837,14 +837,14 @@ def PlotHist(r, s):
 
 def ModelsGenerator(folder, mode, index=None):
     """Generate a list of models with architecture
-    
+
     Input:
     folder -- a string: the root of the imgs
     mode -- a int between 1 and 3
         mode=1 is a classic classifier
         mode=2 is a tree classifier
         mode=3 is a binary multiclass classifier
-        
+
     Output:
     models -- a list of models"""
     models = []
@@ -852,7 +852,7 @@ def ModelsGenerator(folder, mode, index=None):
     allFiles = glob(join('.', 'imgs', folder, '**', '*.jpg'),  recursive=True)
     if mode in [1,3]:
         labels = sorted(list(set([SplitPath(path)[-2]  for path in allFiles])))
-    
+
         filesL = [[] for label in labels]
         label2index = {label:labels.index(label) for label in labels}
         for file in allFiles:
@@ -886,14 +886,14 @@ def ModelsGenerator(folder, mode, index=None):
             modelName = folder+str(j)
             labels = archFolders[root]
             filesL = [glob(join(label, '**', '*.jpg'), recursive=True) for label in labels]
-            
+
             labels = [SplitPath(label)[-1] for label in labels]
             models[j] = Model(labels, modelName, filesL, folder, mode, j)
             j+=1
-    print(datetime.now() - begin, 'to generate models')        
+    print(datetime.now() - begin, 'to generate models')
     return models
 
-    
+
 def Launcher(name, modelType, mode, modelIndex):
     """
     Input:
@@ -914,7 +914,7 @@ def Launcher(name, modelType, mode, modelIndex):
     if mode in ['testH', 'trainH']:
         models = ModelsGenerator(name,modelType)
     else:
-        models = ModelsGenerator(name, modelType, index = modelIndex)        
+        models = ModelsGenerator(name, modelType, index = modelIndex)
     if mode == 'test':
         if modelIndex == 0 and modelType == 4:
             ModelsGenerator(name, 1).Test()
@@ -932,7 +932,7 @@ def Launcher(name, modelType, mode, modelIndex):
     elif mode == 'testH':
         ModelsGenerator(name,1)[0].TestHierarch(models, modelType)
     elif mode == 'move':
-        if modelType == 1:        
+        if modelType == 1:
             models[0].Move()
         else:
             ModelsGenerator(name,1)[0].MoveMode2(models)
@@ -945,7 +945,7 @@ def Launcher(name, modelType, mode, modelIndex):
             model.PlotConfuse(confuse, dump=False)
         else:
             models[modelIndex].PlotConfuse(confuse, dump=False)
-    elif mode == 'makeClusters': 
+    elif mode == 'makeClusters':
         confuse = pickle.load(open(join('confuse', str(models[modelIndex].mode)+models[modelIndex].name+".p"), "rb" ))
         clusters = models[modelIndex].PlotConfuse(confuse, show = False, dump=False)
         models[modelIndex].MakeClusters(clusters)
@@ -958,14 +958,14 @@ def Launcher(name, modelType, mode, modelIndex):
         models[modelIndex].PlotConfuse(confuse2, dump=False)
     else:
         print('incorrect command:', mode)
-    
+
 def SplitPath(path):
     head, tail = splitF(path)
     if not head:
         return [tail]
     else:
         return SplitPath(head) + [tail]
-    
+
 if __name__ == '__main__':
     print('BEGIN:', datetime.now().strftime('%H:%M'))
     for name, modelType, mode, modelIndex in zip(names, modelTypes, modes, modelIndexs):

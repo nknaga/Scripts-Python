@@ -6,7 +6,7 @@ Created on Sat Sep 15 18:38:56 2018
 """
 import os
 import re
-iniRoot = 'D:\\Telechargements\\Anime\\Manga - Copie - Copie - Copie - Copie'
+iniRoot = 'D:\\Telechargements\\Manga'
 
 def StripTitle(title):
     if '[' in title:

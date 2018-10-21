@@ -57,7 +57,7 @@ def DetectJPG(fname, mode = 0):
         ar3 = np.absolute(array0-array2)
         noise.append((Intensity(ar3)/i, q))
     if mode == 1:
-        #img_from_np(array2).show()
+        img_from_np(array2).show()
         return noise
     else:
         return(noise[FirstLocalMinimum(noise)][1])
@@ -71,9 +71,10 @@ def FirstLocalMinimum(t):
 
 def Test():
     from matplotlib import pyplot as plt
-    
+
     x = []
     files = ['1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg']
+    files = ['Taro 1.jpg']
     for file in files:
         y = DetectJPG(join('example', file), mode=1)
         x.append([1-y[a][0] for a in range(len(y))])

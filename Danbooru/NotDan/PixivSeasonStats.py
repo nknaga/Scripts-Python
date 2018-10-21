@@ -56,7 +56,7 @@ def JsonReading(requests):
                     res[key].append(int(i))
                     t+=1
     return res
-    
+
 def Convert2Histo(response, width):
     print()
     for key, value in response.items():
@@ -71,7 +71,7 @@ def Convert2Histo(response, width):
             maxi = mini + width
             res[key].append(len([ele for ele in values if ele < maxi and ele > mini]))
     return res
-    
+
 def Plot(response):
     data = Convert2Histo(response, 1000000)
     fig, ax1 = plt.subplots()
@@ -85,12 +85,12 @@ def Plot(response):
     plt.legend(legend, loc="best")
 
 def main():
-    request = "spring 2018"
+    request = "summer 2018"
     request = convertRequest(request)
     requests = GetRequest(request)
     response = JsonReading(requests)
     Plot(response)
-    
+
 
 if __name__=="__main__":
     main()
