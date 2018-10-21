@@ -8,7 +8,7 @@ Created on Sat Oct 14 22:39:43 2017
 import urllib
 from sys import stdout
 
-str1 = "http://hijiribe.donmai.us/counts/posts.json?tags="
+str1 = "http://shima.donmai.us/counts/posts.json?tags="
 
 def NbTags(tags, username, api_key):
     tags = tags.replace(' ', '%20')
