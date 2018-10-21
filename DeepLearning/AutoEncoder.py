@@ -137,27 +137,6 @@ def Progress(s):
     sys.stdout.write(s+'           ')
     sys.stdout.flush()
 
-def PrepareImage(file):
-    img = image_utils.load_img(file, target_size=picSize[:2], grayscale=picSize[2]==1,
-                               interpolation='bicubic')
-    x = image_utils.img_to_array(img)
-    x = np.expand_dims(x, axis=0).astype('float32')/255
-    return x
-
-def PrepareImages(files):
-    inputs = []
-    begin = datetime.now()
-    l = len(files)
-    for i, file in enumerate(files):
-        eta = ((datetime.now()-begin)/(i+1)*l+begin).strftime('%H:%M')
-        Progress(str(i)+'/'+str(l)+' - '+eta)
-
-        x = PrepareImage(file)
-        inputs.append(x[0])
-    print()
-    inputs = np.array(inputs)
-    print(inputs.shape)
-    return inputs
 
 def ListFilesRec(folder):
     resFiles = []
