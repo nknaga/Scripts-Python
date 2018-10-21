@@ -31,8 +31,10 @@ def IndividualRequest(url,i):
             page = urllib.request.urlopen(url)
             soup = BeautifulSoup.BeautifulSoup(page, "lxml")
             ok = True
-        except:
+        except Exception as e:
             pass
+            print(e)
+            sleep(10)
     td = soup.find_all('td')
     if i == 0:
         j = -3
@@ -45,11 +47,11 @@ def IndividualRequest(url,i):
 
 
 if __name__ == '__main__':
-    urls_beg = ["http://sonohara.donmai.us/tags?commit=Search&page=",
-               "http://sonohara.donmai.us/tag_aliases?commit=Search&limit=1000&page="]
-    urls_end = ["&search%5Bhide_empty%5D=yes&search%5Border%5D=count&limit=1000",
+    urls_beg = ["https://shima.donmai.us/tags?commit=Search&page=",
+               "https://shima.donmai.us/tag_aliases?commit=Search&limit=30&page="]
+    urls_end = ["&search%5Bhide_empty%5D=yes&search%5Border%5D=count&limit=30",
                "&search%5Border%5D=tag_count&search%5Bstatus%5D=Approved"]
-    ls = [150, 12]
+    ls = [5000, 360]
     api_key, username = DanbooruCodes()
     global tags
     tags = []
@@ -57,6 +59,7 @@ if __name__ == '__main__':
     limit_active = 20
     for i in range(len(ls)):
         urls_end[i] += '&login=' + username + '&api_key=' + api_key
+
         for j in range(1,ls[i]+1):
             while threading.active_count() > limit_active:
                 sleep(0.1)
