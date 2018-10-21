@@ -15,8 +15,7 @@ if __name__ == '__main__':
     maxi = int(input("How many data ? "))
     file = open('result.txt', 'w')
     for i in range(mini, maxi):
-        res = str(date.today() - timedelta(days=i)) + " "
-        tag_date = "%20age:" + str(i) + "d"
+        tag_date = f"%20age:{i}d"
         upload_number = Lib.NbTags("approver:any" + tag_date, username, api_key)
 
         if i < 4:
@@ -28,14 +27,13 @@ if __name__ == '__main__':
             deleted_number = Lib.NbTags("status:deleted%20approver:none" + tag_date, username, api_key)
             upload_number += deleted_number
             ratio = deleted_number/upload_number
-        res += str(ratio).replace('.', ',') + " "
-        res += str(upload_number) + " "
-        if i<620:
-            user_number = Lib.NbTags("user:" + username + "%20status:all" + tag_date, username, api_key)
-            if user_number == 0:
-                user_del = 0
-            else:
-                user_del = Lib.NbTags("user:" + username + "%20status:deleted" + tag_date, username, api_key)
-            res += str(user_number) + " "
-            res += str(user_del)
+        res = f"{date.today() - timedelta(days=i)} {ratio} {upload_number} ".replace('.', ',')
+        user_number = Lib.NbTags(f"user:{username} status:all {tag_date}", username, api_key)
+        if user_number == 0:
+            user_del = 0
+        else:
+            user_del = Lib.NbTags(f"user:{username} status:deleted {tag_date}", username, api_key)
+        res += f" {user_number} {user_del}"
+        total = Lib.NbTags("status:any" + tag_date, username, api_key)
+        res += f" {total}"
         print(res)
