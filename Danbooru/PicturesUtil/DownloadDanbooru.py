@@ -13,11 +13,12 @@ import time
 import os
 from datetime import datetime
 from sys import stdout
+import json
 from threading import Thread
 import threading
 
 hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
-
+list_pictures_with = []
 if exists("../Danbooru_Codes.txt"):
     with open("../Danbooru_Codes.txt") as f:
         api_key = f.readline().split()[1]
@@ -34,6 +35,24 @@ def Progress(s):
     stdout.write(s+'           ')
     stdout.flush()
 
+def IndividualListPictures(url):
+    ok = 0
+    while ok < 5:
+        try:
+            req = urllib.request.Request(url, headers=hdr)
+            req = json.load(urllib.request.urlopen(req))
+        except:
+            ok += 1
+            time.sleep(5)
+            continue
+        for dic in req:
+            entry = dic['large_file_url']
+            #entry = sample.get("data-preview-file-url")
+            list_pictures_with.append(entry)
+            ok = 6
+    if ok == 5:
+        print('5 consecutive errors')
+
 def ListPicturesWithTag(tags, limit):
     """ Return a list of 'limit1' url, with the tags 'tags'
 
@@ -43,25 +62,20 @@ def ListPicturesWithTag(tags, limit):
 
     Output:
     list_pictures_with -- A list"""
-    list_pictures_with = []
     n = 200
     begin = datetime.now()
+    limit_active = threading.active_count()+10
     for i in range(int(limit/n)+1):
+        while threading.active_count() > limit_active:
+            time.sleep(0.1)
         eta = ((datetime.now()-begin)/(i+1)*int(limit/n)+begin).strftime('%H:%M')
-        Progress(str(i)+'/'+str(int(limit/n))+' | '+tags+' | '+eta)
-        url = "http://hijiribe.donmai.us/posts?page=" + str(i + 1)
-        url = url + "&tags=limit%3A200+" + tags.replace(' ','+')
+        domain = ['danbooru', 'shima', 'kagamihara'][i%3]
+        Progress(f"{i}/{int(limit/n)} | {tags} | {eta}")
+        url = f"https://{domain}.donmai.us/posts.json?page={i+1}&tags=limit%3A200+{tags.replace(' ','+')}"
         if exists("../Danbooru_Codes.txt"):
-            url += "&login="+username+"&api_key="+api_key
-        req = urllib.request.Request(url, headers=hdr)
-        page = urllib.request.urlopen(req)
-        bytespage = page.read()
-        soup = BeautifulSoup.BeautifulSoup(bytespage, "lxml")
-        for j, sample in enumerate(soup.find_all('article')):
-            entry = sample.get("data-large-file-url")
-            #entry = sample.get("data-preview-file-url")
-            list_pictures_with.append(entry)
-    return list_pictures_with
+            url += f"&login={username}&api_key={api_key}"
+        Thread(target=IndividualListPictures, args=(url,)).start()
+    time.sleep(20)
 
 
 def Launch():
@@ -77,7 +91,7 @@ def Launch():
                 os.makedirs(join('results', name))
         except Exception as e:
             print(e)
-    limits = [int(i) for i in input("Number of pictures with the tags (split with blank): ").split()]
+    limits = [int(i) for i in input("Number of pictures with the tags (split with |): ").split('|')]
     if len(limits) not in [1, len(tags)] :
         print('Error : not same length')
         return
@@ -87,11 +101,11 @@ def Launch():
     begin = datetime.now()
     k = 0
     for j in range(len(tags)):
-        urls = ListPicturesWithTag(tags[j], limits[j])
+        ListPicturesWithTag(tags[j], limits[j])
         folder = tags[j].split()[-1]
         for key in replace:
             folder = folder.replace(key, '-')
-        for i, url in enumerate(urls):
+        for i, url in enumerate(list_pictures_with):
             k +=1
             if i > limits[j]:
                 break
@@ -99,7 +113,7 @@ def Launch():
                 time.sleep(0.1)
             Thread(target=Download, args=(i, folder, url)).start()
             ending = (datetime.now() - begin) / k  * total + begin
-            Progress(str(k) + ' on ' + str(total) + ' | ' + ending.strftime('%D-%H:%M'))
+            Progress(f"{k} on {total} | {ending.strftime('%D-%H:%M')}")
 
 
 def Download(i, folder, url):
